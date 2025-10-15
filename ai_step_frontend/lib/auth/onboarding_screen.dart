@@ -23,9 +23,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFFFD464), Color(0xFFFF5E5E), Color(0xFFE23C64)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            colors: [Color(0xFF91EAAF), Color(0xFF5DD9A8), Color(0xFF2BA87F)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
         child: SafeArea(
@@ -78,7 +78,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           decoration: BoxDecoration(
                             color: _currentPage == index
                                 ? Colors.white
-                                : Colors.white.withOpacity(0.4),
+                                : Colors.white.withOpacity(0.5),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -101,9 +101,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFFE23C64),
+                          foregroundColor: const Color(0xFF1F8A70),
                           elevation: 8,
-                          shadowColor: Colors.black26,
+                          shadowColor: Colors.black.withOpacity(0.2),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(29),
                           ),
@@ -166,17 +166,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 30,
-                  offset: const Offset(0, 15),
+                  color: const Color(0xFF2BA87F).withOpacity(0.3),
+                  blurRadius: 40,
+                  offset: const Offset(0, 20),
                 ),
               ],
             ),
-            child: Icon(
-              icon,
-              size: 100,
-              color: const Color(0xFFE23C64),
-            ),
+            child: Icon(icon, size: 100, color: const Color(0xFF2BA87F)),
           ),
           const SizedBox(height: 60),
           Text(
@@ -188,6 +184,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               color: Colors.white,
               height: 1.2,
               letterSpacing: -0.5,
+              shadows: [
+                Shadow(
+                  color: Color(0x40000000),
+                  offset: Offset(0, 2),
+                  blurRadius: 8,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 20),
@@ -199,6 +202,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               color: Colors.white.withOpacity(0.95),
               height: 1.6,
               fontWeight: FontWeight.w400,
+              shadows: const [
+                Shadow(
+                  color: Color(0x30000000),
+                  offset: Offset(0, 1),
+                  blurRadius: 4,
+                ),
+              ],
             ),
           ),
         ],

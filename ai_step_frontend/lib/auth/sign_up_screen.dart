@@ -17,7 +17,8 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
@@ -27,7 +28,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -39,11 +41,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() => _isSubmitting = true);
 
     try {
+      final fullName =
+          '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}';
+
       final response = await http.post(
         apiUri('/auth/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'name': _nameController.text.trim(),
+          'name': fullName,
           'email': _emailController.text.trim(),
           'password': _passwordController.text,
         }),
@@ -205,7 +210,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? const Color(0xFFE23C64) : null,
+        backgroundColor: isSuccess ? const Color(0xFF2BA87F) : null,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -218,9 +223,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFFFD464), Color(0xFFFF5E5E), Color(0xFFE23C64)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            colors: [Color(0xFF91EAAF), Color(0xFF5DD9A8), Color(0xFF2BA87F)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
         child: SafeArea(
@@ -277,17 +282,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                           ),
                           const SizedBox(height: 48),
-                          _buildTextField(
-                            controller: _nameController,
-                            hint: 'Full Name',
-                            icon: Icons.person_outline_rounded,
-                            textCapitalization: TextCapitalization.words,
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Please enter your name';
-                              }
-                              return null;
-                            },
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildTextField(
+                                  controller: _firstNameController,
+                                  hint: 'First Name',
+                                  icon: Icons.person_outline_rounded,
+                                  textCapitalization: TextCapitalization.words,
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) {
+                                      return 'Required';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildTextField(
+                                  controller: _lastNameController,
+                                  hint: 'Last Name',
+                                  icon: Icons.person_outline_rounded,
+                                  textCapitalization: TextCapitalization.words,
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) {
+                                      return 'Required';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 16),
                           _buildTextField(
@@ -316,7 +342,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 _obscurePassword
                                     ? Icons.visibility_off_outlined
                                     : Icons.visibility_outlined,
-                                color: const Color(0xFFE23C64),
+                                color: const Color(0xFF2BA87F),
                               ),
                               onPressed: () {
                                 setState(
@@ -342,9 +368,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               onPressed: _isSubmitting ? null : _handleSignUp,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFFE23C64),
+                                foregroundColor: const Color(0xFF1F8A70),
                                 elevation: 8,
-                                shadowColor: Colors.black26,
+                                shadowColor: Colors.black.withOpacity(0.2),
                                 disabledBackgroundColor: Colors.white
                                     .withOpacity(0.7),
                                 shape: RoundedRectangleBorder(
@@ -357,7 +383,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       height: 24,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2.5,
-                                        color: Color(0xFFE23C64),
+                                        color: Color(0xFF1F8A70),
                                       ),
                                     )
                                   : const Text(
@@ -508,7 +534,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         hintText: hint,
-        prefixIcon: Icon(icon, color: const Color(0xFFE23C64)),
+        prefixIcon: Icon(icon, color: const Color(0xFF2BA87F)),
         suffixIcon: suffixIcon,
         hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 16),
         filled: true,
@@ -523,7 +549,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE23C64), width: 2.5),
+          borderSide: const BorderSide(color: Color(0xFF2BA87F), width: 2.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
