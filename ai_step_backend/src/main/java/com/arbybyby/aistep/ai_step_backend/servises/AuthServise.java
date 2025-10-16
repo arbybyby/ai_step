@@ -7,11 +7,11 @@ import com.arbybyby.aistep.ai_step_backend.models.User;
 import com.arbybyby.aistep.ai_step_backend.repositories.UserRepository;
 
 @Service
-public class UserServise {
+public class AuthServise {
     private final UserRepository userRepository;
 
     @Autowired
-    public UserServise(UserRepository userRepository) {
+    public AuthServise(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
@@ -20,11 +20,11 @@ public class UserServise {
             throw new IllegalArgumentException("Email cannot be null or empty");
         }
 
-        if (user.getName() == null || user.getName().isEmpty()) {
+        if (user.getFirstName() == null || user.getFirstName().isEmpty()) {
             throw new IllegalArgumentException("Name cannot be null or empty");
         }
 
-        if (user.getPasswordHash() == null || user.getPasswordHash().isEmpty()) {
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
             throw new IllegalArgumentException("Password hash cannot be null or empty");
         }
 
