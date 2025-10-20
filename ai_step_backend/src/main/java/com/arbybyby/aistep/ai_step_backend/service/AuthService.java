@@ -1,0 +1,41 @@
+package com.arbybyby.aistep.ai_step_backend.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.arbybyby.aistep.ai_step_backend.models.User;
+import com.arbybyby.aistep.ai_step_backend.repositories.UserRepository;
+
+@Service
+public class AuthService {
+    private final UserRepository userRepository;
+
+    @Autowired
+    public AuthService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    public void addUser(User user) {
+        if (user.getEmail() == null || user.getEmail().isEmpty()) {
+            throw new IllegalArgumentException("Email cannot be null or empty");
+        }
+
+        if (user.getFirstName() == null || user.getFirstName().isEmpty()) {
+            throw new IllegalArgumentException("Name cannot be null or empty");
+        }
+
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            throw new IllegalArgumentException("Password hash cannot be null or empty");
+        }
+
+        if (userRepository.findByEmail(user.getEmail()) != null) {
+            throw new IllegalArgumentException("User with this email already exists");
+        }
+
+        userRepository.save(user);
+    }
+
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+}

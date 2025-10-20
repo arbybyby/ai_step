@@ -1,4 +1,4 @@
-package com.arbybyby.aistep.models;
+package com.arbybyby.aistep.ai_step_backend.models;
 
 import java.time.Instant;
 import java.util.Date;
