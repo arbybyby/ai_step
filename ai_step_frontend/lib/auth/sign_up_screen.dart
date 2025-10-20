@@ -41,14 +41,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final fullName =
-          '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}';
-
       final response = await http.post(
         apiUri('/auth/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'name': fullName,
+          'firstName': _firstNameController.text.trim(),
+          'lastName': _lastNameController.text.trim(),
           'email': _emailController.text.trim(),
           'password': _passwordController.text,
         }),
