@@ -11,22 +11,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.arbybyby.aistep.ai_step_backend.models.User;
-import com.arbybyby.aistep.ai_step_backend.servises.AuthServise;
+import com.arbybyby.aistep.ai_step_backend.service.AuthService;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
-    private final AuthServise authServise;
+    private final AuthService authService;
 
     @Autowired
-    public AuthController(AuthServise authServise) {
-        this.authServise = authServise;
+    public AuthController(AuthService authService) {
+        this.authService = authService;
     }
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody User user) {
         try {
-            authServise.addUser(user);
+            authService.addUser(user);
             return ResponseEntity.status(HttpStatus.CREATED).body("User registered");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
@@ -35,7 +35,7 @@ public class AuthController {
 
     @GetMapping("/test/{email}")
     public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
-        User user = authServise.getUserByEmail(email);
+        User user = authService.getUserByEmail(email);
         if (user != null) {
             return ResponseEntity.ok(user);
         } else {

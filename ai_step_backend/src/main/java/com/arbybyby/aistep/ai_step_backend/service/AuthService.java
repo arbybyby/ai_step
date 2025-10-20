@@ -1,4 +1,4 @@
-package com.arbybyby.aistep.ai_step_backend.servises;
+package com.arbybyby.aistep.ai_step_backend.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -7,11 +7,11 @@ import com.arbybyby.aistep.ai_step_backend.models.User;
 import com.arbybyby.aistep.ai_step_backend.repositories.UserRepository;
 
 @Service
-public class AuthServise {
+public class AuthService {
     private final UserRepository userRepository;
 
     @Autowired
-    public AuthServise(UserRepository userRepository) {
+    public AuthService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
