@@ -27,7 +27,13 @@ public class AuthController {
     public ResponseEntity<String> register(@RequestBody User user) {
         try {
             authService.addUser(user);
-            return ResponseEntity.status(HttpStatus.CREATED).body("User registered");
+            ResponseEntity<String> response = new ResponseEntity<String>(HttpStatus.CREATED);
+            response.getHeaders().add("Access-Control-Allow-Origin", "*");
+            response.getHeaders().add("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+            response.getHeaders().add("Access-Control-Allow-Credentials", "true");
+            response.getHeaders().add("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS,HEAD");
+
+            return response;
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
         }
