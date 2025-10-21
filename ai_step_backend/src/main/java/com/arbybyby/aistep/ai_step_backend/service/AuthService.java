@@ -1,18 +1,54 @@
 package com.arbybyby.aistep.ai_step_backend.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.arbybyby.aistep.ai_step_backend.dto.RegisterRequest;
 import com.arbybyby.aistep.ai_step_backend.models.User;
 import com.arbybyby.aistep.ai_step_backend.repositories.UserRepository;
+
+import java.time.Instant;
 
 @Service
 public class AuthService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public AuthService(UserRepository userRepository) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    public User registerUser(RegisterRequest registerRequest) {
+        if (userRepository.findByEmail(registerRequest.getEmail()) != null) {
+            throw new IllegalArgumentException("Error: Email is already taken!");
+        }
+
+        // Create new user's account
+        User user = new User();
+        user.setEmail(registerRequest.getEmail());
+        user.setFirstName(registerRequest.getFirstName());
+        user.setLastName(registerRequest.getLastName());
+        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        
+        if (registerRequest.getLocale() != null) {
+            user.setLocale(registerRequest.getLocale());
+        }
+        
+        if (registerRequest.getTimezone() != null) {
+            user.setTimezone(registerRequest.getTimezone());
+        }
+        
+        if (registerRequest.getUnitsPreference() != null) {
+            user.setUnitsPreference(registerRequest.getUnitsPreference());
+        }
+
+        user.setCreatedAt(Instant.now());
+        user.setUpdatedAt(Instant.now());
+
+        return userRepository.save(user);
     }
 
     public void addUser(User user) {

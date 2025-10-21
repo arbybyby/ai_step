@@ -1,6 +1,6 @@
 const String backendBaseUrl = String.fromEnvironment(
   'BACKEND_URL',
-  defaultValue: 'http://localhost:8080',
+  defaultValue: 'http://192.168.42.162:8080',
 );
 
 const String googleClientId = String.fromEnvironment(
