@@ -23,7 +23,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF91EAAF), Color(0xFF5DD9A8), Color(0xFF2BA87F)],
+            colors: [Color(0xFF7CFF9B), Color(0xFF4ADE80), Color(0xFF22C55E)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -101,7 +101,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF1F8A70),
+                          foregroundColor: const Color(0xFF059669),
                           elevation: 8,
                           shadowColor: Colors.black.withOpacity(0.2),
                           shape: RoundedRectangleBorder(
@@ -166,13 +166,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF2BA87F).withOpacity(0.3),
+                  color: const Color(0xFF059669).withOpacity(0.3),
                   blurRadius: 40,
                   offset: const Offset(0, 20),
                 ),
               ],
             ),
-            child: Icon(icon, size: 100, color: const Color(0xFF2BA87F)),
+            child: Icon(icon, size: 100, color: const Color(0xFF059669)),
           ),
           const SizedBox(height: 60),
           Text(

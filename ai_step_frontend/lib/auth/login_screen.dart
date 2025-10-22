@@ -38,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await http.post(
-        apiUri('/auth/login'),
+        apiUri('/auth/signin'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': _emailController.text.trim(),
@@ -204,7 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? const Color(0xFFE23C64) : null,
+        backgroundColor: isSuccess ? const Color(0xFF22C55E) : null,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -217,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFFFD464), Color(0xFFFF5E5E), Color(0xFFE23C64)],
+            colors: [Color(0xFF7CFF9B), Color(0xFF4ADE80), Color(0xFF22C55E)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -248,7 +248,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: const Icon(
                         Icons.directions_walk_rounded,
                         size: 60,
-                        color: Color(0xFFE23C64),
+                        color: Color(0xFF22C55E),
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -297,7 +297,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           _obscurePassword
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
-                          color: const Color(0xFFE23C64),
+                          color: const Color(0xFF22C55E),
                         ),
                         onPressed: () {
                           setState(() => _obscurePassword = !_obscurePassword);
@@ -341,7 +341,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: _isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFFE23C64),
+                          foregroundColor: const Color(0xFF22C55E),
                           elevation: 8,
                           shadowColor: Colors.black26,
                           disabledBackgroundColor: Colors.white.withOpacity(
@@ -357,7 +357,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 height: 24,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2.5,
-                                  color: Color(0xFFE23C64),
+                                  color: Color(0xFF22C55E),
                                 ),
                               )
                             : const Text(
@@ -415,17 +415,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : Image.asset(
-                                'assets/google_icon.png',
-                                width: 24,
-                                height: 24,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(
-                                    Icons.g_translate_rounded,
-                                    size: 24,
-                                    color: Colors.white,
-                                  );
-                                },
+                            : const Icon(
+                                Icons.g_mobiledata_rounded,
+                                size: 32,
+                                color: Colors.white,
                               ),
                         label: Text(
                           _isGoogleLoading
@@ -507,7 +500,7 @@ class _LoginScreenState extends State<LoginScreen> {
       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         hintText: hint,
-        prefixIcon: Icon(icon, color: const Color(0xFFE23C64)),
+        prefixIcon: Icon(icon, color: const Color(0xFF22C55E)),
         suffixIcon: suffixIcon,
         hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 16),
         filled: true,
@@ -522,7 +515,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE23C64), width: 2.5),
+          borderSide: const BorderSide(color: Color(0xFF22C55E), width: 2.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),

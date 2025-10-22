@@ -14,7 +14,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   final int _goalSteps = 10000;
   String _userName = 'User';
@@ -64,13 +65,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final distance = pedometer.distance;
     final activeMinutes = pedometer.activeMinutes;
 
-    final progress = _goalSteps > 0 ? (currentSteps / _goalSteps).clamp(0.0, 1.0) : 0.0;
+    final progress = _goalSteps > 0
+        ? (currentSteps / _goalSteps).clamp(0.0, 1.0)
+        : 0.0;
 
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFFFD464), Color(0xFFFF5E5E), Color(0xFFE23C64)],
+            colors: [Color(0xFF064E3B), Color(0xFF047857), Color(0xFF10B981)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -106,10 +109,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.pushNamed(context, '/profile'),
         backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFFE23C64),
+        foregroundColor: const Color(0xFF047857),
         elevation: 8,
         icon: const Icon(Icons.person_rounded),
-        label: const Text('Profile', style: TextStyle(fontWeight: FontWeight.w700)),
+        label: const Text(
+          'Profile',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
       ),
     );
   }
@@ -158,7 +164,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 color: Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(Icons.notifications_rounded, color: Colors.white, size: 26),
+              child: const Icon(
+                Icons.notifications_rounded,
+                color: Colors.white,
+                size: 26,
+              ),
             ),
           ),
         ],
@@ -195,8 +205,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       painter: CircularProgressPainter(
                         progress: progress * _animationController.value,
                         strokeWidth: 16,
-                        backgroundColor: const Color(0xFFFCEDD8),
-                        progressColor: const Color(0xFFE23C64),
+                        backgroundColor: const Color(0xFFD1FAE5),
+                        progressColor: const Color(0xFF059669),
                       ),
                     );
                   },
@@ -205,14 +215,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.directions_walk_rounded, size: 40, color: Color(0xFFE23C64)),
+                  const Icon(
+                    Icons.directions_walk_rounded,
+                    size: 40,
+                    color: Color(0xFF059669),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     currentSteps.toString(),
                     style: const TextStyle(
                       fontSize: 42,
                       fontWeight: FontWeight.w900,
-                      color: Color(0xFFE23C64),
+                      color: Color(0xFF059669),
                       height: 1,
                     ),
                   ),
@@ -232,8 +246,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           const SizedBox(height: 24),
           LinearProgressIndicator(
             value: progress,
-            backgroundColor: const Color(0xFFFCEDD8),
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFE23C64)),
+            backgroundColor: const Color(0xFFD1FAE5),
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
             minHeight: 8,
             borderRadius: BorderRadius.circular(4),
           ),
@@ -251,7 +265,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildQuickStats(double caloriesBurned, double distance, int activeMinutes) {
+  Widget _buildQuickStats(
+    double caloriesBurned,
+    double distance,
+    int activeMinutes,
+  ) {
     return Column(
       children: [
         Row(
@@ -262,7 +280,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 value: caloriesBurned.toStringAsFixed(0),
                 unit: 'kcal',
                 label: 'Calories',
-                color: const Color(0xFFFF5E5E),
+                color: const Color(0xFF10B981),
               ),
             ),
             const SizedBox(width: 16),
@@ -272,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 value: distance.toStringAsFixed(1),
                 unit: 'km',
                 label: 'Distance',
-                color: const Color(0xFFFFD464),
+                color: const Color(0xFF34D399),
               ),
             ),
           ],
@@ -283,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           value: activeMinutes.toString(),
           unit: 'min',
           label: 'Active Minutes',
-          color: const Color(0xFFE23C64),
+          color: const Color(0xFF059669),
           isWide: true,
         ),
       ],
@@ -422,10 +440,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _buildWeeklyProgress(int currentSteps) {
     final weekData = [6500, 8200, 7100, 9300, 8900, currentSteps, 0];
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    
-    // Находим максимум, исключая нулевые значения
+
     final nonZeroData = weekData.where((v) => v > 0).toList();
-    final maxSteps = nonZeroData.isNotEmpty ? nonZeroData.reduce(math.max) : 10000;
+    final maxSteps = nonZeroData.isNotEmpty
+        ? nonZeroData.reduce(math.max)
+        : 10000;
 
     return InkWell(
       onTap: () => Navigator.pushNamed(context, '/statistics'),
@@ -454,7 +473,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFFE23C64),
+                    color: Color(0xFF059669),
                   ),
                 ),
                 Row(
@@ -464,13 +483,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFFE23C64).withOpacity(0.7),
+                        color: const Color(0xFF059669).withOpacity(0.7),
                       ),
                     ),
                     const SizedBox(width: 4),
                     Icon(
                       Icons.arrow_forward_ios_rounded,
-                      color: const Color(0xFFE23C64).withOpacity(0.7),
+                      color: const Color(0xFF059669).withOpacity(0.7),
                       size: 14,
                     ),
                   ],
@@ -486,8 +505,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 children: List.generate(7, (index) {
                   final isToday = index == 5;
                   final stepCount = weekData[index];
-                  final height = stepCount == 0 ? 10.0 : ((stepCount / maxSteps) * 140).clamp(10.0, 140.0);
-                  
+                  final height = stepCount == 0
+                      ? 10.0
+                      : ((stepCount / maxSteps) * 140).clamp(10.0, 140.0);
+
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -499,7 +520,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: isToday ? const Color(0xFFE23C64) : Colors.grey.shade600,
+                              color: isToday
+                                  ? const Color(0xFF059669)
+                                  : Colors.grey.shade600,
                             ),
                           ),
                         ),
@@ -511,10 +534,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: isToday
-                                ? [const Color(0xFFE23C64), const Color(0xFFFF5E5E)]
+                                ? [
+                                    const Color(0xFF059669),
+                                    const Color(0xFF10B981),
+                                  ]
                                 : [
-                                    const Color(0xFFFCEDD8),
-                                    const Color(0xFFFCEDD8).withOpacity(0.6)
+                                    const Color(0xFFD1FAE5),
+                                    const Color(0xFFD1FAE5).withOpacity(0.6),
                                   ],
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
@@ -527,8 +553,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         days[index],
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: isToday ? FontWeight.w900 : FontWeight.w600,
-                          color: isToday ? const Color(0xFFE23C64) : Colors.grey.shade600,
+                          fontWeight: isToday
+                              ? FontWeight.w900
+                              : FontWeight.w600,
+                          color: isToday
+                              ? const Color(0xFF059669)
+                              : Colors.grey.shade600,
                         ),
                       ),
                     ],
@@ -550,7 +580,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             icon: Icons.restaurant_rounded,
             title: 'Meals',
             subtitle: 'Track food',
-            color: const Color(0xFFFF5E5E),
+            color: const Color(0xFF10B981),
             onTap: () => Navigator.pushNamed(context, '/meals'),
           ),
         ),
@@ -560,7 +590,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             icon: Icons.water_drop_rounded,
             title: 'Water',
             subtitle: 'Stay hydrated',
-            color: const Color(0xFF64B5F6),
+            color: const Color(0xFF34D399),
             onTap: () => Navigator.pushNamed(context, '/water'),
           ),
         ),
@@ -636,14 +666,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFE23C64), Color(0xFFFF5E5E)],
+          colors: [Color(0xFF059669), Color(0xFF10B981)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFE23C64).withOpacity(0.4),
+            color: const Color(0xFF059669).withOpacity(0.4),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -684,7 +714,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               shape: BoxShape.circle,
             ),
             child: Icon(
-              remainingSteps > 0 ? Icons.emoji_events_rounded : Icons.celebration_rounded,
+              remainingSteps > 0
+                  ? Icons.emoji_events_rounded
+                  : Icons.celebration_rounded,
               size: 48,
               color: Colors.white,
             ),

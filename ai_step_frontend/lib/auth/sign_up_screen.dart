@@ -42,7 +42,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     try {
       final response = await http.post(
-        apiUri('/auth/register'),
+        apiUri('/auth/signup'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'firstName': _firstNameController.text.trim(),
@@ -172,7 +172,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         case GoogleSignIn.kSignInCanceledError:
           return 'Google sign-in was cancelled.';
         case GoogleSignIn.kSignInFailedError:
-          return 'Google rejected the sign-in request. Проверьте OAuth конфигурацию.';
+          return 'Google rejected the sign-in request. Check OAuth configuration.';
         case 'network_error':
           return 'Google sign-in failed due to network error.';
         default:
@@ -208,7 +208,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? const Color(0xFF2BA87F) : null,
+        backgroundColor: isSuccess ? const Color(0xFF22C55E) : null,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -221,7 +221,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF91EAAF), Color(0xFF5DD9A8), Color(0xFF2BA87F)],
+            colors: [Color(0xFF7CFF9B), Color(0xFF4ADE80), Color(0xFF22C55E)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -340,7 +340,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 _obscurePassword
                                     ? Icons.visibility_off_outlined
                                     : Icons.visibility_outlined,
-                                color: const Color(0xFF2BA87F),
+                                color: const Color(0xFF22C55E),
                               ),
                               onPressed: () {
                                 setState(
@@ -366,7 +366,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               onPressed: _isSubmitting ? null : _handleSignUp,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFF1F8A70),
+                                foregroundColor: const Color(0xFF22C55E),
                                 elevation: 8,
                                 shadowColor: Colors.black.withOpacity(0.2),
                                 disabledBackgroundColor: Colors.white
@@ -381,7 +381,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       height: 24,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2.5,
-                                        color: Color(0xFF1F8A70),
+                                        color: Color(0xFF22C55E),
                                       ),
                                     )
                                   : const Text(
@@ -532,7 +532,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         hintText: hint,
-        prefixIcon: Icon(icon, color: const Color(0xFF2BA87F)),
+        prefixIcon: Icon(icon, color: const Color(0xFF22C55E)),
         suffixIcon: suffixIcon,
         hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 16),
         filled: true,
@@ -547,7 +547,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF2BA87F), width: 2.5),
+          borderSide: const BorderSide(color: Color(0xFF22C55E), width: 2.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
