@@ -74,11 +74,15 @@ class AuthService extends ChangeNotifier {
       );
 
       final responseBody = jsonDecode(response.body);
+      print('Sign up response status: ${response.statusCode}');
+      print('Sign up response body: $responseBody');
 
       if (response.statusCode == 200) {
         final authResponse = AuthResponse.fromJson(responseBody);
+        print('AuthResponse parsed: ${authResponse.token.isNotEmpty ? "token received" : "no token"}');
         await _saveSession(authResponse);
-        return AuthResult.success('Account created successfully!');
+        print('Session saved, isAuthenticated: $isAuthenticated');
+        return AuthResult.success('Account created successfully! Welcome aboard!');
       } else {
         final message = responseBody['message'] ?? 'Registration failed';
         return AuthResult.error(message);
@@ -223,6 +227,9 @@ class AuthService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       
+      print('Saving session with token: ${authResponse.token.isNotEmpty ? "received" : "empty"}');
+      print('User data: ${authResponse.email}, ${authResponse.firstName} ${authResponse.lastName}');
+      
       _token = authResponse.token;
       _user = User(
         id: authResponse.id,
@@ -235,7 +242,9 @@ class AuthService extends ChangeNotifier {
       await prefs.setString(_tokenKey, _token!);
       await prefs.setString(_userKey, jsonEncode(_user!.toJson()));
       
+      print('Session saved to preferences');
       notifyListeners();
+      print('Listeners notified, isAuthenticated: $isAuthenticated');
     } catch (e) {
       print('Error saving session: $e');
       throw Exception('Failed to save session');

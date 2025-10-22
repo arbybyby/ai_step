@@ -40,6 +40,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authService = Provider.of<AuthService>(context, listen: false);
+    
+    print('Starting sign up process...');
 
     final result = await authService.signUp(
       firstName: _firstNameController.text.trim(),
@@ -50,9 +52,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     if (!mounted) return;
 
+    print('Sign up result: ${result.success}, message: ${result.message}');
+    print('User authenticated: ${authService.isAuthenticated}');
+    print('User data: ${authService.user?.toJson()}');
+
     if (result.success) {
       _showSnackBar(result.message, isSuccess: true);
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+      
+      // Add a small delay to ensure auth state is updated
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      if (mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+      }
     } else {
       _showSnackBar(result.message);
     }

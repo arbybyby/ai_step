@@ -59,9 +59,23 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest signUpRequest) {
         try {
-            authService.registerUser(signUpRequest);
+            User user = authService.registerUser(signUpRequest);
             
-            return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+            // Auto-login after registration
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(signUpRequest.getEmail(), signUpRequest.getPassword()));
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = jwtUtils.generateJwtToken(authentication);
+
+            UserPrincipal userDetails = (UserPrincipal) authentication.getPrincipal();
+
+            return ResponseEntity.ok(new AuthResponse(jwt,
+                    userDetails.getId(),
+                    userDetails.getEmail(),
+                    userDetails.getFirstName(),
+                    userDetails.getLastName(),
+                    true)); // Assuming email is verified for now
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
                     .body(new MessageResponse(e.getMessage()));
