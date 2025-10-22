@@ -43,7 +43,7 @@ class AuthService extends ChangeNotifier {
         }
       }
     } catch (e) {
-      debugPrint('Error initializing auth service: $e');
+      print('Error initializing auth service: $e');
       await logout();
     } finally {
       _isLoading = false;
@@ -84,7 +84,7 @@ class AuthService extends ChangeNotifier {
         return AuthResult.error(message);
       }
     } catch (e) {
-      debugPrint('Sign up error: $e');
+      print('Sign up error: $e');
       return AuthResult.error('Network error. Please try again.');
     } finally {
       _isLoading = false;
@@ -121,7 +121,7 @@ class AuthService extends ChangeNotifier {
         return AuthResult.error(message);
       }
     } catch (e) {
-      debugPrint('Sign in error: $e');
+      print('Sign in error: $e');
       return AuthResult.error('Network error. Please try again.');
     } finally {
       _isLoading = false;
@@ -152,7 +152,7 @@ class AuthService extends ChangeNotifier {
         return AuthResult.error(message);
       }
     } catch (e) {
-      debugPrint('Google sign in error: $e');
+      print('Google sign in error: $e');
       return AuthResult.error('Network error. Please try again.');
     } finally {
       _isLoading = false;
@@ -171,7 +171,7 @@ class AuthService extends ChangeNotifier {
       _user = null;
       notifyListeners();
     } catch (e) {
-      debugPrint('Logout error: $e');
+      print('Logout error: $e');
     }
   }
 
@@ -237,17 +237,17 @@ class AuthService extends ChangeNotifier {
       
       notifyListeners();
     } catch (e) {
-      debugPrint('Error saving session: $e');
+      print('Error saving session: $e');
       throw Exception('Failed to save session');
     }
   }
 
   bool _isTokenValid(String token) {
     try {
-      // Check if token is expired
+      // Check if token is expired using JWT decoder
       return !JwtDecoder.isExpired(token);
     } catch (e) {
-      debugPrint('Token validation error: $e');
+      print('Token validation error: $e');
       return false;
     }
   }

@@ -93,8 +93,8 @@ class _LoginScreenState extends State<LoginScreen> {
         _showSnackBar(result.message);
       }
     } catch (error, stackTrace) {
-      debugPrint('Google sign-in error: $error');
-      debugPrintStack(stackTrace: stackTrace);
+      print('Google sign-in error: $error');
+      print('Stack trace: $stackTrace');
       if (mounted) {
         _showSnackBar(_googleSignInErrorMessage(error));
       }

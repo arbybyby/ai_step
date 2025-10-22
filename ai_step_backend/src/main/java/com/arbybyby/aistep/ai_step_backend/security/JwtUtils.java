@@ -28,7 +28,7 @@ public class JwtUtils {
                 .subject((userPrincipal.getEmail()))
                 .issuedAt(new Date())
                 .expiration(new Date((new Date()).getTime() + jwtExpirationMs))
-                .signWith(key(), SignatureAlgorithm.HS512)
+                .signWith(key())
                 .compact();
     }
 
@@ -37,7 +37,7 @@ public class JwtUtils {
                 .subject(email)
                 .issuedAt(new Date())
                 .expiration(new Date((new Date()).getTime() + jwtExpirationMs))
-                .signWith(key(), SignatureAlgorithm.HS512)
+                .signWith(key())
                 .compact();
     }
 
