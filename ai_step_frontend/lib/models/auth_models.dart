@@ -15,11 +15,11 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'] ?? 0,
+      id: (json['id'] as num?)?.toInt() ?? 0,
       email: json['email'] ?? '',
       firstName: json['firstName'] ?? '',
       lastName: json['lastName'] ?? '',
-      isEmailVerified: json['isEmailVerified'] ?? false,
+      isEmailVerified: json['isEmailVerified'] ?? json['emailVerified'] ?? false,
     );
   }
 
@@ -56,11 +56,11 @@ class AuthResponse {
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
     return AuthResponse(
       token: json['token'] ?? json['jwt'] ?? '',
-      id: json['id'] ?? 0,
+      id: (json['id'] as num?)?.toInt() ?? 0,
       email: json['email'] ?? '',
       firstName: json['firstName'] ?? '',
       lastName: json['lastName'] ?? '',
-      isEmailVerified: json['isEmailVerified'] ?? false,
+      isEmailVerified: json['isEmailVerified'] ?? json['emailVerified'] ?? false,
     );
   }
 }

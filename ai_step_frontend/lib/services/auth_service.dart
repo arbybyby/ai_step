@@ -251,20 +251,4 @@ class AuthService extends ChangeNotifier {
       return false;
     }
   }
-
-  Future<bool> _validateTokenWithServer() async {
-    if (_token == null) return false;
-
-    try {
-      final response = await http.get(
-        apiUri('/auth/validate'),
-        headers: authHeaders,
-      );
-      
-      return response.statusCode == 200;
-    } catch (e) {
-      debugPrint('Server token validation error: $e');
-      return false;
-    }
-  }
 }

@@ -90,23 +90,20 @@ public class AuthController {
 
     @GetMapping("/validate")
     public ResponseEntity<?> validateToken(HttpServletRequest request) {
-        String headerAuth = request.getHeader("Authorization");
-        
-        if (headerAuth != null && headerAuth.startsWith("Bearer ")) {
-            String jwt = headerAuth.substring(7);
-            
-            if (jwtUtils.validateJwtToken(jwt)) {
-                String email = jwtUtils.getEmailFromJwtToken(jwt);
-                User user = authService.getUserByEmail(email);
-                
-                if (user != null) {
+        try {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String jwt = authHeader.substring(7);
+                if (jwtUtils.validateJwtToken(jwt)) {
                     return ResponseEntity.ok(new MessageResponse("Token is valid"));
                 }
             }
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new MessageResponse("Invalid token"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new MessageResponse("Token validation failed"));
         }
-        
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(new MessageResponse("Invalid token"));
     }
 
     @GetMapping("/test/{email}")
