@@ -12,6 +12,8 @@ import 'homepage/statistics_screen.dart';
 import 'homepage/meals_tracking_screen.dart';
 import 'homepage/water_tracking_screen.dart';
 import 'services/pedometer_service.dart';
+import 'services/auth_service.dart';
+import 'middleware/auth_guard.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,8 +34,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => PedometerService()..initialize(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => PedometerService()..initialize(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AuthService()..initialize(),
+        ),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'AI-Step',
@@ -48,15 +57,15 @@ class MyApp extends StatelessWidget {
         ),
         initialRoute: '/',
         routes: {
-          '/': (context) => const OnboardingScreen(),
-          '/login': (context) => const LoginScreen(),
-          '/signup': (context) => const SignUpScreen(),
-          '/additional-data': (context) => const AdditionalDataScreen(),
-          '/home': (context) => const HomeScreen(),
-          '/profile': (context) => const ProfileScreen(),
-          '/statistics': (context) => const StatisticsScreen(),
-          '/meals': (context) => const MealsScreen(),
-          '/water': (context) => const WaterScreen(),
+          '/': (context) => const GuestGuard(child: OnboardingScreen()),
+          '/login': (context) => const GuestGuard(child: LoginScreen()),
+          '/signup': (context) => const GuestGuard(child: SignUpScreen()),
+          '/additional-data': (context) => const AuthGuard(child: AdditionalDataScreen()),
+          '/home': (context) => const AuthGuard(child: HomeScreen()),
+          '/profile': (context) => const AuthGuard(child: ProfileScreen()),
+          '/statistics': (context) => const AuthGuard(child: StatisticsScreen()),
+          '/meals': (context) => const AuthGuard(child: MealsScreen()),
+          '/water': (context) => const AuthGuard(child: WaterScreen()),
         },
       ),
     );

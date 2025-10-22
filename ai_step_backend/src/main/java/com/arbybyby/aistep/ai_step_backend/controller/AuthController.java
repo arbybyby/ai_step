@@ -1,5 +1,6 @@
 package com.arbybyby.aistep.ai_step_backend.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -85,6 +86,27 @@ public class AuthController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/validate")
+    public ResponseEntity<?> validateToken(HttpServletRequest request) {
+        String headerAuth = request.getHeader("Authorization");
+        
+        if (headerAuth != null && headerAuth.startsWith("Bearer ")) {
+            String jwt = headerAuth.substring(7);
+            
+            if (jwtUtils.validateJwtToken(jwt)) {
+                String email = jwtUtils.getEmailFromJwtToken(jwt);
+                User user = authService.getUserByEmail(email);
+                
+                if (user != null) {
+                    return ResponseEntity.ok(new MessageResponse("Token is valid"));
+                }
+            }
+        }
+        
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new MessageResponse("Invalid token"));
     }
 
     @GetMapping("/test/{email}")

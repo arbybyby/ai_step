@@ -1,11 +1,10 @@
 import 'dart:math' as math;
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/pedometer_service.dart';
+import '../services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -31,23 +30,11 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _loadUserName() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final cachedUser = prefs.getString('auth_user');
-      if (cachedUser == null || cachedUser.isEmpty) return;
-
-      final decoded = jsonDecode(cachedUser);
-      if (decoded is Map<String, dynamic>) {
-        final name = (decoded['name'] as String?)?.trim();
-        if (name != null && name.isNotEmpty) {
-          if (!mounted) return;
-          setState(() {
-            _userName = name.split(' ').first;
-          });
-        }
-      }
-    } catch (_) {
-      // ignore cache/parsing issues, keep default name
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (authService.user != null) {
+      setState(() {
+        _userName = authService.user!.firstName;
+      });
     }
   }
 
@@ -149,27 +136,53 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ],
           ),
-          GestureDetector(
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Notifications coming soon!'),
-                  duration: Duration(seconds: 2),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Notifications coming soon!'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.notifications_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
                 ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(
-                Icons.notifications_rounded,
-                color: Colors.white,
-                size: 26,
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () async {
+                  final authService = Provider.of<AuthService>(context, listen: false);
+                  await authService.logout();
+                  if (mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.logout,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),
