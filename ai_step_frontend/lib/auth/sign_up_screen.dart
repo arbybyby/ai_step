@@ -59,11 +59,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (result.success) {
       _showSnackBar(result.message, isSuccess: true);
       
-      // Add a small delay to ensure auth state is updated
-      await Future.delayed(const Duration(milliseconds: 500));
-      
+      // After successful registration, redirect to login page
       if (mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
       }
     } else {
       _showSnackBar(result.message);

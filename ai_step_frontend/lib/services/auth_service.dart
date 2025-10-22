@@ -78,11 +78,10 @@ class AuthService extends ChangeNotifier {
       print('Sign up response body: $responseBody');
 
       if (response.statusCode == 200) {
-        final authResponse = AuthResponse.fromJson(responseBody);
-        print('AuthResponse parsed: ${authResponse.token.isNotEmpty ? "token received" : "no token"}');
-        await _saveSession(authResponse);
-        print('Session saved, isAuthenticated: $isAuthenticated');
-        return AuthResult.success('Account created successfully! Welcome aboard!');
+        // For now, registration only returns success message, not auth token
+        // User needs to sign in manually after registration
+        final message = responseBody['message'] ?? 'Account created successfully!';
+        return AuthResult.success(message);
       } else {
         final message = responseBody['message'] ?? 'Registration failed';
         return AuthResult.error(message);

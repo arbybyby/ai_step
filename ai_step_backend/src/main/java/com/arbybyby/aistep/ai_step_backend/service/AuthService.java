@@ -1,5 +1,7 @@
 package com.arbybyby.aistep.ai_step_backend.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,6 +14,8 @@ import java.time.Instant;
 
 @Service
 public class AuthService {
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
+    
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -22,7 +26,10 @@ public class AuthService {
     }
 
     public User registerUser(RegisterRequest registerRequest) {
+        logger.info("Starting registration for email: {}", registerRequest.getEmail());
+        
         if (userRepository.findByEmail(registerRequest.getEmail()) != null) {
+            logger.warn("Registration failed: Email already exists: {}", registerRequest.getEmail());
             throw new IllegalArgumentException("Error: Email is already taken!");
         }
 
@@ -48,7 +55,11 @@ public class AuthService {
         user.setCreatedAt(Instant.now());
         user.setUpdatedAt(Instant.now());
 
-        return userRepository.save(user);
+        logger.info("Saving user to database: {}", registerRequest.getEmail());
+        User savedUser = userRepository.save(user);
+        logger.info("User saved successfully with ID: {}", savedUser.getId());
+        
+        return savedUser;
     }
 
     public void addUser(User user) {

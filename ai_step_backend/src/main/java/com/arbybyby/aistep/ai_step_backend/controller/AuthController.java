@@ -2,6 +2,8 @@ package com.arbybyby.aistep.ai_step_backend.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +26,8 @@ import com.arbybyby.aistep.ai_step_backend.service.AuthService;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+    
     @Autowired
     AuthenticationManager authenticationManager;
 
@@ -59,29 +63,22 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest signUpRequest) {
         try {
-            User user = authService.registerUser(signUpRequest);
+            logger.info("Attempting to register user with email: {}", signUpRequest.getEmail());
             
-            // Auto-login after registration
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(signUpRequest.getEmail(), signUpRequest.getPassword()));
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            String jwt = jwtUtils.generateJwtToken(authentication);
-
-            UserPrincipal userDetails = (UserPrincipal) authentication.getPrincipal();
-
-            return ResponseEntity.ok(new AuthResponse(jwt,
-                    userDetails.getId(),
-                    userDetails.getEmail(),
-                    userDetails.getFirstName(),
-                    userDetails.getLastName(),
-                    true)); // Assuming email is verified for now
+            User user = authService.registerUser(signUpRequest);
+            logger.info("User registered successfully with ID: {}", user.getId());
+            
+            // Return success message without auto-login for now
+            return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+            
         } catch (IllegalArgumentException e) {
+            logger.error("Registration failed with IllegalArgumentException: {}", e.getMessage());
             return ResponseEntity.badRequest()
                     .body(new MessageResponse(e.getMessage()));
         } catch (Exception e) {
+            logger.error("Registration failed with exception: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MessageResponse("Error: Registration failed!"));
+                    .body(new MessageResponse("Error: Registration failed! Details: " + e.getMessage()));
         }
     }
 
