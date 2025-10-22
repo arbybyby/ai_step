@@ -68,8 +68,29 @@ public class AuthController {
             User user = authService.registerUser(signUpRequest);
             logger.info("User registered successfully with ID: {}", user.getId());
             
-            // Return success message without auto-login for now
-            return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+            // Auto-login after registration
+            logger.info("Attempting auto-login for user: {}", signUpRequest.getEmail());
+            try {
+                Authentication authentication = authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(signUpRequest.getEmail(), signUpRequest.getPassword()));
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                String jwt = jwtUtils.generateJwtToken(authentication);
+
+                UserPrincipal userDetails = (UserPrincipal) authentication.getPrincipal();
+                logger.info("Auto-login successful for user: {}", signUpRequest.getEmail());
+
+                return ResponseEntity.ok(new AuthResponse(jwt,
+                        userDetails.getId(),
+                        userDetails.getEmail(),
+                        userDetails.getFirstName(),
+                        userDetails.getLastName(),
+                        true)); // Assuming email is verified for now
+            } catch (Exception authException) {
+                logger.error("Auto-login failed after registration: {}", authException.getMessage());
+                // Registration succeeded but auto-login failed, return success message
+                return ResponseEntity.ok(new MessageResponse("User registered successfully! Please sign in."));
+            }
             
         } catch (IllegalArgumentException e) {
             logger.error("Registration failed with IllegalArgumentException: {}", e.getMessage());

@@ -53,15 +53,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!mounted) return;
 
     print('Sign up result: ${result.success}, message: ${result.message}');
-    print('User authenticated: ${authService.isAuthenticated}');
-    print('User data: ${authService.user?.toJson()}');
+    print('User authenticated after signup: ${authService.isAuthenticated}');
+    print('User data after signup: ${authService.user?.toJson()}');
 
     if (result.success) {
       _showSnackBar(result.message, isSuccess: true);
       
-      // After successful registration, redirect to login page
-      if (mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+      // Check if user is now authenticated (auto-login successful)
+      if (authService.isAuthenticated) {
+        // Auto-login successful, go to home
+        print('Auto-login successful, navigating to home');
+        if (mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+        }
+      } else {
+        // Registration successful but auto-login failed, go to login page
+        print('Registration successful but auto-login failed, navigating to login');
+        if (mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+        }
       }
     } else {
       _showSnackBar(result.message);
