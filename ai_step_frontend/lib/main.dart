@@ -36,12 +36,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => PedometerService()..initialize(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => AuthService()..initialize(),
-        ),
+        ChangeNotifierProvider(create: (_) => PedometerService()..initialize()),
+        ChangeNotifierProvider(create: (_) => AuthService()..initialize()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -60,10 +56,12 @@ class MyApp extends StatelessWidget {
           '/': (context) => const GuestGuard(child: OnboardingScreen()),
           '/login': (context) => const GuestGuard(child: LoginScreen()),
           '/signup': (context) => const GuestGuard(child: SignUpScreen()),
-          '/additional-data': (context) => const AuthGuard(child: AdditionalDataScreen()),
+          '/additional-data': (context) =>
+              const AuthGuard(child: AdditionalDataScreen()),
           '/home': (context) => const AuthGuard(child: HomeScreen()),
           '/profile': (context) => const AuthGuard(child: ProfileScreen()),
-          '/statistics': (context) => const AuthGuard(child: StatisticsScreen()),
+          '/statistics': (context) =>
+              const AuthGuard(child: StatisticsScreen()),
           '/meals': (context) => const AuthGuard(child: MealsScreen()),
           '/water': (context) => const AuthGuard(child: WaterScreen()),
         },

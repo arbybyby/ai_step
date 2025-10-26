@@ -23,7 +23,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _checkAuthStatus() async {
     final authService = Provider.of<AuthService>(context, listen: false);
     await authService.initialize();
-    
+
     if (mounted && authService.isAuthenticated) {
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
     }
