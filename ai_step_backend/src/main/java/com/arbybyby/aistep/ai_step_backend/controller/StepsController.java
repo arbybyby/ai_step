@@ -1,26 +1,16 @@
 package com.arbybyby.aistep.ai_step_backend.controller;
 
-import com.arbybyby.aistep.ai_step_backend.dto.StepDataRequest;
 import com.arbybyby.aistep.ai_step_backend.dto.StepSubmissionRequest;
-import com.arbybyby.aistep.ai_step_backend.models.DailyStepTotals;
-import com.arbybyby.aistep.ai_step_backend.models.StepData;
 import com.arbybyby.aistep.ai_step_backend.models.Steps;
 import com.arbybyby.aistep.ai_step_backend.security.UserPrincipal;
-import com.arbybyby.aistep.ai_step_backend.service.StepValidationService;
 import com.arbybyby.aistep.ai_step_backend.service.StepsService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
-
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -28,51 +18,41 @@ import java.util.Map;
 @RequestMapping("/api")
 @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
 public class StepsController {
-
-    @Autowired
-    private StepValidationService stepValidationService;
-
     @Autowired
     private StepsService stepsService;
 
     /**
-     * Отправка данных о шагах с акселерометра
-     */
-    @PostMapping("/steps/submit")
-    public ResponseEntity<?> submitStepData(@RequestBody StepDataRequest request, Authentication authentication) {
-        try {
-            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-            Long userId = userPrincipal.getId();
-
-            StepData processedStepData = stepValidationService.processStepData(userId, request);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("stepData", Map.of(
-                "id", processedStepData.getId(),
-                "stepCount", processedStepData.getStepCount(),
-                "isValidStep", processedStepData.getIsValidStep(),
-                "confidenceScore", processedStepData.getConfidenceScore(),
-                "timestamp", processedStepData.getTimestamp()
-            ));
-
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Failed to process step data: " + e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
-    }
-
-    /**
      * Отправка данных о шагах (совместимость с Node.js API)
+     * Corresponds to: app.post('/steps', auth, async (req, res) => {...})
      */
     @PostMapping("/steps")
-    public ResponseEntity<?> submitSteps(@Valid @RequestBody StepSubmissionRequest request, Authentication authentication) {
+    public ResponseEntity<?> submitSteps(@RequestBody StepSubmissionRequest request, Authentication authentication) {
         try {
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
             Long userId = userPrincipal.getId();
+
+            // Validate step_count manually to match Node.js validation exactly
+            Integer stepCount = request.getStepCount();
+            if (stepCount == null || stepCount < 0 || !isInteger(stepCount)) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "step_count must be a non-negative integer"));
+            }
+
+            // Validate recorded_at
+            Instant recordedAt = request.getRecordedAt();
+            if (recordedAt == null) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "recorded_at is required"));
+            }
+
+            // Validate optional numeric fields (distance_m, calories_burned)
+            try {
+                validateOptionalNumber(request.getDistanceM());
+                validateOptionalNumber(request.getCaloriesBurned());
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "distance_m and calories_burned must be numeric values"));
+            }
 
             // Save step data
             Steps savedSteps = stepsService.saveStepData(userId, request);
@@ -88,182 +68,107 @@ public class StepsController {
 
             return ResponseEntity.status(201).body(response);
         } catch (IllegalArgumentException e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
+            return ResponseEntity.badRequest()
+                .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Server error inserting steps");
-            return ResponseEntity.internalServerError().body(errorResponse);
+            System.err.println("Steps insert error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                .body(Map.of("error", "Server error inserting steps"));
         }
     }
 
     /**
-     * Получение текущего количества шагов за сегодня
+     * Helper method to validate integer values exactly like Node.js
      */
-    @GetMapping("/steps/today")
-    public ResponseEntity<?> getTodaySteps(Authentication authentication) {
-        try {
-            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-            Long userId = userPrincipal.getId();
+    private boolean isInteger(Integer value) {
+        return value != null && value.equals(value.intValue());
+    }
 
-            Integer validStepsToday = stepValidationService.getValidStepsForToday(userId);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("date", LocalDate.now().toString());
-            response.put("totalSteps", validStepsToday);
-            response.put("distance", validStepsToday * 0.78 / 1000.0); // km
-            response.put("calories", validStepsToday * 0.04);
-
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to get today's steps: " + e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
+    /**
+     * Helper method to validate optional numeric fields exactly like Node.js normalizeOptionalNumber
+     */
+    private void validateOptionalNumber(Double value) {
+        if (value != null && !Double.isFinite(value)) {
+            throw new IllegalArgumentException("invalid_number");
         }
     }
 
     /**
-     * Получение статистики шагов за определенный период
+     * Get daily step totals for a specific date
+     * Corresponds to: app.get('/steps/daily', auth, async (req, res) => {...})
      */
     @GetMapping("/steps/daily")
-    public ResponseEntity<?> getDailyStepStats(
-            @RequestParam(defaultValue = "7") int days,
-            Authentication authentication) {
+    public ResponseEntity<?> getDailySteps(@RequestParam(required = false) String date, Authentication authentication) {
         try {
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
             Long userId = userPrincipal.getId();
 
-            List<DailyStepTotals> dailyTotals = stepValidationService.getDailyStepTotals(userId, days);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("period", days + " days");
-            response.put("dailyStats", dailyTotals);
-
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to get daily stats: " + e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
-    }
-
-    /**
-     * Получение детальных данных шагов за период
-     */
-    @GetMapping("/steps/detailed")
-    public ResponseEntity<?> getDetailedStepData(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @RequestParam(defaultValue = "true") boolean validOnly,
-            Authentication authentication) {
-        try {
-            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-            Long userId = userPrincipal.getId();
-
-            Instant startTime = startDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-            Instant endTime = endDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-            List<StepData> stepData;
-            if (validOnly) {
-                stepData = stepValidationService.getValidStepDataForPeriod(userId, startTime, endTime);
-            } else {
-                stepData = stepValidationService.getStepDataForPeriod(userId, startTime, endTime);
-            }
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("startDate", startDate.toString());
-            response.put("endDate", endDate.toString());
-            response.put("validOnly", validOnly);
-            response.put("totalRecords", stepData.size());
-            response.put("stepData", stepData);
-
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to get detailed step data: " + e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
-    }
-
-    /**
-     * Получение статистики валидации (для отладки)
-     */
-    @GetMapping("/steps/validation-stats")
-    public ResponseEntity<?> getValidationStats(Authentication authentication) {
-        try {
-            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-            Long userId = userPrincipal.getId();
-
-            // Получаем данные за последние 24 часа
-            Instant last24Hours = Instant.now().minusSeconds(24 * 60 * 60);
-            Instant now = Instant.now();
-
-            List<StepData> allSteps = stepValidationService.getStepDataForPeriod(userId, last24Hours, now);
-            List<StepData> validSteps = stepValidationService.getValidStepDataForPeriod(userId, last24Hours, now);
-
-            int totalSteps = allSteps.size();
-            int validStepsCount = validSteps.size();
-            int invalidStepsCount = totalSteps - validStepsCount;
+            Map<String, Object> totals = stepsService.getDailyStepTotals(userId, date);
             
-            double validationRate = totalSteps > 0 ? (double) validStepsCount / totalSteps : 0.0;
+            // Check if has data (matching Node.js logic)
+            Integer totalSteps = (Integer) totals.get("total_steps");
+            Double totalDistanceM = (Double) totals.get("total_distance_m");
+            Double totalCalories = (Double) totals.get("total_calories");
+            String lastEntryAt = (String) totals.get("last_entry_at");
+            
+            boolean hasData = (totalSteps != null && totalSteps > 0) ||
+                            (totalDistanceM != null && totalDistanceM > 0) ||
+                            (totalCalories != null && totalCalories > 0) ||
+                            (lastEntryAt != null);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("period", "last 24 hours");
-            response.put("totalSteps", totalSteps);
-            response.put("validSteps", validStepsCount);
-            response.put("invalidSteps", invalidStepsCount);
-            response.put("validationRate", Math.round(validationRate * 100.0) + "%");
-            
-            // Статистика confidence scores
-            if (!allSteps.isEmpty()) {
-                double avgConfidence = allSteps.stream()
-                    .mapToDouble(step -> step.getConfidenceScore() != null ? step.getConfidenceScore() : 0.0)
-                    .average()
-                    .orElse(0.0);
-                response.put("averageConfidence", Math.round(avgConfidence * 100.0) / 100.0);
-            }
+            response.put("day", totals.get("day"));
+            response.put("data", hasData ? totals : null);
 
             return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            if ("INVALID_DATE".equals(e.getMessage())) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Invalid date. Expected format YYYY-MM-DD."));
+            }
+            return ResponseEntity.badRequest()
+                .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to get validation stats: " + e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
+            System.err.println("Daily steps fetch error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                .body(Map.of("error", "Server error fetching daily steps"));
         }
     }
 
     /**
-     * Массовая отправка данных о шагах (для пакетной обработки)
+     * Get step history for a date range
+     * Corresponds to: app.get('/steps/history', auth, async (req, res) => {...})
      */
-    @PostMapping("/steps/batch")
-    public ResponseEntity<?> submitBatchStepData(@RequestBody List<StepDataRequest> requests, Authentication authentication) {
+    @GetMapping("/steps/history")
+    public ResponseEntity<?> getStepHistory(@RequestParam(required = false) String from, 
+                                          @RequestParam(required = false) String to, 
+                                          Authentication authentication) {
         try {
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
             Long userId = userPrincipal.getId();
 
-            int processedCount = 0;
-            int validCount = 0;
-
-            for (StepDataRequest request : requests) {
-                StepData processedStepData = stepValidationService.processStepData(userId, request);
-                processedCount++;
-                if (processedStepData.getIsValidStep()) {
-                    validCount++;
-                }
+            Map<String, Object> history = stepsService.fetchStepHistory(userId, from, to);
+            
+            return ResponseEntity.ok(history);
+        } catch (IllegalArgumentException e) {
+            String errorCode = e.getMessage();
+            if ("INVALID_FROM_DATE".equals(errorCode) || "INVALID_TO_DATE".equals(errorCode)) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Invalid date. Expected format YYYY-MM-DD."));
+            } else if ("INVALID_RANGE".equals(errorCode)) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "from date must be before or equal to to date."));
             }
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("processedCount", processedCount);
-            response.put("validCount", validCount);
-            response.put("invalidCount", processedCount - validCount);
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.badRequest()
+                .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Failed to process batch step data: " + e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
+            System.err.println("Steps history fetch error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                .body(Map.of("error", "Server error fetching steps history"));
         }
     }
+
 }

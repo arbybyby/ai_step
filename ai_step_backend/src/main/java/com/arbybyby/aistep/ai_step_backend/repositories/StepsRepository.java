@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Repository
 public interface StepsRepository extends JpaRepository<Steps, Long> {
@@ -19,4 +20,14 @@ public interface StepsRepository extends JpaRepository<Steps, Long> {
     Object[] findDailyTotals(@Param("userId") Long userId, @Param("date") LocalDate date);
     
     List<Steps> findByUserIdAndRecordedDateOrderByRecordedAtDesc(Long userId, LocalDate recordedDate);
+    
+    @Query("SELECT s.recordedDate as date, " +
+           "COALESCE(SUM(s.stepCount), 0) as totalSteps, " +
+           "COALESCE(SUM(s.distanceM), 0.0) as totalDistanceM, " +
+           "COALESCE(SUM(s.caloriesBurned), 0.0) as totalCaloriesBurned " +
+           "FROM Steps s WHERE s.userId = :userId AND s.recordedDate BETWEEN :fromDate AND :toDate " +
+           "GROUP BY s.recordedDate ORDER BY s.recordedDate ASC")
+    List<Map<String, Object>> findStepHistoryByDateRange(@Param("userId") Long userId, 
+                                                        @Param("fromDate") LocalDate fromDate, 
+                                                        @Param("toDate") LocalDate toDate);
 }
