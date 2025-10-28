@@ -15,6 +15,9 @@ import 'services/pedometer_service.dart';
 import 'services/auth_service.dart';
 import 'middleware/auth_guard.dart';
 
+// TODO: Set to false before production release!
+const bool DEV_MODE = true;
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -51,19 +54,29 @@ class MyApp extends StatelessWidget {
           fontFamily: 'Roboto',
           scaffoldBackgroundColor: Colors.white,
         ),
-        initialRoute: '/',
+        initialRoute: DEV_MODE ? '/home' : '/',
         routes: {
           '/': (context) => const GuestGuard(child: OnboardingScreen()),
           '/login': (context) => const GuestGuard(child: LoginScreen()),
           '/signup': (context) => const GuestGuard(child: SignUpScreen()),
-          '/additional-data': (context) =>
-              const AuthGuard(child: AdditionalDataScreen()),
-          '/home': (context) => const AuthGuard(child: HomeScreen()),
-          '/profile': (context) => const AuthGuard(child: ProfileScreen()),
-          '/statistics': (context) =>
-              const AuthGuard(child: StatisticsScreen()),
-          '/meals': (context) => const AuthGuard(child: MealsScreen()),
-          '/water': (context) => const AuthGuard(child: WaterScreen()),
+          '/additional-data': (context) => DEV_MODE
+              ? const AdditionalDataScreen()
+              : const AuthGuard(child: AdditionalDataScreen()),
+          '/home': (context) => DEV_MODE
+              ? const HomeScreen()
+              : const AuthGuard(child: HomeScreen()),
+          '/profile': (context) => DEV_MODE
+              ? const ProfileScreen()
+              : const AuthGuard(child: ProfileScreen()),
+          '/statistics': (context) => DEV_MODE
+              ? const StatisticsScreen()
+              : const AuthGuard(child: StatisticsScreen()),
+          '/meals': (context) => DEV_MODE
+              ? const MealsScreen()
+              : const AuthGuard(child: MealsScreen()),
+          '/water': (context) => DEV_MODE
+              ? const WaterScreen()
+              : const AuthGuard(child: WaterScreen()),
         },
       ),
     );

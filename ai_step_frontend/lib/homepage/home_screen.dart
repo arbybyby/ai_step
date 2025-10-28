@@ -1,6 +1,8 @@
 import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../services/pedometer_service.dart';
@@ -18,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen>
   late AnimationController _animationController;
   final int _goalSteps = 10000;
   String _userName = 'User';
+  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -36,6 +39,24 @@ class _HomeScreenState extends State<HomeScreen>
         _userName = authService.user!.firstName;
       });
     }
+  }
+
+  Future<void> _handleRefresh() async {
+    setState(() => _isRefreshing = true);
+    HapticFeedback.mediumImpact();
+
+    // Simulate refresh - replace with actual refresh logic
+    await Future.delayed(const Duration(seconds: 1));
+
+    setState(() => _isRefreshing = false);
+    HapticFeedback.lightImpact();
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
   }
 
   @override
@@ -70,22 +91,45 @@ class _HomeScreenState extends State<HomeScreen>
             children: [
               _buildAppBar(),
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildStepCounter(currentSteps, progress),
-                      const SizedBox(height: 24),
-                      _buildQuickStats(caloriesBurned, distance, activeMinutes),
-                      const SizedBox(height: 24),
-                      _buildWeeklyProgress(currentSteps),
-                      const SizedBox(height: 24),
-                      _buildActionCards(),
-                      const SizedBox(height: 24),
-                      _buildMotivationCard(currentSteps, activeMinutes),
-                      const SizedBox(height: 80),
-                    ],
+                child: RefreshIndicator(
+                  onRefresh: _handleRefresh,
+                  color: const Color(0xFF059669),
+                  backgroundColor: Colors.white,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_isRefreshing)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.only(bottom: 16),
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        _buildStepCounter(currentSteps, progress),
+                        const SizedBox(height: 16),
+                        _buildAchievementsBadges(currentSteps),
+                        const SizedBox(height: 24),
+                        _buildQuickStats(
+                          caloriesBurned,
+                          distance,
+                          activeMinutes,
+                        ),
+                        const SizedBox(height: 24),
+                        _buildWeeklyProgress(currentSteps),
+                        const SizedBox(height: 24),
+                        _buildActionCards(),
+                        const SizedBox(height: 24),
+                        _buildDailyTip(),
+                        const SizedBox(height: 24),
+                        _buildMotivationCard(currentSteps, activeMinutes),
+                        const SizedBox(height: 80),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -94,7 +138,10 @@ class _HomeScreenState extends State<HomeScreen>
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.pushNamed(context, '/profile'),
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          Navigator.pushNamed(context, '/profile');
+        },
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF047857),
         elevation: 8,
@@ -117,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Hello, $_userName!',
+                '${_getGreeting()}, $_userName!',
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.white.withOpacity(0.9),
@@ -140,10 +187,15 @@ class _HomeScreenState extends State<HomeScreen>
             children: [
               GestureDetector(
                 onTap: () {
+                  HapticFeedback.lightImpact();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Notifications coming soon!'),
-                      duration: Duration(seconds: 2),
+                    SnackBar(
+                      content: const Text('Notifications coming soon!'),
+                      duration: const Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   );
                 },
@@ -163,10 +215,16 @@ class _HomeScreenState extends State<HomeScreen>
               const SizedBox(width: 12),
               GestureDetector(
                 onTap: () async {
-                  final authService = Provider.of<AuthService>(context, listen: false);
+                  HapticFeedback.lightImpact();
+                  final authService = Provider.of<AuthService>(
+                    context,
+                    listen: false,
+                  );
                   await authService.logout();
                   if (mounted) {
-                    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                    Navigator.of(
+                      context,
+                    ).pushNamedAndRemoveUntil('/login', (route) => false);
                   }
                 },
                 child: Container(
@@ -234,14 +292,21 @@ class _HomeScreenState extends State<HomeScreen>
                     color: Color(0xFF059669),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    currentSteps.toString(),
-                    style: const TextStyle(
-                      fontSize: 42,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF059669),
-                      height: 1,
-                    ),
+                  TweenAnimationBuilder<int>(
+                    tween: IntTween(begin: 0, end: currentSteps),
+                    duration: const Duration(milliseconds: 1500),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, value, child) {
+                      return Text(
+                        value.toString(),
+                        style: const TextStyle(
+                          fontSize: 42,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF059669),
+                          height: 1,
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -257,24 +322,166 @@ class _HomeScreenState extends State<HomeScreen>
             ],
           ),
           const SizedBox(height: 24),
-          LinearProgressIndicator(
-            value: progress,
-            backgroundColor: const Color(0xFFD1FAE5),
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
-            minHeight: 8,
+          ClipRRect(
             borderRadius: BorderRadius.circular(4),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: progress),
+              duration: const Duration(milliseconds: 1500),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, child) {
+                return LinearProgressIndicator(
+                  value: value,
+                  backgroundColor: const Color(0xFFD1FAE5),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Color(0xFF059669),
+                  ),
+                  minHeight: 8,
+                );
+              },
+            ),
           ),
           const SizedBox(height: 16),
-          Text(
-            '${(progress * 100).toStringAsFixed(0)}% of daily goal',
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.grey.shade700,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '${(progress * 100).toStringAsFixed(0)}% of daily goal',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (currentSteps > 0 && currentSteps < 10000)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Text(
+                    '↑ Keep going!',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: const Color(0xFF059669),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAchievementsBadges(int currentSteps) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.emoji_events_rounded,
+                color: Color(0xFF059669),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Achievements',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildBadge(
+                icon: Icons.track_changes_rounded,
+                label: '5K Steps',
+                isUnlocked: currentSteps >= 5000,
+                color: const Color(0xFF10B981),
+              ),
+              _buildBadge(
+                icon: Icons.local_fire_department_rounded,
+                label: 'On Fire',
+                isUnlocked: currentSteps >= 7500,
+                color: const Color(0xFFFF6B35),
+              ),
+              _buildBadge(
+                icon: Icons.workspace_premium_rounded,
+                label: 'Champion',
+                isUnlocked: currentSteps >= 10000,
+                color: const Color(0xFFFFD700),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBadge({
+    required IconData icon,
+    required String label,
+    required bool isUnlocked,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: isUnlocked
+                ? LinearGradient(
+                    colors: [color, color.withOpacity(0.7)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: isUnlocked ? null : Colors.grey.shade200,
+            shape: BoxShape.circle,
+            boxShadow: isUnlocked
+                ? [
+                    BoxShadow(
+                      color: color.withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Icon(
+            icon,
+            size: 32,
+            color: isUnlocked ? Colors.white : Colors.grey.shade400,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: isUnlocked ? color : Colors.grey.shade500,
+          ),
+        ),
+      ],
     );
   }
 
@@ -361,14 +568,21 @@ class _HomeScreenState extends State<HomeScreen>
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text(
-                            value,
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w900,
-                              color: color,
-                              height: 1,
-                            ),
+                          TweenAnimationBuilder<int>(
+                            tween: IntTween(begin: 0, end: int.parse(value)),
+                            duration: const Duration(milliseconds: 1200),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, val, child) {
+                              return Text(
+                                val.toString(),
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
+                                  color: color,
+                                  height: 1,
+                                ),
+                              );
+                            },
                           ),
                           const SizedBox(width: 4),
                           Padding(
@@ -413,14 +627,21 @@ class _HomeScreenState extends State<HomeScreen>
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      value,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: color,
-                        height: 1,
-                      ),
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.0, end: double.parse(value)),
+                      duration: const Duration(milliseconds: 1200),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, val, child) {
+                        return Text(
+                          val.toStringAsFixed(value.contains('.') ? 1 : 0),
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: color,
+                            height: 1,
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(width: 4),
                     Padding(
@@ -460,7 +681,10 @@ class _HomeScreenState extends State<HomeScreen>
         : 10000;
 
     return InkWell(
-      onTap: () => Navigator.pushNamed(context, '/statistics'),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        Navigator.pushNamed(context, '/statistics');
+      },
       borderRadius: BorderRadius.circular(24),
       child: Container(
         padding: const EdgeInsets.all(24),
@@ -510,74 +734,83 @@ class _HomeScreenState extends State<HomeScreen>
               ],
             ),
             const SizedBox(height: 28),
-            SizedBox(
-              height: 160,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: List.generate(7, (index) {
-                  final isToday = index == 5;
-                  final stepCount = weekData[index];
-                  final height = stepCount == 0
-                      ? 10.0
-                      : ((stepCount / maxSteps) * 140).clamp(10.0, 140.0);
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(7, (index) {
+                final isToday = index == 5;
+                final stepCount = weekData[index];
+                final height = stepCount == 0
+                    ? 20.0
+                    : ((stepCount / maxSteps) * 120).clamp(20.0, 120.0);
 
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (stepCount > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            '${(stepCount / 1000).toStringAsFixed(1)}k',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: isToday
-                                  ? const Color(0xFF059669)
-                                  : Colors.grey.shade600,
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Label above bar
+                        SizedBox(
+                          height: 20,
+                          child: stepCount > 0
+                              ? Text(
+                                  '${(stepCount / 1000).toStringAsFixed(1)}k',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: isToday
+                                        ? const Color(0xFF059669)
+                                        : Colors.grey.shade600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.visible,
+                                )
+                              : null,
+                        ),
+                        const SizedBox(height: 4),
+                        // Bar
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 800),
+                          curve: Curves.easeOutCubic,
+                          width: double.infinity,
+                          height: height,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: isToday
+                                  ? [
+                                      const Color(0xFF059669),
+                                      const Color(0xFF10B981),
+                                    ]
+                                  : [
+                                      const Color(0xFFD1FAE5),
+                                      const Color(0xFFD1FAE5).withOpacity(0.6),
+                                    ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
                             ),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 800),
-                        curve: Curves.easeOutCubic,
-                        width: 32,
-                        height: height,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: isToday
-                                ? [
-                                    const Color(0xFF059669),
-                                    const Color(0xFF10B981),
-                                  ]
-                                : [
-                                    const Color(0xFFD1FAE5),
-                                    const Color(0xFFD1FAE5).withOpacity(0.6),
-                                  ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
+                        const SizedBox(height: 8),
+                        // Day label
+                        Text(
+                          days[index],
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: isToday
+                                ? FontWeight.w900
+                                : FontWeight.w600,
+                            color: isToday
+                                ? const Color(0xFF059669)
+                                : Colors.grey.shade600,
                           ),
-                          borderRadius: BorderRadius.circular(8),
+                          maxLines: 1,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        days[index],
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isToday
-                              ? FontWeight.w900
-                              : FontWeight.w600,
-                          color: isToday
-                              ? const Color(0xFF059669)
-                              : Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  );
-                }),
-              ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
             ),
           ],
         ),
@@ -594,7 +827,10 @@ class _HomeScreenState extends State<HomeScreen>
             title: 'Meals',
             subtitle: 'Track food',
             color: const Color(0xFF10B981),
-            onTap: () => Navigator.pushNamed(context, '/meals'),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.pushNamed(context, '/meals');
+            },
           ),
         ),
         const SizedBox(width: 16),
@@ -604,7 +840,10 @@ class _HomeScreenState extends State<HomeScreen>
             title: 'Water',
             subtitle: 'Stay hydrated',
             color: const Color(0xFF34D399),
-            onTap: () => Navigator.pushNamed(context, '/water'),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.pushNamed(context, '/water');
+            },
           ),
         ),
       ],
@@ -669,24 +908,131 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildMotivationCard(int currentSteps, int activeMinutes) {
-    final remainingSteps = math.max(0, _goalSteps - currentSteps);
-    final motivationText = remainingSteps > 0
-        ? "You're only $remainingSteps steps away from your goal!"
-        : "Amazing! You surpassed your goal today!";
+  Widget _buildDailyTip() {
+    final tips = [
+      {
+        'icon': Icons.stairs_rounded,
+        'text': 'Take the stairs instead of the elevator',
+      },
+      {
+        'icon': Icons.directions_walk_rounded,
+        'text': 'A 10-minute walk burns around 40 calories',
+      },
+      {
+        'icon': Icons.local_parking_rounded,
+        'text': 'Park farther away to add extra steps',
+      },
+      {
+        'icon': Icons.notifications_active_rounded,
+        'text': 'Set hourly reminders to stand and stretch',
+      },
+      {
+        'icon': Icons.music_note_rounded,
+        'text': 'Listen to music to make walking more fun',
+      },
+    ];
+
+    final randomTip = tips[math.Random().nextInt(tips.length)];
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF059669), Color(0xFF10B981)],
+        gradient: LinearGradient(
+          colors: [const Color(0xFF059669), const Color(0xFF10B981)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF059669).withOpacity(0.4),
+            color: const Color(0xFF059669).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              randomTip['icon'] as IconData,
+              color: Colors.white,
+              size: 32,
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.lightbulb_rounded,
+                      color: Colors.white.withOpacity(0.9),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Daily Tip',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white.withOpacity(0.9),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  randomTip['text'] as String,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMotivationCard(int currentSteps, int activeMinutes) {
+    final remainingSteps = math.max(0, _goalSteps - currentSteps);
+    final motivationText = remainingSteps > 0
+        ? "You're only $remainingSteps steps away from your goal!"
+        : "Amazing! You surpassed your goal today!";
+    final goalReached = remainingSteps == 0;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: goalReached
+              ? [const Color(0xFFFFD700), const Color(0xFFFFA500)]
+              : [const Color(0xFF059669), const Color(0xFF10B981)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color:
+                (goalReached
+                        ? const Color(0xFFFFD700)
+                        : const Color(0xFF059669))
+                    .withOpacity(0.4),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -699,7 +1045,7 @@ class _HomeScreenState extends State<HomeScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  remainingSteps > 0 ? '🔥 Keep Going!' : '🎉 Goal Reached!',
+                  goalReached ? '🎉 Goal Reached!' : '🔥 Keep Going!',
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
@@ -720,16 +1066,17 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
           const SizedBox(width: 16),
-          Container(
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              remainingSteps > 0
-                  ? Icons.emoji_events_rounded
-                  : Icons.celebration_rounded,
+              goalReached
+                  ? Icons.celebration_rounded
+                  : Icons.emoji_events_rounded,
               size: 48,
               color: Colors.white,
             ),
