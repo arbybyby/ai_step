@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../services/pedometer_service.dart';
+import '../services/steps_service.dart';
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
@@ -33,18 +34,74 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   Future<void> _loadStatistics() async {
     setState(() => _isLoading = true);
 
-    // Simulate loading real data - Replace with actual data fetching
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    // Generate realistic weekly data based on current steps
-    final pedometer = Provider.of<PedometerService>(context, listen: false);
-    final currentSteps = pedometer.steps;
-
-    _weeklyData = _generateWeeklyData(currentSteps);
-    _monthlyDailySteps = _generateMonthlyData();
-    _yearlySteps = _generateYearlyData();
+    try {
+      final stepsService = Provider.of<StepsService>(context, listen: false);
+      final pedometer = Provider.of<PedometerService>(context, listen: false);
+      
+      // Try to get real data for the last 7 days
+      final today = DateTime.now();
+      final weekAgo = today.subtract(const Duration(days: 6));
+      
+      final historyData = await stepsService.getStepsHistory(
+        from: weekAgo,
+        to: today,
+      );
+      
+      if (historyData != null && historyData['dailyStats'] != null) {
+        _weeklyData = _processServerDataForWeekly(historyData['dailyStats']);
+      } else {
+        // Fallback to generated data
+        _weeklyData = _generateWeeklyData(pedometer.steps);
+      }
+      
+      _monthlyDailySteps = _generateMonthlyData();
+      _yearlySteps = _generateYearlyData();
+    } catch (e) {
+      print('Error loading statistics: $e');
+      // Fallback to generated data
+      final pedometer = Provider.of<PedometerService>(context, listen: false);
+      _weeklyData = _generateWeeklyData(pedometer.steps);
+      _monthlyDailySteps = _generateMonthlyData();
+      _yearlySteps = _generateYearlyData();
+    }
 
     setState(() => _isLoading = false);
+  }
+
+  List<Map<String, dynamic>> _processServerDataForWeekly(List<dynamic> dailyStats) {
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final today = DateTime.now();
+    
+    // Create a map for quick lookup by date
+    final statsMap = <String, Map<String, dynamic>>{};
+    for (final stat in dailyStats) {
+      if (stat is Map<String, dynamic> && stat['day'] != null) {
+        statsMap[stat['day']] = stat;
+      }
+    }
+    
+    return List.generate(7, (index) {
+      final date = today.subtract(Duration(days: 6 - index));
+      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      
+      final serverData = statsMap[dateStr];
+      if (serverData != null) {
+        return {
+          'day': days[index],
+          'steps': serverData['totalSteps'] ?? 0,
+          'calories': (serverData['totalCalories'] ?? 0).round(),
+          'distance': (serverData['totalDistanceM'] ?? 0.0) / 1000.0, // Convert to km
+        };
+      } else {
+        // Fallback data if no server data available
+        return {
+          'day': days[index],
+          'steps': 0,
+          'calories': 0,
+          'distance': 0.0,
+        };
+      }
+    });
   }
 
   List<Map<String, dynamic>> _generateWeeklyData(int todaySteps) {

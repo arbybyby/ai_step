@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../services/pedometer_service.dart';
 import '../services/auth_service.dart';
+import '../services/steps_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -45,8 +46,25 @@ class _HomeScreenState extends State<HomeScreen>
     setState(() => _isRefreshing = true);
     HapticFeedback.mediumImpact();
 
-    // Simulate refresh - replace with actual refresh logic
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // Trigger sync of current steps to server
+      final stepsService = Provider.of<StepsService>(context, listen: false);
+      final pedometer = Provider.of<PedometerService>(context, listen: false);
+      
+      if (pedometer.steps > 0) {
+        await stepsService.submitSteps(
+          stepCount: pedometer.steps,
+          recordedAt: DateTime.now(),
+          distanceM: pedometer.distance * 1000, // Convert km to m
+          caloriesBurned: pedometer.calories,
+        );
+      }
+      
+      // Get today's data from server
+      await stepsService.getDailySteps();
+    } catch (e) {
+      print('Error during refresh: $e');
+    }
 
     setState(() => _isRefreshing = false);
     HapticFeedback.lightImpact();

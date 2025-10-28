@@ -4,23 +4,30 @@ import 'package:flutter/foundation.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'steps_service.dart';
+
 /// Provides step metrics for the home screen and falls back to a lightweight
 /// simulator when real pedometer data is unavailable (e.g. on web/desktop).
 class PedometerService extends ChangeNotifier {
   PedometerService({
     double strideLengthInMeters = 0.78, // average adult walking stride
     double caloriesPerStep = 0.04, // rough kcal estimate per step
+    StepsService? stepsService,
   }) : _strideLengthInMeters = strideLengthInMeters,
-       _caloriesPerStep = caloriesPerStep;
+       _caloriesPerStep = caloriesPerStep,
+       _stepsService = stepsService;
 
   final double _strideLengthInMeters;
   final double _caloriesPerStep;
+  final StepsService? _stepsService;
 
   StreamSubscription<StepCount>? _stepSubscription;
   StreamSubscription<PedestrianStatus>? _statusSubscription;
   Timer? _simulationTimer;
+  Timer? _syncTimer;
 
   int? _baselineSteps;
+  int _lastSyncedSteps = 0;
 
   int _steps = 0;
   double _distanceKm = 0;
@@ -48,6 +55,7 @@ class PedometerService extends ChangeNotifier {
     try {
       if (kIsWeb) {
         _startSimulation();
+        _startSyncTimer();
         return;
       }
 
@@ -58,15 +66,18 @@ class PedometerService extends ChangeNotifier {
       if (!granted) {
         _error = 'Activity recognition permission denied';
         _startSimulation();
+        _startSyncTimer();
         return;
       }
 
       await _startMonitoring();
+      _startSyncTimer();
     } catch (e, stackTrace) {
       debugPrint('PedometerService initialization failed: $e');
       debugPrint('$stackTrace');
       _error = e.toString();
       _startSimulation();
+      _startSyncTimer();
     } finally {
       _isInitializing = false;
     }
@@ -182,11 +193,42 @@ class PedometerService extends ChangeNotifier {
     _activeMinutes = 0;
   }
 
+  void _startSyncTimer() {
+    if (_stepsService == null) return;
+    
+    _syncTimer?.cancel();
+    _syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _syncStepsToServer();
+    });
+  }
+
+  Future<void> _syncStepsToServer() async {
+    if (_stepsService == null || _steps <= _lastSyncedSteps) return;
+    
+    try {
+      final newSteps = _steps - _lastSyncedSteps;
+      final success = await _stepsService.submitSteps(
+        stepCount: newSteps,
+        recordedAt: DateTime.now(),
+        distanceM: newSteps * _strideLengthInMeters,
+        caloriesBurned: newSteps * _caloriesPerStep,
+      );
+      
+      if (success) {
+        _lastSyncedSteps = _steps;
+        debugPrint('Synced $newSteps steps to server');
+      }
+    } catch (e) {
+      debugPrint('Failed to sync steps to server: $e');
+    }
+  }
+
   @override
   void dispose() {
     _stepSubscription?.cancel();
     _statusSubscription?.cancel();
     _simulationTimer?.cancel();
+    _syncTimer?.cancel();
     super.dispose();
   }
 }

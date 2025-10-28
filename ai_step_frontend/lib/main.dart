@@ -13,6 +13,7 @@ import 'homepage/meals_tracking_screen.dart';
 import 'homepage/water_tracking_screen.dart';
 import 'services/pedometer_service.dart';
 import 'services/auth_service.dart';
+import 'services/steps_service.dart';
 import 'middleware/auth_guard.dart';
 
 // TODO: Set to false before production release!
@@ -39,8 +40,15 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => PedometerService()..initialize()),
         ChangeNotifierProvider(create: (_) => AuthService()..initialize()),
+        ChangeNotifierProxyProvider<AuthService, StepsService>(
+          create: (context) => StepsService(context.read<AuthService>()),
+          update: (context, auth, previous) => StepsService(auth),
+        ),
+        ChangeNotifierProxyProvider<StepsService, PedometerService>(
+          create: (context) => PedometerService(stepsService: context.read<StepsService>())..initialize(),
+          update: (context, stepsService, previous) => PedometerService(stepsService: stepsService)..initialize(),
+        ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
