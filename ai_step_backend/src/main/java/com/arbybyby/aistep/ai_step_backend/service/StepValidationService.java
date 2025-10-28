@@ -11,7 +11,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -236,7 +235,9 @@ public class StepValidationService {
         List<DailyStepTotals> dailyTotals = new ArrayList<>();
 
         for (Object[] result : results) {
-            Date day = (Date) result[0];
+            // Convert SQL Date to java.util.Date for DailyStepTotals
+            java.sql.Date sqlDate = (java.sql.Date) result[0];
+            java.util.Date day = new java.util.Date(sqlDate.getTime());
             Integer totalSteps = ((Number) result[1]).intValue();
             Double totalDistanceM = result[2] != null ? ((Number) result[2]).doubleValue() : 0.0;
             Integer totalCalories = ((Number) result[3]).intValue();

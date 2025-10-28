@@ -1,14 +1,12 @@
 package com.arbybyby.aistep.ai_step_backend.repositories;
 
 import com.arbybyby.aistep.ai_step_backend.models.StepData;
-import com.arbybyby.aistep.ai_step_backend.models.DailyStepTotals;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 
 @Repository

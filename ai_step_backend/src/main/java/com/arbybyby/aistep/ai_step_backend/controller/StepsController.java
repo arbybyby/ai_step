@@ -1,16 +1,20 @@
 package com.arbybyby.aistep.ai_step_backend.controller;
 
 import com.arbybyby.aistep.ai_step_backend.dto.StepDataRequest;
+import com.arbybyby.aistep.ai_step_backend.dto.StepSubmissionRequest;
 import com.arbybyby.aistep.ai_step_backend.models.DailyStepTotals;
 import com.arbybyby.aistep.ai_step_backend.models.StepData;
+import com.arbybyby.aistep.ai_step_backend.models.Steps;
 import com.arbybyby.aistep.ai_step_backend.security.UserPrincipal;
 import com.arbybyby.aistep.ai_step_backend.service.StepValidationService;
+import com.arbybyby.aistep.ai_step_backend.service.StepsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -21,17 +25,20 @@ import java.util.Map;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
-@RequestMapping("/api/steps")
+@RequestMapping("/api")
 @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
 public class StepsController {
 
     @Autowired
     private StepValidationService stepValidationService;
 
+    @Autowired
+    private StepsService stepsService;
+
     /**
      * Отправка данных о шагах с акселерометра
      */
-    @PostMapping("/submit")
+    @PostMapping("/steps/submit")
     public ResponseEntity<?> submitStepData(@RequestBody StepDataRequest request, Authentication authentication) {
         try {
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
@@ -59,9 +66,42 @@ public class StepsController {
     }
 
     /**
+     * Отправка данных о шагах (совместимость с Node.js API)
+     */
+    @PostMapping("/steps")
+    public ResponseEntity<?> submitSteps(@Valid @RequestBody StepSubmissionRequest request, Authentication authentication) {
+        try {
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            Long userId = userPrincipal.getId();
+
+            // Save step data
+            Steps savedSteps = stepsService.saveStepData(userId, request);
+
+            // Compute daily totals for the recorded date
+            Map<String, Object> totals = stepsService.computeDailyStepTotals(userId, savedSteps.getRecordedDate());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Steps stored");
+            response.put("step_id", savedSteps.getId());
+            response.put("recorded_at", savedSteps.getRecordedAt().toString());
+            response.put("totals", totals);
+
+            return ResponseEntity.status(201).body(response);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Server error inserting steps");
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
+    }
+
+    /**
      * Получение текущего количества шагов за сегодня
      */
-    @GetMapping("/today")
+    @GetMapping("/steps/today")
     public ResponseEntity<?> getTodaySteps(Authentication authentication) {
         try {
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
@@ -86,7 +126,7 @@ public class StepsController {
     /**
      * Получение статистики шагов за определенный период
      */
-    @GetMapping("/daily")
+    @GetMapping("/steps/daily")
     public ResponseEntity<?> getDailyStepStats(
             @RequestParam(defaultValue = "7") int days,
             Authentication authentication) {
@@ -111,7 +151,7 @@ public class StepsController {
     /**
      * Получение детальных данных шагов за период
      */
-    @GetMapping("/detailed")
+    @GetMapping("/steps/detailed")
     public ResponseEntity<?> getDetailedStepData(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
@@ -149,7 +189,7 @@ public class StepsController {
     /**
      * Получение статистики валидации (для отладки)
      */
-    @GetMapping("/validation-stats")
+    @GetMapping("/steps/validation-stats")
     public ResponseEntity<?> getValidationStats(Authentication authentication) {
         try {
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
@@ -195,7 +235,7 @@ public class StepsController {
     /**
      * Массовая отправка данных о шагах (для пакетной обработки)
      */
-    @PostMapping("/batch")
+    @PostMapping("/steps/batch")
     public ResponseEntity<?> submitBatchStepData(@RequestBody List<StepDataRequest> requests, Authentication authentication) {
         try {
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
