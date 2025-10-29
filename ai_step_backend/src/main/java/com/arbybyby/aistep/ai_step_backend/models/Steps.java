@@ -1,16 +1,35 @@
 package com.arbybyby.aistep.ai_step_backend.models;
 
+import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalDate;
 
+@Entity
+@Table(name = "steps")
 public class Steps {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
+    @Column(name = "user_id", nullable = false)
     private Long userId;
+    
+    @Column(name = "device_id")
     private String deviceId;
+    
+    @Column(name = "step_count", nullable = false)
     private Integer stepCount;
+    
+    @Column(name = "distance_m")
     private Double distanceM;
+    
+    @Column(name = "calories_burned")
     private Double caloriesBurned;
+    
+    @Column(name = "recorded_at", nullable = false)
     private Instant recordedAt;
+    
+    @Column(name = "recorded_date", nullable = false)
     private LocalDate recordedDate;
 
     // Constructors

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.arbybyby.aistep.ai_step_backend.dto.RegisterRequest;
 import com.arbybyby.aistep.ai_step_backend.models.User;
-import com.arbybyby.aistep.ai_step_backend.repositories.InMemoryUserRepository;
+import com.arbybyby.aistep.ai_step_backend.repositories.UserRepository;
 
 import java.time.Instant;
 
@@ -16,11 +16,11 @@ import java.time.Instant;
 public class AuthService {
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
     
-    private final InMemoryUserRepository userRepository;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public AuthService(InMemoryUserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }

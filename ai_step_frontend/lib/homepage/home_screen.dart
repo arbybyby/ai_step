@@ -31,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen>
       duration: const Duration(milliseconds: 2000),
     )..forward();
     _loadUserName();
+    _loadInitialData();
   }
 
   Future<void> _loadUserName() async {
@@ -39,6 +40,19 @@ class _HomeScreenState extends State<HomeScreen>
       setState(() {
         _userName = authService.user!.firstName;
       });
+    }
+  }
+
+  Future<void> _loadInitialData() async {
+    try {
+      final stepsService = Provider.of<StepsService>(context, listen: false);
+      
+      // Load today's steps from server
+      await stepsService.getDailySteps();
+      
+      print('Initial data loaded successfully');
+    } catch (e) {
+      print('Error loading initial data: $e');
     }
   }
 

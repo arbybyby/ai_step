@@ -2,7 +2,7 @@ package com.arbybyby.aistep.ai_step_backend.service;
 
 import com.arbybyby.aistep.ai_step_backend.dto.StepSubmissionRequest;
 import com.arbybyby.aistep.ai_step_backend.models.Steps;
-import com.arbybyby.aistep.ai_step_backend.repositories.InMemoryStepsRepository;
+import com.arbybyby.aistep.ai_step_backend.repositories.StepsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +17,7 @@ import java.util.Map;
 public class StepsService {
 
     @Autowired
-    private InMemoryStepsRepository stepsRepository;
+    private StepsRepository stepsRepository;
 
     public Steps saveStepData(Long userId, StepSubmissionRequest request) {
         // Get validated data from request (validation is done in controller)
@@ -91,9 +91,18 @@ public class StepsService {
         
         Map<String, Object> result = new HashMap<>();
         result.put("day", date.toString());
-        result.put("total_steps", totals[0]);
-        result.put("total_distance_m", totals[1]);
-        result.put("total_calories", totals[2]); // Note: Node.js uses "total_calories" not "total_calories_burned"
+        
+        // Safely extract values from the array
+        if (totals != null && totals.length >= 3) {
+            result.put("total_steps", totals[0]);
+            result.put("total_distance_m", totals[1]);
+            result.put("total_calories", totals[2]);
+        } else {
+            result.put("total_steps", 0);
+            result.put("total_distance_m", 0.0);
+            result.put("total_calories", 0);
+        }
+        
         result.put("last_entry_at", lastEntryAt != null ? lastEntryAt.toString() : null);
         
         return result;

@@ -70,8 +70,14 @@ public class StepsController {
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
             Long userId = userPrincipal.getId();
             
-            System.out.println("Received steps submission request from user: " + userId);
-            System.out.println("Request data: " + request.getStepCount() + " steps at " + request.getRecordedAt());
+            System.out.println("=== Received steps submission request ===");
+            System.out.println("User ID: " + userId);
+            System.out.println("Step count: " + request.getStepCount());
+            System.out.println("Recorded at: " + request.getRecordedAt());
+            System.out.println("Distance M: " + request.getDistanceM());
+            System.out.println("Calories burned: " + request.getCaloriesBurned());
+            System.out.println("Device ID: " + request.getDeviceId());
+            System.out.println("=========================================");
 
             // Validate step_count manually to match Node.js validation exactly
             Integer stepCount = request.getStepCount();
@@ -159,8 +165,13 @@ public class StepsController {
             // Handle both Integer and Long types from database SUM operations
             Object totalStepsObj = totals.get("total_steps");
             Integer totalSteps = totalStepsObj != null ? ((Number) totalStepsObj).intValue() : null;
-            Double totalDistanceM = (Double) totals.get("total_distance_m");
-            Double totalCalories = (Double) totals.get("total_calories");
+            
+            Object totalDistanceMObj = totals.get("total_distance_m");
+            Double totalDistanceM = totalDistanceMObj != null ? ((Number) totalDistanceMObj).doubleValue() : null;
+            
+            Object totalCaloriesObj = totals.get("total_calories");
+            Double totalCalories = totalCaloriesObj != null ? ((Number) totalCaloriesObj).doubleValue() : null;
+            
             String lastEntryAt = (String) totals.get("last_entry_at");
             
             boolean hasData = (totalSteps != null && totalSteps > 0) ||

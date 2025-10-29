@@ -3,7 +3,7 @@ package com.arbybyby.aistep.ai_step_backend.service;
 import com.arbybyby.aistep.ai_step_backend.dto.StepDataRequest;
 import com.arbybyby.aistep.ai_step_backend.models.DailyStepTotals;
 import com.arbybyby.aistep.ai_step_backend.models.StepData;
-import com.arbybyby.aistep.ai_step_backend.repositories.InMemoryStepDataRepository;
+import com.arbybyby.aistep.ai_step_backend.repositories.StepDataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +18,7 @@ import java.util.ArrayList;
 public class StepValidationService {
 
     @Autowired
-    private InMemoryStepDataRepository stepDataRepository;
+    private StepDataRepository stepDataRepository;
 
     // Константы для фильтрации
     private static final double MIN_STEP_MAGNITUDE = 1.5;  // Минимальная величина ускорения для шага
