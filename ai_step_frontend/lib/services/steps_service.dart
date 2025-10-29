@@ -47,6 +47,33 @@ class StepsService extends ChangeNotifier {
     }
   }
 
+  /// Проверить соединение с сервером
+  Future<bool> checkHealth() async {
+    try {
+      if (!_authService.isAuthenticated) {
+        print('User not authenticated, cannot check health');
+        return false;
+      }
+
+      final response = await _authService.authenticatedRequest(
+        method: 'GET',
+        path: '/api/steps/health',
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('Health check successful: ${data['status']}');
+        return data['status'] == 'ok';
+      } else {
+        print('Health check failed: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('Error checking health: $e');
+      return false;
+    }
+  }
+
   /// Получить данные о шагах за определенный день
   Future<Map<String, dynamic>?> getDailySteps({DateTime? date}) async {
     try {

@@ -1,6 +1,7 @@
 package com.arbybyby.aistep.ai_step_backend.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.Instant;
 
 public class StepSubmissionRequest {
@@ -9,6 +10,7 @@ public class StepSubmissionRequest {
     private Integer stepCount;
     
     @JsonProperty("recorded_at")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Instant recordedAt;
     
     @JsonProperty("distance_m")

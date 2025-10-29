@@ -9,17 +9,58 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMethod;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
+@CrossOrigin(
+    origins = {"http://localhost:*", "https://*"}, 
+    allowedHeaders = {"*"}, 
+    methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS},
+    allowCredentials = "true",
+    maxAge = 3600
+)
 @RestController
 @RequestMapping("/api")
 @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
 public class StepsController {
     @Autowired
     private StepsService stepsService;
+
+    /**
+     * Handle preflight OPTIONS requests for CORS
+     */
+    @RequestMapping(value = "/steps/**", method = RequestMethod.OPTIONS)
+    public ResponseEntity<?> handlePreflight() {
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Health check endpoint for Flutter app connectivity
+     */
+    @GetMapping("/steps/health")
+    public ResponseEntity<?> healthCheck(Authentication authentication) {
+        try {
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            Long userId = userPrincipal.getId();
+            
+            Map<String, Object> health = new HashMap<>();
+            health.put("status", "ok");
+            health.put("user_id", userId);
+            health.put("timestamp", Instant.now().toString());
+            health.put("service", "steps");
+            
+            return ResponseEntity.ok(health);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", "error");
+            error.put("message", "Health check failed");
+            error.put("timestamp", Instant.now().toString());
+            
+            return ResponseEntity.internalServerError().body(error);
+        }
+    }
 
     /**
      * Отправка данных о шагах (совместимость с Node.js API)
@@ -30,10 +71,14 @@ public class StepsController {
         try {
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
             Long userId = userPrincipal.getId();
+            
+            System.out.println("Received steps submission request from user: " + userId);
+            System.out.println("Request data: " + request.getStepCount() + " steps at " + request.getRecordedAt());
 
             // Validate step_count manually to match Node.js validation exactly
             Integer stepCount = request.getStepCount();
             if (stepCount == null || stepCount < 0 || !isInteger(stepCount)) {
+                System.out.println("Invalid step count: " + stepCount);
                 return ResponseEntity.badRequest()
                     .body(Map.of("error", "step_count must be a non-negative integer"));
             }
@@ -41,6 +86,7 @@ public class StepsController {
             // Validate recorded_at
             Instant recordedAt = request.getRecordedAt();
             if (recordedAt == null) {
+                System.out.println("Missing recorded_at field");
                 return ResponseEntity.badRequest()
                     .body(Map.of("error", "recorded_at is required"));
             }
@@ -65,16 +111,19 @@ public class StepsController {
             response.put("step_id", savedSteps.getId());
             response.put("recorded_at", savedSteps.getRecordedAt().toString());
             response.put("totals", totals);
+            
+            System.out.println("Successfully saved steps with ID: " + savedSteps.getId());
 
             return ResponseEntity.status(201).body(response);
         } catch (IllegalArgumentException e) {
+            System.err.println("Validation error for steps submission: " + e.getMessage());
             return ResponseEntity.badRequest()
                 .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             System.err.println("Steps insert error: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.internalServerError()
-                .body(Map.of("error", "Server error inserting steps"));
+                .body(Map.of("error", "Server error inserting steps", "details", e.getMessage()));
         }
     }
 
@@ -103,6 +152,8 @@ public class StepsController {
         try {
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
             Long userId = userPrincipal.getId();
+            
+            System.out.println("Fetching daily steps for user: " + userId + ", date: " + date);
 
             Map<String, Object> totals = stepsService.getDailyStepTotals(userId, date);
             
@@ -123,6 +174,7 @@ public class StepsController {
 
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
+            System.err.println("Validation error for daily steps: " + e.getMessage());
             if ("INVALID_DATE".equals(e.getMessage())) {
                 return ResponseEntity.badRequest()
                     .body(Map.of("error", "Invalid date. Expected format YYYY-MM-DD."));
@@ -133,7 +185,7 @@ public class StepsController {
             System.err.println("Daily steps fetch error: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.internalServerError()
-                .body(Map.of("error", "Server error fetching daily steps"));
+                .body(Map.of("error", "Server error fetching daily steps", "details", e.getMessage()));
         }
     }
 
@@ -148,11 +200,14 @@ public class StepsController {
         try {
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
             Long userId = userPrincipal.getId();
+            
+            System.out.println("Fetching step history for user: " + userId + ", from: " + from + ", to: " + to);
 
             Map<String, Object> history = stepsService.fetchStepHistory(userId, from, to);
             
             return ResponseEntity.ok(history);
         } catch (IllegalArgumentException e) {
+            System.err.println("Validation error for step history: " + e.getMessage());
             String errorCode = e.getMessage();
             if ("INVALID_FROM_DATE".equals(errorCode) || "INVALID_TO_DATE".equals(errorCode)) {
                 return ResponseEntity.badRequest()
@@ -167,7 +222,7 @@ public class StepsController {
             System.err.println("Steps history fetch error: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.internalServerError()
-                .body(Map.of("error", "Server error fetching steps history"));
+                .body(Map.of("error", "Server error fetching steps history", "details", e.getMessage()));
         }
     }
 
