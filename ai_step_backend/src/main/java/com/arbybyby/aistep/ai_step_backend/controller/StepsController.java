@@ -6,7 +6,6 @@ import com.arbybyby.aistep.ai_step_backend.security.UserPrincipal;
 import com.arbybyby.aistep.ai_step_backend.service.StepsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -15,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @CrossOrigin(
-    origins = {"http://localhost:*", "https://*"}, 
+    origins = {"http://localhost:*", "http://192.168.1.82:*", "https://*"}, 
     allowedHeaders = {"*"}, 
     methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS},
     allowCredentials = "true",
@@ -23,7 +22,6 @@ import java.util.Map;
 )
 @RestController
 @RequestMapping("/api")
-@PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
 public class StepsController {
     @Autowired
     private StepsService stepsService;
@@ -158,7 +156,9 @@ public class StepsController {
             Map<String, Object> totals = stepsService.getDailyStepTotals(userId, date);
             
             // Check if has data (matching Node.js logic)
-            Integer totalSteps = (Integer) totals.get("total_steps");
+            // Handle both Integer and Long types from database SUM operations
+            Object totalStepsObj = totals.get("total_steps");
+            Integer totalSteps = totalStepsObj != null ? ((Number) totalStepsObj).intValue() : null;
             Double totalDistanceM = (Double) totals.get("total_distance_m");
             Double totalCalories = (Double) totals.get("total_calories");
             String lastEntryAt = (String) totals.get("last_entry_at");

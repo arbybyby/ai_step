@@ -3,6 +3,7 @@ package com.arbybyby.aistep.ai_step_backend.security;
 import com.arbybyby.aistep.ai_step_backend.models.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
@@ -31,7 +32,10 @@ public class UserPrincipal implements UserDetails {
     }
 
     public static UserPrincipal create(User user) {
-        List<GrantedAuthority> authorities = List.of();
+        // Assign default USER role to all authenticated users
+        List<GrantedAuthority> authorities = List.of(
+            new SimpleGrantedAuthority("ROLE_USER")
+        );
 
         return new UserPrincipal(
                 user.getId(),

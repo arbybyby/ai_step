@@ -2,7 +2,7 @@ package com.arbybyby.aistep.ai_step_backend.service;
 
 import com.arbybyby.aistep.ai_step_backend.dto.StepSubmissionRequest;
 import com.arbybyby.aistep.ai_step_backend.models.Steps;
-import com.arbybyby.aistep.ai_step_backend.repositories.StepsRepository;
+import com.arbybyby.aistep.ai_step_backend.repositories.InMemoryStepsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +17,7 @@ import java.util.Map;
 public class StepsService {
 
     @Autowired
-    private StepsRepository stepsRepository;
+    private InMemoryStepsRepository stepsRepository;
 
     public Steps saveStepData(Long userId, StepSubmissionRequest request) {
         // Get validated data from request (validation is done in controller)
@@ -49,9 +49,19 @@ public class StepsService {
         Object[] totals = stepsRepository.findDailyTotals(userId, date);
         
         Map<String, Object> result = new HashMap<>();
-        result.put("total_steps", totals[0]);
-        result.put("total_distance_m", totals[1]);
-        result.put("total_calories_burned", totals[2]);
+        
+        // Проверяем, что массив содержит ожидаемое количество элементов
+        if (totals != null && totals.length >= 3) {
+            result.put("total_steps", totals[0] != null ? totals[0] : 0);
+            result.put("total_distance_m", totals[1] != null ? totals[1] : 0.0);
+            result.put("total_calories_burned", totals[2] != null ? totals[2] : 0.0);
+        } else {
+            // Значения по умолчанию, если нет данных
+            result.put("total_steps", 0);
+            result.put("total_distance_m", 0.0);
+            result.put("total_calories_burned", 0.0);
+        }
+        
         result.put("date", date.toString());
         
         return result;

@@ -18,27 +18,54 @@ class StepsService extends ChangeNotifier {
     try {
       if (!_authService.isAuthenticated) {
         print('User not authenticated, cannot submit steps');
+        print('Token: ${_authService.token != null ? "exists" : "null"}');
+        print('User: ${_authService.user != null ? "exists" : "null"}');
         return false;
       }
+
+      // Проверяем валидность токена
+      if (!_authService.isTokenValid) {
+        print('Token is expired or invalid, cannot submit steps');
+        return false;
+      }
+
+      print('Submitting steps - authenticated user: ${_authService.user?.email}');
+      print('Token available: ${_authService.token != null}');
+      print('Token valid: ${_authService.isTokenValid}');
+
+      final requestBody = {
+        'step_count': stepCount,
+        'recorded_at': recordedAt.toUtc().toIso8601String(),
+        if (distanceM != null) 'distance_m': distanceM,
+        if (caloriesBurned != null) 'calories_burned': caloriesBurned,
+        if (deviceId != null) 'device_id': deviceId,
+      };
+      
+      print('Request body: $requestBody');
 
       final response = await _authService.authenticatedRequest(
         method: 'POST',
         path: '/api/steps',
-        body: {
-          'step_count': stepCount,
-          'recorded_at': recordedAt.toUtc().toIso8601String(),
-          if (distanceM != null) 'distance_m': distanceM,
-          if (caloriesBurned != null) 'calories_burned': caloriesBurned,
-          if (deviceId != null) 'device_id': deviceId,
-        },
+        body: requestBody,
       );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 201) {
         print('Steps submitted successfully');
         return true;
+      } else if (response.statusCode == 401) {
+        print('Unauthorized - token may be expired');
+        // Попробуем обновить токен или заставить пользователя войти снова
+        return false;
       } else {
-        final errorData = jsonDecode(response.body);
-        print('Failed to submit steps: ${errorData['error'] ?? 'Unknown error'}');
+        try {
+          final errorData = jsonDecode(response.body);
+          print('Failed to submit steps: ${errorData['error'] ?? errorData['message'] ?? 'Unknown error'}');
+        } catch (e) {
+          print('Failed to submit steps: HTTP ${response.statusCode}');
+        }
         return false;
       }
     } catch (e) {

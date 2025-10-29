@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.arbybyby.aistep.ai_step_backend.dto.RegisterRequest;
 import com.arbybyby.aistep.ai_step_backend.models.User;
-import com.arbybyby.aistep.ai_step_backend.repositories.UserRepository;
+import com.arbybyby.aistep.ai_step_backend.repositories.InMemoryUserRepository;
 
 import java.time.Instant;
 
@@ -16,11 +16,11 @@ import java.time.Instant;
 public class AuthService {
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
     
-    private final UserRepository userRepository;
+    private final InMemoryUserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthService(InMemoryUserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
@@ -28,7 +28,7 @@ public class AuthService {
     public User registerUser(RegisterRequest registerRequest) {
         logger.info("Starting registration for email: {}", registerRequest.getEmail());
         
-        if (userRepository.findByEmail(registerRequest.getEmail()) != null) {
+        if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
             logger.warn("Registration failed: Email already exists: {}", registerRequest.getEmail());
             throw new IllegalArgumentException("Error: Email is already taken!");
         }
@@ -75,7 +75,7 @@ public class AuthService {
             throw new IllegalArgumentException("Password hash cannot be null or empty");
         }
 
-        if (userRepository.findByEmail(user.getEmail()) != null) {
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new IllegalArgumentException("User with this email already exists");
         }
 
@@ -83,6 +83,6 @@ public class AuthService {
     }
 
     public User getUserByEmail(String email) {
-        return userRepository.findByEmail(email);
+        return userRepository.findByEmail(email).orElse(null);
     }
 }

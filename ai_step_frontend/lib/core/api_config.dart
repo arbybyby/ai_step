@@ -11,7 +11,7 @@ String get backendBaseUrl {
   // Автоматическое определение в зависимости от платформы
   if (Platform.isAndroid) {
     // Для Android эмулятора используем 10.0.2.2
-    return 'http://192.168.42.63:8080';
+    return 'http://192.168.1.82:8080';
   } else if (Platform.isIOS) {
     // Для iOS симулятора используем localhost
     return 'http://localhost:8080';

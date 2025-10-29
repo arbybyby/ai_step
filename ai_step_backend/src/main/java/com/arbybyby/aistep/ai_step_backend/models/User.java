@@ -1,44 +1,19 @@
 package com.arbybyby.aistep.ai_step_backend.models;
 
-import jakarta.persistence.*;
 import java.time.Instant;
 
-@Entity
-@Table(name = "users")
 public class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false, unique = true)
     private String email;
-
-    @Column(name = "password")
     private String password;
-
-    @Column(name = "first_name")
     private String firstName;
-
-    @Column(name = "last_name")
     private String lastName;
-
-    @Column(name = "email_verified")
     private Boolean emailVerified = false;
-
     private String locale;
-
     private String timezone;
-
-    @Column(name = "units_preference")
     private String unitsPreference = "metric";
-
-    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
-
-    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
-
-    @Column(name = "last_login_at")
     private Instant lastLoginAt;
 
     public User() {}

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -193,6 +194,11 @@ class AuthService extends ChangeNotifier {
 
   // Get authenticated HTTP headers
   Map<String, String> get authHeaders {
+    print('Getting auth headers - token exists: ${_token != null}');
+    if (_token != null) {
+      print('Token preview: ${_token!.substring(0, math.min(20, _token!.length))}...');
+    }
+    
     if (_token == null) {
       return {'Content-Type': 'application/json'};
     }
@@ -211,6 +217,12 @@ class AuthService extends ChangeNotifier {
   }) async {
     final headers = {...authHeaders, ...?additionalHeaders};
     final uri = apiUri(path);
+
+    print('Making $method request to: $uri');
+    print('Headers: $headers');
+    if (body != null) {
+      print('Body: ${jsonEncode(body)}');
+    }
 
     switch (method.toUpperCase()) {
       case 'GET':
@@ -271,5 +283,11 @@ class AuthService extends ChangeNotifier {
       print('Token validation error: $e');
       return false;
     }
+  }
+
+  // Public method to check token validity
+  bool get isTokenValid {
+    if (_token == null) return false;
+    return _isTokenValid(_token!);
   }
 }

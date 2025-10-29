@@ -384,6 +384,8 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
             ],
           ),
+          const SizedBox(height: 12),
+          _buildMovementStatus(),
         ],
       ),
     );
@@ -1099,6 +1101,60 @@ class _HomeScreenState extends State<HomeScreen>
               color: Colors.white,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMovementStatus() {
+    final pedometer = context.watch<PedometerService>();
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: pedometer.isWalking 
+            ? const Color(0xFF059669).withOpacity(0.1) 
+            : Colors.grey.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: pedometer.isWalking 
+              ? const Color(0xFF059669).withOpacity(0.3) 
+              : Colors.grey.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: pedometer.isWalking 
+                  ? const Color(0xFF059669) 
+                  : Colors.grey,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            pedometer.isWalking ? 'Walking detected' : 'Stationary',
+            style: TextStyle(
+              fontSize: 12,
+              color: pedometer.isWalking 
+                  ? const Color(0xFF059669) 
+                  : Colors.grey.shade600,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (pedometer.isSimulating) ...[
+            const SizedBox(width: 8),
+            Icon(
+              Icons.computer,
+              size: 14,
+              color: Colors.grey.shade600,
+            ),
+          ],
         ],
       ),
     );
