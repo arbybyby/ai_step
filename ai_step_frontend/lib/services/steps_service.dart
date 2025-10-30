@@ -289,4 +289,74 @@ class StepsService extends ChangeNotifier {
       return null;
     }
   }
+
+  /// Получить weekly progress (статистику за неделю)
+  Future<Map<String, dynamic>?> getWeeklyProgress() async {
+    try {
+      if (!_authService.isAuthenticated) {
+        print('User not authenticated, cannot get weekly progress');
+        return null;
+      }
+
+      final response = await _authService.authenticatedRequest(
+        method: 'GET',
+        path: '/api/weekly-progress/current',
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('===== Weekly progress response =====');
+        print('Full response: $data');
+        print('================================');
+        return data;
+      } else if (response.statusCode == 401) {
+        print('Authentication failed, logging out user');
+        await _authService.logout();
+        return null;
+      } else {
+        print('Failed to get weekly progress: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Error getting weekly progress: $e');
+      return null;
+    }
+  }
+
+  /// Получить статистику за последние N недель
+  Future<List<Map<String, dynamic>>?> getLastNWeeks(int weeks) async {
+    try {
+      if (!_authService.isAuthenticated) {
+        print('User not authenticated, cannot get last N weeks');
+        return null;
+      }
+
+      final response = await _authService.authenticatedRequest(
+        method: 'GET',
+        path: '/api/weekly-progress/last?weeks=$weeks',
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('===== Last $weeks weeks response =====');
+        print('Data: $data');
+        print('================================');
+        
+        if (data['data'] is List) {
+          return List<Map<String, dynamic>>.from(data['data']);
+        }
+        return null;
+      } else if (response.statusCode == 401) {
+        print('Authentication failed, logging out user');
+        await _authService.logout();
+        return null;
+      } else {
+        print('Failed to get last N weeks: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Error getting last N weeks: $e');
+      return null;
+    }
+  }
 }

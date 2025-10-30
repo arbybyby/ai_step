@@ -22,6 +22,10 @@ class _HomeScreenState extends State<HomeScreen>
   final int _goalSteps = 10000;
   String _userName = 'User';
   bool _isRefreshing = false;
+  
+  // Weekly progress data
+  List<int> _weeklySteps = [0, 0, 0, 0, 0, 0, 0]; // Mon-Sun
+  bool _weeklyDataLoaded = false;
 
   @override
   void initState() {
@@ -78,10 +82,14 @@ class _HomeScreenState extends State<HomeScreen>
       print('   Distance: ${pedometer.distance.toStringAsFixed(2)} km');
       print('   Calories: ${pedometer.calories.toStringAsFixed(1)} kcal');
       
+      // Загружаем weekly progress
+      print('📍 Step 6: Loading weekly progress...');
+      await _loadWeeklyProgress();
+      
       // Принудительно обновляем UI
       if (mounted) {
         setState(() {});
-        print('📍 Step 6: UI force updated');
+        print('📍 Step 7: UI force updated');
       }
       
       print('═══════════════════════════════════════');
@@ -89,6 +97,76 @@ class _HomeScreenState extends State<HomeScreen>
       print('═══════════════════════════════════════');
     } catch (e, stackTrace) {
       print('❌ Error loading initial data: $e');
+      print('Stack trace: $stackTrace');
+    }
+  }
+
+  Future<void> _loadWeeklyProgress() async {
+    try {
+      final stepsService = Provider.of<StepsService>(context, listen: false);
+      final weeklyData = await stepsService.getWeeklyProgress();
+      
+      print('📊 =================================');
+      print('📊 Loading Weekly Progress Data');
+      print('📊 =================================');
+      print('Raw response: $weeklyData');
+      
+      if (weeklyData != null && weeklyData['data'] != null) {
+        final data = weeklyData['data'];
+        print('Data object: $data');
+        print('Data type: ${data.runtimeType}');
+        print('Data keys: ${data is Map ? data.keys.toList() : "Not a map"}');
+        
+        // Извлекаем daily breakdown (массив данных по дням недели)
+        if (data['daily_breakdown'] != null && data['daily_breakdown'] is List) {
+          final dailyBreakdown = data['daily_breakdown'] as List;
+          print('✅ Found daily_breakdown with ${dailyBreakdown.length} days');
+          
+          // Создаем новый список для хранения шагов по дням
+          List<int> newWeeklySteps = [0, 0, 0, 0, 0, 0, 0];
+          
+          for (var day in dailyBreakdown) {
+            if (day is Map) {
+              final dayOfWeek = day['day_of_week']; // 1=Monday, 7=Sunday
+              final steps = day['steps'] ?? 0;
+              final dayName = day['day_name'] ?? 'Unknown';
+              
+              print('  Day: $dayName (day_of_week: $dayOfWeek), steps: $steps');
+              
+              if (dayOfWeek != null && dayOfWeek >= 1 && dayOfWeek <= 7) {
+                // Преобразуем day_of_week (1-7) в индекс массива (0-6)
+                newWeeklySteps[dayOfWeek - 1] = steps is int ? steps : (steps as num).toInt();
+              }
+            }
+          }
+          
+          setState(() {
+            _weeklySteps = newWeeklySteps;
+            _weeklyDataLoaded = true;
+          });
+          
+          print('✅ Weekly steps loaded successfully!');
+          print('   Monday: ${newWeeklySteps[0]}');
+          print('   Tuesday: ${newWeeklySteps[1]}');
+          print('   Wednesday: ${newWeeklySteps[2]}');
+          print('   Thursday: ${newWeeklySteps[3]}');
+          print('   Friday: ${newWeeklySteps[4]}');
+          print('   Saturday: ${newWeeklySteps[5]}');
+          print('   Sunday: ${newWeeklySteps[6]}');
+        } else {
+          print('⚠️ No daily_breakdown in weekly progress data');
+          print('   Available keys: ${data is Map ? data.keys.toList() : "Not a map"}');
+        }
+      } else {
+        print('⚠️ No weekly progress data available');
+        print('   weeklyData is null: ${weeklyData == null}');
+        if (weeklyData != null) {
+          print('   data field is null: ${weeklyData["data"] == null}');
+        }
+      }
+      print('📊 =================================');
+    } catch (e, stackTrace) {
+      print('❌ Error loading weekly progress: $e');
       print('Stack trace: $stackTrace');
     }
   }
@@ -111,6 +189,9 @@ class _HomeScreenState extends State<HomeScreen>
       
       // И синхронизируем локальный счетчик
       await pedometer.loadFromServer();
+      
+      // Обновляем weekly progress
+      await _loadWeeklyProgress();
       
       print('   Final local steps: ${pedometer.steps}');
       print('✅ Refresh completed');
@@ -785,8 +866,16 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildWeeklyProgress(int currentSteps) {
-    final weekData = [6500, 8200, 7100, 9300, 8900, currentSteps, 0];
+    // Используем только реальные данные из _weeklySteps
+    final weekData = _weeklyDataLoaded 
+        ? List<int>.from(_weeklySteps)
+        : List<int>.filled(7, 0); // показываем пустой график, пока данные не загружены
+    
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    
+    // Определяем текущий день недели (1=Monday, 7=Sunday)
+    final today = DateTime.now();
+    final todayIndex = today.weekday - 1; // 0=Monday, 6=Sunday
 
     final nonZeroData = weekData.where((v) => v > 0).toList();
     final maxSteps = nonZeroData.isNotEmpty
@@ -847,11 +936,37 @@ class _HomeScreenState extends State<HomeScreen>
               ],
             ),
             const SizedBox(height: 28),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(7, (index) {
-                final isToday = index == 5;
+            if (!_weeklyDataLoaded && nonZeroData.isEmpty)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.cloud_download_rounded,
+                        size: 48,
+                        color: Colors.grey.shade300,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Loading weekly data...',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade500,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: List.generate(7, (index) {
+                final isToday = index == todayIndex; // используем реальный день недели
                 final stepCount = weekData[index];
+                final hasSteps = stepCount > 0;
                 final height = stepCount == 0
                     ? 20.0
                     : ((stepCount / maxSteps) * 120).clamp(20.0, 120.0);
@@ -865,7 +980,7 @@ class _HomeScreenState extends State<HomeScreen>
                         // Label above bar
                         SizedBox(
                           height: 20,
-                          child: stepCount > 0
+                          child: hasSteps
                               ? Text(
                                   '${(stepCount / 1000).toStringAsFixed(1)}k',
                                   style: TextStyle(
@@ -888,19 +1003,22 @@ class _HomeScreenState extends State<HomeScreen>
                           width: double.infinity,
                           height: height,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: isToday
-                                  ? [
-                                      const Color(0xFF059669),
-                                      const Color(0xFF10B981),
-                                    ]
-                                  : [
-                                      const Color(0xFFD1FAE5),
-                                      const Color(0xFFD1FAE5).withOpacity(0.6),
-                                    ],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
+                            gradient: hasSteps
+                                ? LinearGradient(
+                                    colors: isToday
+                                        ? [
+                                            const Color(0xFF059669),
+                                            const Color(0xFF10B981),
+                                          ]
+                                        : [
+                                            const Color(0xFF059669).withOpacity(0.6),
+                                            const Color(0xFF10B981).withOpacity(0.6),
+                                          ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  )
+                                : null,
+                            color: hasSteps ? null : const Color(0xFFD1FAE5),
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),

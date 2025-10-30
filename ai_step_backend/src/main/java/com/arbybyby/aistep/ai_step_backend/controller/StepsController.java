@@ -4,6 +4,7 @@ import com.arbybyby.aistep.ai_step_backend.dto.StepSubmissionRequest;
 import com.arbybyby.aistep.ai_step_backend.models.Steps;
 import com.arbybyby.aistep.ai_step_backend.security.UserPrincipal;
 import com.arbybyby.aistep.ai_step_backend.service.StepsService;
+import com.arbybyby.aistep.ai_step_backend.service.WeeklyProgressService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -25,6 +26,9 @@ import java.util.Map;
 public class StepsController {
     @Autowired
     private StepsService stepsService;
+
+    @Autowired
+    private WeeklyProgressService weeklyProgressService;
 
     /**
      * Handle preflight OPTIONS requests for CORS
@@ -117,6 +121,15 @@ public class StepsController {
 
             // Compute daily totals for the recorded date
             Map<String, Object> totals = stepsService.computeDailyStepTotals(userId, savedSteps.getRecordedDate());
+
+            // Update weekly progress for the week containing this date
+            try {
+                weeklyProgressService.calculateAndSaveWeeklyProgress(userId, savedSteps.getRecordedDate());
+                System.out.println("✅ Weekly progress updated for date: " + savedSteps.getRecordedDate());
+            } catch (Exception e) {
+                // Log but don't fail the request if weekly progress update fails
+                System.err.println("⚠️ Failed to update weekly progress: " + e.getMessage());
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Steps stored");

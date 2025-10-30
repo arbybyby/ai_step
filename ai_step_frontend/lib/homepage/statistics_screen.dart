@@ -38,34 +38,82 @@ class _StatisticsScreenState extends State<StatisticsScreen>
       final stepsService = Provider.of<StepsService>(context, listen: false);
       final pedometer = Provider.of<PedometerService>(context, listen: false);
       
-      // Try to get real data for the last 7 days
-      final today = DateTime.now();
-      final weekAgo = today.subtract(const Duration(days: 6));
+      // Try to get weekly progress data from backend
+      final weeklyProgressData = await stepsService.getWeeklyProgress();
       
-      final historyData = await stepsService.getStepsHistory(
-        from: weekAgo,
-        to: today,
-      );
-      
-      if (historyData != null && historyData['dailyStats'] != null) {
-        _weeklyData = _processServerDataForWeekly(historyData['dailyStats']);
+      if (weeklyProgressData != null && weeklyProgressData['data'] != null) {
+        _weeklyData = _processWeeklyProgressData(weeklyProgressData['data']);
       } else {
-        // Fallback to generated data
-        _weeklyData = _generateWeeklyData(pedometer.steps);
+        // Fallback to history API
+        final today = DateTime.now();
+        final weekAgo = today.subtract(const Duration(days: 6));
+        
+        final historyData = await stepsService.getStepsHistory(
+          from: weekAgo,
+          to: today,
+        );
+        
+        if (historyData != null && historyData['dailyStats'] != null) {
+          _weeklyData = _processServerDataForWeekly(historyData['dailyStats']);
+        } else {
+          // Показываем пустые данные вместо тестовых
+          _weeklyData = _generateEmptyWeeklyData();
+        }
       }
       
       _monthlyDailySteps = _generateMonthlyData();
       _yearlySteps = _generateYearlyData();
     } catch (e) {
       print('Error loading statistics: $e');
-      // Fallback to generated data
-      final pedometer = Provider.of<PedometerService>(context, listen: false);
-      _weeklyData = _generateWeeklyData(pedometer.steps);
+      // Показываем пустые данные вместо тестовых
+      _weeklyData = _generateEmptyWeeklyData();
       _monthlyDailySteps = _generateMonthlyData();
       _yearlySteps = _generateYearlyData();
     }
 
     setState(() => _isLoading = false);
+  }
+
+  List<Map<String, dynamic>> _processWeeklyProgressData(Map<String, dynamic> data) {
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    
+    // Extract daily_breakdown from weekly progress response
+    if (data['daily_breakdown'] != null && data['daily_breakdown'] is List) {
+      final dailyBreakdown = data['daily_breakdown'] as List;
+      
+      // Create a result list with all days
+      List<Map<String, dynamic>> result = List.generate(7, (index) => {
+        'day': days[index],
+        'steps': 0,
+        'calories': 0,
+        'distance': 0.0,
+      });
+      
+      for (var dayData in dailyBreakdown) {
+        if (dayData is Map) {
+          final dayOfWeek = dayData['day_of_week']; // 1=Monday, 7=Sunday
+          if (dayOfWeek != null && dayOfWeek >= 1 && dayOfWeek <= 7) {
+            final index = dayOfWeek - 1;
+            result[index] = {
+              'day': days[index],
+              'steps': dayData['steps'] ?? 0,
+              'calories': (dayData['calories'] ?? 0).round(),
+              'distance': (dayData['distance_m'] ?? 0.0) / 1000.0, // Convert to km
+            };
+          }
+        }
+      }
+      
+      return result;
+    }
+    
+    // Fallback if no daily_breakdown
+    return List.generate(7, (index) => {
+      'day': days[index],
+      'steps': 0,
+      'calories': 0,
+      'distance': 0.0,
+    });
   }
 
   List<Map<String, dynamic>> _processServerDataForWeekly(List<dynamic> dailyStats) {
@@ -104,22 +152,16 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     });
   }
 
-  List<Map<String, dynamic>> _generateWeeklyData(int todaySteps) {
-    // Generate last 7 days data with some randomness
-    final random = math.Random();
+  List<Map<String, dynamic>> _generateEmptyWeeklyData() {
+    // Возвращаем пустые данные вместо тестовых
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     return List.generate(7, (index) {
-      final isToday = index == 5; // Saturday is today
-      final steps = isToday ? todaySteps : 6000 + random.nextInt(4000);
-      final calories = (steps * 0.04).round();
-      final distance = steps * 0.00075; // ~0.75m per step
-
       return {
         'day': days[index],
-        'steps': steps,
-        'calories': calories,
-        'distance': distance,
+        'steps': 0,
+        'calories': 0,
+        'distance': 0.0,
       };
     });
   }
