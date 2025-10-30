@@ -5,6 +5,17 @@ import 'auth_service.dart';
 class StepsService extends ChangeNotifier {
   final AuthService _authService;
   
+  // Данные о шагах с сервера
+  int _serverSteps = 0;
+  double _serverDistanceM = 0.0;
+  double _serverCalories = 0.0;
+  DateTime? _lastServerUpdate;
+  
+  int get serverSteps => _serverSteps;
+  double get serverDistanceM => _serverDistanceM;
+  double get serverCalories => _serverCalories;
+  DateTime? get lastServerUpdate => _lastServerUpdate;
+  
   StepsService(this._authService);
 
   /// Отправить данные о шагах на сервер
@@ -102,7 +113,7 @@ class StepsService extends ChangeNotifier {
   }
 
   /// Получить данные о шагах за определенный день
-  Future<Map<String, dynamic>?> getDailySteps({DateTime? date}) async {
+  Future<Map<String, dynamic>?> getDailySteps({DateTime? date, bool forceUpdate = false}) async {
     try {
       if (!_authService.isAuthenticated) {
         print('User not authenticated, cannot get daily steps');
@@ -125,6 +136,95 @@ class StepsService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        print('===== Daily steps response =====');
+        print('Full response: $data');
+        print('Has data field: ${data.containsKey('data')}');
+        print('Data value: ${data['data']}');
+        print('Data type: ${data['data'].runtimeType}');
+        
+        // Обновляем локальное состояние данными с сервера
+        if (data['data'] != null) {
+          final serverData = data['data'];
+          print('Server data keys: ${serverData.keys}');
+          print('Raw server data: $serverData');
+          
+          // Безопасный парсинг - обрабатываем разные типы данных
+          final rawSteps = serverData['total_steps'];
+          final rawDistance = serverData['total_distance_m'];
+          final rawCalories = serverData['total_calories'];
+          
+          print('Raw values:');
+          print('  total_steps: $rawSteps (type: ${rawSteps.runtimeType})');
+          print('  total_distance_m: $rawDistance (type: ${rawDistance.runtimeType})');
+          print('  total_calories: $rawCalories (type: ${rawCalories.runtimeType})');
+          
+          int newServerSteps = 0;
+          if (rawSteps != null) {
+            if (rawSteps is int) {
+              newServerSteps = rawSteps;
+            } else if (rawSteps is double) {
+              newServerSteps = rawSteps.toInt();
+            } else {
+              newServerSteps = int.tryParse(rawSteps.toString()) ?? 0;
+            }
+          }
+          
+          double newServerDistanceM = 0.0;
+          if (rawDistance != null) {
+            if (rawDistance is double) {
+              newServerDistanceM = rawDistance;
+            } else if (rawDistance is int) {
+              newServerDistanceM = rawDistance.toDouble();
+            } else {
+              newServerDistanceM = double.tryParse(rawDistance.toString()) ?? 0.0;
+            }
+          }
+          
+          double newServerCalories = 0.0;
+          if (rawCalories != null) {
+            if (rawCalories is double) {
+              newServerCalories = rawCalories;
+            } else if (rawCalories is int) {
+              newServerCalories = rawCalories.toDouble();
+            } else {
+              newServerCalories = double.tryParse(rawCalories.toString()) ?? 0.0;
+            }
+          }
+          
+          print('Parsed server data:');
+          print('  Steps: $newServerSteps (type: ${newServerSteps.runtimeType})');
+          print('  Distance: $newServerDistanceM m (type: ${newServerDistanceM.runtimeType})');
+          print('  Calories: $newServerCalories (type: ${newServerCalories.runtimeType})');
+          print('  Current server steps: $_serverSteps');
+          print('  Force update: $forceUpdate');
+          
+          // При первой загрузке (forceUpdate) всегда обновляем
+          // При обычной загрузке - только если данные больше или равны
+          if (forceUpdate || newServerSteps >= _serverSteps) {
+            _serverSteps = newServerSteps;
+            _serverDistanceM = newServerDistanceM;
+            _serverCalories = newServerCalories;
+            _lastServerUpdate = DateTime.now();
+            
+            print('✓ Updated server steps: $_serverSteps, distance: $_serverDistanceM, calories: $_serverCalories');
+            notifyListeners();
+          } else {
+            print('⚠ Server has fewer steps ($_serverSteps -> $newServerSteps), keeping current value');
+          }
+        } else {
+          print('⚠ No data from server yet (data field is null)');
+          // При первой загрузке обновляем в любом случае, показывая 0
+          if (forceUpdate) {
+            _serverSteps = 0;
+            _serverDistanceM = 0.0;
+            _serverCalories = 0.0;
+            _lastServerUpdate = DateTime.now();
+            print('✓ Force update: set server steps to 0');
+            notifyListeners();
+          }
+        }
+        print('================================');
+        
         return data;
       } else if (response.statusCode == 401) {
         print('Authentication failed, logging out user');

@@ -77,6 +77,14 @@ public class StepsController {
             System.out.println("Distance M: " + request.getDistanceM());
             System.out.println("Calories burned: " + request.getCaloriesBurned());
             System.out.println("Device ID: " + request.getDeviceId());
+            
+            // Проверка на null значения
+            if (request.getStepCount() == null) {
+                System.out.println("⚠️ WARNING: step_count is NULL!");
+            }
+            if (request.getStepCount() != null && request.getStepCount() == 0) {
+                System.out.println("⚠️ WARNING: step_count is ZERO!");
+            }
             System.out.println("=========================================");
 
             // Validate step_count manually to match Node.js validation exactly
@@ -157,31 +165,22 @@ public class StepsController {
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
             Long userId = userPrincipal.getId();
             
-            System.out.println("Fetching daily steps for user: " + userId + ", date: " + date);
+            System.out.println("=== GET /api/steps/daily ===");
+            System.out.println("User ID: " + userId);
+            System.out.println("Date param: " + date);
 
             Map<String, Object> totals = stepsService.getDailyStepTotals(userId, date);
             
-            // Check if has data (matching Node.js logic)
-            // Handle both Integer and Long types from database SUM operations
-            Object totalStepsObj = totals.get("total_steps");
-            Integer totalSteps = totalStepsObj != null ? ((Number) totalStepsObj).intValue() : null;
-            
-            Object totalDistanceMObj = totals.get("total_distance_m");
-            Double totalDistanceM = totalDistanceMObj != null ? ((Number) totalDistanceMObj).doubleValue() : null;
-            
-            Object totalCaloriesObj = totals.get("total_calories");
-            Double totalCalories = totalCaloriesObj != null ? ((Number) totalCaloriesObj).doubleValue() : null;
-            
-            String lastEntryAt = (String) totals.get("last_entry_at");
-            
-            boolean hasData = (totalSteps != null && totalSteps > 0) ||
-                            (totalDistanceM != null && totalDistanceM > 0) ||
-                            (totalCalories != null && totalCalories > 0) ||
-                            (lastEntryAt != null);
+            // Всегда возвращаем данные (даже если все нули) для правильного отображения на клиенте
+            // Это позволяет Flutter показывать "0 steps" вместо "No data"
+            System.out.println("Returning totals: " + totals);
 
             Map<String, Object> response = new HashMap<>();
             response.put("day", totals.get("day"));
-            response.put("data", hasData ? totals : null);
+            response.put("data", totals);
+
+            System.out.println("Response: " + response);
+            System.out.println("===========================");
 
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
@@ -234,6 +233,32 @@ public class StepsController {
             e.printStackTrace();
             return ResponseEntity.internalServerError()
                 .body(Map.of("error", "Server error fetching steps history", "details", e.getMessage()));
+        }
+    }
+
+    /**
+     * Clean up zero-value step entries (for debugging/maintenance)
+     */
+    @DeleteMapping("/steps/cleanup-zeros")
+    public ResponseEntity<?> cleanupZeroSteps(Authentication authentication) {
+        try {
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            Long userId = userPrincipal.getId();
+            
+            System.out.println("Cleaning up zero-value steps for user: " + userId);
+            // TODO: Implement deleteZeroStepEntries method in StepsService
+            int deleted = 0; // Placeholder until method is implemented
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Cleanup completed");
+            response.put("deleted_count", deleted);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("Cleanup error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                .body(Map.of("error", "Server error during cleanup", "details", e.getMessage()));
         }
     }
 

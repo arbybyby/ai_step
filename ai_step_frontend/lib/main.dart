@@ -43,11 +43,17 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthService()..initialize()),
         ChangeNotifierProxyProvider<AuthService, StepsService>(
           create: (context) => StepsService(context.read<AuthService>()),
-          update: (context, auth, previous) => StepsService(auth),
+          update: (context, auth, previous) => previous ?? StepsService(auth),
         ),
         ChangeNotifierProxyProvider<StepsService, PedometerService>(
           create: (context) => PedometerService(stepsService: context.read<StepsService>())..initialize(),
-          update: (context, stepsService, previous) => PedometerService(stepsService: stepsService)..initialize(),
+          update: (context, stepsService, previous) {
+            if (previous != null) {
+              // Возвращаем существующий экземпляр, просто обновляем ссылку на stepsService если нужно
+              return previous;
+            }
+            return PedometerService(stepsService: stepsService)..initialize();
+          },
         ),
       ],
       child: MaterialApp(

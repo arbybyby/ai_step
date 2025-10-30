@@ -31,7 +31,11 @@ class _HomeScreenState extends State<HomeScreen>
       duration: const Duration(milliseconds: 2000),
     )..forward();
     _loadUserName();
-    _loadInitialData();
+    
+    // Загружаем данные после построения виджета, когда провайдеры готовы
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInitialData();
+    });
   }
 
   Future<void> _loadUserName() async {
@@ -45,14 +49,47 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<void> _loadInitialData() async {
     try {
+      print('═══════════════════════════════════════');
+      print('🚀 Loading initial data on app entry');
+      print('═══════════════════════════════════════');
+      
+      final pedometer = Provider.of<PedometerService>(context, listen: false);
       final stepsService = Provider.of<StepsService>(context, listen: false);
       
-      // Load today's steps from server
-      await stepsService.getDailySteps();
+      print('📍 Step 1: Current pedometer state BEFORE server load');
+      print('   Local steps: ${pedometer.steps}');
+      print('   Is simulating: ${pedometer.isSimulating}');
       
-      print('Initial data loaded successfully');
-    } catch (e) {
-      print('Error loading initial data: $e');
+      // Загружаем данные с сервера при входе в приложение
+      print('📍 Step 2: Loading from server...');
+      await stepsService.getDailySteps(forceUpdate: true);
+      
+      print('📍 Step 3: Server data loaded');
+      print('   Server steps: ${stepsService.serverSteps}');
+      print('   Server distance: ${stepsService.serverDistanceM} m');
+      print('   Server calories: ${stepsService.serverCalories}');
+      
+      // Синхронизируем локальный счетчик педометра с сервером
+      print('📍 Step 4: Syncing pedometer with server...');
+      await pedometer.loadFromServer();
+      
+      print('📍 Step 5: Final state after sync');
+      print('   Local steps: ${pedometer.steps}');
+      print('   Distance: ${pedometer.distance.toStringAsFixed(2)} km');
+      print('   Calories: ${pedometer.calories.toStringAsFixed(1)} kcal');
+      
+      // Принудительно обновляем UI
+      if (mounted) {
+        setState(() {});
+        print('📍 Step 6: UI force updated');
+      }
+      
+      print('═══════════════════════════════════════');
+      print('✅ Initial data loading completed');
+      print('═══════════════════════════════════════');
+    } catch (e, stackTrace) {
+      print('❌ Error loading initial data: $e');
+      print('Stack trace: $stackTrace');
     }
   }
 
@@ -61,21 +98,22 @@ class _HomeScreenState extends State<HomeScreen>
     HapticFeedback.mediumImpact();
 
     try {
-      // Trigger sync of current steps to server
-      final stepsService = Provider.of<StepsService>(context, listen: false);
       final pedometer = Provider.of<PedometerService>(context, listen: false);
+      final stepsService = Provider.of<StepsService>(context, listen: false);
       
-      if (pedometer.steps > 0) {
-        await stepsService.submitSteps(
-          stepCount: pedometer.steps,
-          recordedAt: DateTime.now(),
-          distanceM: pedometer.distance * 1000, // Convert km to m
-          caloriesBurned: pedometer.calories,
-        );
-      }
+      print('🔄 Manual refresh started');
+      print('   Current local steps: ${pedometer.steps}');
       
-      // Get today's data from server
-      await stepsService.getDailySteps();
+      // При ручном обновлении загружаем данные с сервера
+      await stepsService.getDailySteps(forceUpdate: true);
+      
+      print('   Server steps after refresh: ${stepsService.serverSteps}');
+      
+      // И синхронизируем локальный счетчик
+      await pedometer.loadFromServer();
+      
+      print('   Final local steps: ${pedometer.steps}');
+      print('✅ Refresh completed');
     } catch (e) {
       print('Error during refresh: $e');
     }
@@ -100,10 +138,19 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final pedometer = context.watch<PedometerService>();
+    
+    // Используем только локальные данные педометра
+    // Синхронизация с сервером происходит только при входе в приложение или pull-to-refresh
     final currentSteps = pedometer.steps;
     final caloriesBurned = pedometer.calories;
     final distance = pedometer.distance;
     final activeMinutes = pedometer.activeMinutes;
+    
+    // DEBUG: Выводим текущее состояние при каждом обновлении UI
+    print('🖼️ UI build() called:');
+    print('   Current steps: $currentSteps');
+    print('   Calories: $caloriesBurned');
+    print('   Distance: $distance km');
 
     final progress = _goalSteps > 0
         ? (currentSteps / _goalSteps).clamp(0.0, 1.0)
@@ -280,6 +327,9 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildStepCounter(int currentSteps, double progress) {
+    final stepsService = context.watch<StepsService>();
+    final hasServerData = stepsService.lastServerUpdate != null;
+    
     return Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
@@ -295,6 +345,35 @@ class _HomeScreenState extends State<HomeScreen>
       ),
       child: Column(
         children: [
+          // Индикатор синхронизации
+          if (hasServerData)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF059669).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.cloud_done_rounded,
+                    size: 16,
+                    color: Color(0xFF059669),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Synced with server',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: const Color(0xFF059669),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Stack(
             alignment: Alignment.center,
             children: [

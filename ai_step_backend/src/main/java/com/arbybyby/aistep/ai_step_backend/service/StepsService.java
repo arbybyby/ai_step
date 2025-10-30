@@ -31,6 +31,14 @@ public class StepsService {
         Double distanceM = normalizeOptionalNumber(request.getDistanceM());
         Double caloriesBurned = normalizeOptionalNumber(request.getCaloriesBurned());
 
+        System.out.println("Saving step data:");
+        System.out.println("  User ID: " + userId);
+        System.out.println("  Step count: " + stepCount);
+        System.out.println("  Recorded at: " + recordedAt);
+        System.out.println("  Recorded date: " + recordedDate);
+        System.out.println("  Distance: " + distanceM);
+        System.out.println("  Calories: " + caloriesBurned);
+
         // Create and save the step data
         Steps steps = new Steps(
             userId,
@@ -42,7 +50,14 @@ public class StepsService {
             recordedDate
         );
 
-        return stepsRepository.save(steps);
+        Steps saved = stepsRepository.save(steps);
+        System.out.println("✅ Saved step data with ID: " + saved.getId());
+        System.out.println("   Verified saved data:");
+        System.out.println("   - Step count: " + saved.getStepCount());
+        System.out.println("   - Distance M: " + saved.getDistanceM());
+        System.out.println("   - Calories: " + saved.getCaloriesBurned());
+        
+        return saved;
     }
 
     public Map<String, Object> computeDailyStepTotals(Long userId, LocalDate date) {
@@ -54,15 +69,16 @@ public class StepsService {
         if (totals != null && totals.length >= 3) {
             result.put("total_steps", totals[0] != null ? totals[0] : 0);
             result.put("total_distance_m", totals[1] != null ? totals[1] : 0.0);
-            result.put("total_calories_burned", totals[2] != null ? totals[2] : 0.0);
+            result.put("total_calories", totals[2] != null ? totals[2] : 0.0);
         } else {
             // Значения по умолчанию, если нет данных
             result.put("total_steps", 0);
             result.put("total_distance_m", 0.0);
-            result.put("total_calories_burned", 0.0);
+            result.put("total_calories", 0.0);
         }
         
-        result.put("date", date.toString());
+        // Используем "day" вместо "date" для совместимости с контроллером
+        result.put("day", date.toString());
         
         return result;
     }
@@ -83,27 +99,53 @@ public class StepsService {
             throw new IllegalArgumentException("INVALID_DATE");
         }
 
+        System.out.println("═══════════════════════════════════════");
+        System.out.println("📊 Getting daily totals for user " + userId + " on date " + date);
+        System.out.println("Date string input: '" + dateStr + "'");
+        System.out.println("Parsed LocalDate: " + date);
+        
         Object[] totals = stepsRepository.findDailyTotals(userId, date);
+        
+        System.out.println("📈 Database SUM query returned: " + (totals != null ? java.util.Arrays.toString(totals) : "null"));
         
         // Get last entry time for the day
         List<Steps> daySteps = stepsRepository.findByUserIdAndRecordedDateOrderByRecordedAtDesc(userId, date);
         Instant lastEntryAt = daySteps.isEmpty() ? null : daySteps.get(0).getRecordedAt();
         
-        Map<String, Object> result = new HashMap<>();
-        result.put("day", date.toString());
+        System.out.println("📋 Found " + daySteps.size() + " step entries for this day");
         
-        // Safely extract values from the array
-        if (totals != null && totals.length >= 3) {
-            result.put("total_steps", totals[0]);
-            result.put("total_distance_m", totals[1]);
-            result.put("total_calories", totals[2]);
-        } else {
-            result.put("total_steps", 0);
-            result.put("total_distance_m", 0.0);
-            result.put("total_calories", 0);
+        Map<String, Object> result = computeDailyStepTotals(userId, date);
+        
+        if (!daySteps.isEmpty()) {
+            System.out.println("📋 Actual data from database:");
+            
+            for (int i = 0; i < Math.min(daySteps.size(), 5); i++) {
+                Steps step = daySteps.get(i);
+                System.out.println("  Entry " + (i+1) + ": ID=" + step.getId() + 
+                    ", steps=" + step.getStepCount() + 
+                    ", distance=" + step.getDistanceM() + 
+                    ", calories=" + step.getCaloriesBurned() + 
+                    ", recorded_date=" + step.getRecordedDate() +
+                    ", recorded_at=" + step.getRecordedAt());
+            }
+            
+            // Check if all dates match
+            boolean allDatesMatch = daySteps.stream()
+                .allMatch(s -> s.getRecordedDate().equals(date));
+            System.out.println("✓ All recorded_date match query date: " + allDatesMatch);
+            
+            // Calculate manual sum for comparison and use it
+            int manualSum = daySteps.stream()
+                .mapToInt(s -> s.getStepCount() != null ? s.getStepCount() : 0)
+                .sum();
+            System.out.println("🧮 Manual sum of steps: " + manualSum);
+            result.put("total_steps", manualSum);
         }
         
         result.put("last_entry_at", lastEntryAt != null ? lastEntryAt.toString() : null);
+        
+        System.out.println("📤 Returning result: " + result);
+        System.out.println("═══════════════════════════════════════");
         
         return result;
     }
