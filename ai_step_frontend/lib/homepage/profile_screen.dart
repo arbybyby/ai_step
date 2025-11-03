@@ -3,9 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 
 import '../core/api_config.dart';
+import '../services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -50,10 +51,9 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Future<void> _loadUserData() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      _authToken = prefs.getString('auth_token');
-
-      if (_authToken == null) {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      
+      if (!authService.isAuthenticated) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -61,34 +61,34 @@ class _ProfileScreenState extends State<ProfileScreen>
               backgroundColor: Colors.red,
             ),
           );
-          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
         }
         return;
       }
 
-      final response = await http.get(
-        apiUri('/auth/profile'),
-        headers: {
-          'Authorization': 'Bearer $_authToken',
-          'Content-Type': 'application/json',
-        },
+      _authToken = authService.token;
+
+      final response = await authService.authenticatedRequest(
+        method: 'GET',
+        path: '/api/profile',
       );
 
       if (!mounted) return;
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final user = data['user'] as Map<String, dynamic>;
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
 
         setState(() {
-          _name = user['name'] ?? 'User';
-          _email = user['email'] ?? '';
-          _height = user['height_cm']?.toDouble();
-          _weight = user['weight_kg']?.toDouble();
-          _gender = user['gender'];
-          _activityLevel = user['activity_level'];
-          _goal = user['goal'] ?? 'maintain';
-          _birthDate = user['birth_date'];
+          _name = '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}' .trim();
+          if (_name.isEmpty) _name = 'User';
+          _email = data['email'] ?? '';
+          // Эти поля пока не возвращаются бэкендом, но оставляем для будущего использования
+          _height = data['height_cm']?.toDouble();
+          _weight = data['weight_kg']?.toDouble();
+          _gender = data['gender'];
+          _activityLevel = data['activity_level'];
+          _goal = data['goal'] ?? 'maintain';
+          _birthDate = data['birth_date'];
 
           if (_birthDate != null && _birthDate!.isNotEmpty) {
             final birthDate = DateTime.parse(_birthDate!);
@@ -103,10 +103,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           _isLoading = false;
         });
       } else if (response.statusCode == 401 || response.statusCode == 403) {
-        await prefs.remove('auth_token');
-        await prefs.remove('auth_user');
+        final authService = Provider.of<AuthService>(context, listen: false);
+        await authService.logout();
         if (mounted) {
-          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
         }
       } else {
         setState(() {
@@ -1548,15 +1548,14 @@ class _ProfileScreenState extends State<ProfileScreen>
           ElevatedButton(
             onPressed: () async {
               HapticFeedback.mediumImpact();
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.remove('auth_token');
-              await prefs.remove('auth_user');
+              final authService = Provider.of<AuthService>(context, listen: false);
+              await authService.logout();
 
               if (mounted) {
                 Navigator.pop(context);
                 Navigator.of(
                   context,
-                ).pushNamedAndRemoveUntil('/', (route) => false);
+                ).pushNamedAndRemoveUntil('/login', (route) => false);
               }
             },
             style: ElevatedButton.styleFrom(
