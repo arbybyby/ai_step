@@ -1,6 +1,8 @@
 // Google OAuth Configuration for AI Step
 // This file contains Google Sign-In configuration
 
+import 'package:flutter/foundation.dart';
+
 class GoogleOAuthConfig {
   // ВАЖНО: Замените эти значения на ваши реальные Client IDs из Google Cloud Console
   
@@ -31,4 +33,50 @@ class GoogleOAuthConfig {
   
   // Настройки для отладки
   static const bool enableDebugLogs = true;
+
+  // Get Client ID with validation
+  String getClientId() {
+    return webClientId;
+  }
+
+  // Check if configuration is valid
+  bool isConfigurationValid() {
+    try {
+      final clientId = getClientId();
+      return _isValidClientId(clientId);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Validate Client ID format
+  bool _isValidClientId(String clientId) {
+    // Check if it's not a placeholder or empty
+    if (clientId.isEmpty || 
+        clientId == 'YOUR_GOOGLE_CLIENT_ID_HERE' ||
+        clientId.startsWith('placeholder') ||
+        clientId.startsWith('your-')) {
+      return false;
+    }
+    
+    // Basic format validation for Google Client IDs
+    // They typically end with .googleusercontent.com
+    return clientId.contains('.googleusercontent.com');
+  }
+
+  // Get configuration status with details
+  Map<String, dynamic> getConfigurationStatus() {
+    final clientId = getClientId();
+    final isValid = _isValidClientId(clientId);
+    
+    return {
+      'isValid': isValid,
+      'clientId': isValid ? clientId : 'Invalid or missing',
+      'environment': kDebugMode ? 'debug' : 'release',
+      'message': isValid 
+        ? 'Google OAuth configuration is valid'
+        : 'Google OAuth Client ID не настроен или некорректен. '
+          'Пожалуйста, обратитесь к администратору приложения.',
+    };
+  }
 }

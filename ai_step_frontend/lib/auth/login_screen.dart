@@ -52,14 +52,20 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
-    if (!isGoogleSignInConfigured) {
-      _showSnackBar(
-        'Google Sign-In is not configured. Please set GOOGLE_CLIENT_ID.',
-      );
+    setState(() => _isGoogleLoading = true);
+
+    // Validate OAuth configuration first
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final configResult = await authService.validateGoogleOAuthConfig();
+    
+    if (!configResult.success) {
+      if (mounted) {
+        _showSnackBar(configResult.message);
+        setState(() => _isGoogleLoading = false);
+      }
       return;
     }
 
-    setState(() => _isGoogleLoading = true);
     final googleSignIn = _buildGoogleSignIn();
 
     try {

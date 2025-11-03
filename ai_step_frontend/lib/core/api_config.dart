@@ -29,7 +29,10 @@ const String googleClientId = String.fromEnvironment(
 );
 
 // Проверка конфигурации OAuth
-bool get isGoogleSignInConfigured => GoogleOAuthConfig.isConfigured;
+bool get isGoogleSignInConfigured {
+  final config = GoogleOAuthConfig();
+  return config.isConfigurationValid();
+}
 
 Uri apiUri(String path) {
   final normalizedPath = path.startsWith('/') ? path : '/$path';

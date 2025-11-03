@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 
 import '../core/api_config.dart';
+import '../core/google_oauth_config.dart';
 import '../models/auth_models.dart';
 
 class AuthService extends ChangeNotifier {
@@ -154,11 +155,36 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  // Validate OAuth configuration
+  Future<AuthResult> validateGoogleOAuthConfig() async {
+    try {
+      final config = GoogleOAuthConfig();
+      final isValid = config.isConfigurationValid();
+      
+      if (!isValid) {
+        return AuthResult.error(
+          'Google Sign-In не настроен. Обратитесь к администратору приложения.'
+        );
+      }
+      
+      return AuthResult.success('Configuration valid');
+    } catch (e) {
+      print('OAuth config validation error: $e');
+      return AuthResult.error('Configuration error: ${e.toString()}');
+    }
+  }
+
   // Google Sign In
   Future<AuthResult> signInWithGoogle(String idToken) async {
     try {
       _isLoading = true;
       notifyListeners();
+
+      // Validate configuration first
+      final configResult = await validateGoogleOAuthConfig();
+      if (!configResult.success) {
+        return configResult;
+      }
 
       final response = await http.post(
         apiUri('/auth/google'),
