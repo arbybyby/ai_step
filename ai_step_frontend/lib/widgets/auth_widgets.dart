@@ -200,24 +200,10 @@ class GoogleSignInButton extends StatelessWidget {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.grey.shade600),
                 ),
               )
-            : Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Image.asset(
-                  'assets/images/google_logo.png',
-                  width: 20,
-                  height: 20,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      Icons.g_mobiledata_rounded,
-                      size: 24,
-                      color: Colors.grey.shade600,
-                    );
-                  },
-                ),
+            : Icon(
+                Icons.g_mobiledata_rounded,
+                size: 24,
+                color: Colors.grey.shade600,
               ),
         label: Text(
           isLoading ? 'Signing in...' : 'Continue with Google',

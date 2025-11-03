@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../services/pedometer_service.dart';
+// import '../services/pedometer_service.dart';
 import '../services/steps_service.dart';
 
 class StatisticsScreen extends StatefulWidget {
@@ -36,7 +36,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
 
     try {
       final stepsService = Provider.of<StepsService>(context, listen: false);
-      final pedometer = Provider.of<PedometerService>(context, listen: false);
+      // final pedometer = Provider.of<PedometerService>(context, listen: false);
       
       // Try to get weekly progress data from backend
       final weeklyProgressData = await stepsService.getWeeklyProgress();

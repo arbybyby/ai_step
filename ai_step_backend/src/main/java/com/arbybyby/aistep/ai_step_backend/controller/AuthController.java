@@ -24,6 +24,9 @@ import com.arbybyby.aistep.ai_step_backend.security.UserPrincipal;
 import com.arbybyby.aistep.ai_step_backend.service.AuthService;
 import com.arbybyby.aistep.ai_step_backend.service.GoogleTokenVerificationService;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/auth")
@@ -192,6 +195,26 @@ public class AuthController {
             return ResponseEntity.ok(user);
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+
+    @GetMapping("/google/config")
+    public ResponseEntity<?> getGoogleConfig() {
+        try {
+            // Получаем текущую конфигурацию Google OAuth
+            String configuredClientId = googleTokenVerificationService.getClientId();
+            
+            Map<String, Object> config = new HashMap<>();
+            config.put("clientId", configuredClientId);
+            config.put("isConfigured", configuredClientId != null && !configuredClientId.isEmpty());
+            config.put("isPlaceholder", configuredClientId != null && configuredClientId.contains("37802022899"));
+            config.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(config);
+        } catch (Exception e) {
+            logger.error("Error getting Google config: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Error retrieving Google configuration"));
         }
     }
 }

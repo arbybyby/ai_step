@@ -18,8 +18,15 @@ public class GoogleTokenVerificationService {
     @Value("${google.client.id:37802022899-a4o3o6qfoglpa0vju8amoubvpkg3ncjk.apps.googleusercontent.com}")
     private String clientId;
 
+    public String getClientId() {
+        return clientId;
+    }
+
     public GoogleIdToken.Payload verifyToken(String idTokenString) {
         try {
+            logger.info("Attempting to verify Google token with Client ID: {}", clientId);
+            logger.debug("Token string length: {}", idTokenString != null ? idTokenString.length() : "null");
+            
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
                     new NetHttpTransport(),
                     GsonFactory.getDefaultInstance())
@@ -30,13 +37,21 @@ public class GoogleTokenVerificationService {
             if (idToken != null) {
                 GoogleIdToken.Payload payload = idToken.getPayload();
                 logger.info("Google token verified successfully for email: {}", payload.getEmail());
+                logger.debug("Token audience: {}", payload.getAudience());
+                logger.debug("Token issuer: {}", payload.getIssuer());
                 return payload;
             } else {
-                logger.warn("Invalid Google ID token");
+                logger.warn("Google ID token verification failed - token is invalid");
+                logger.warn("Expected audience: {}", clientId);
                 return null;
             }
         } catch (Exception e) {
-            logger.error("Error verifying Google token: {}", e.getMessage());
+            logger.error("Error verifying Google token: {}", e.getMessage(), e);
+            logger.error("Client ID used: {}", clientId);
+            logger.error("Token string (first 50 chars): {}", 
+                idTokenString != null && idTokenString.length() > 50 
+                    ? idTokenString.substring(0, 50) + "..." 
+                    : idTokenString);
             return null;
         }
     }

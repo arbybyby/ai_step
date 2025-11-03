@@ -42,7 +42,7 @@ class PedometerService extends ChangeNotifier {
   // Упрощенные пороги
   static const double _movementThreshold = 1.5; // Порог для определения движения
   static const int _minStepInterval = 200; // Минимальный интервал между обновлениями (мс)
-  static const double _staticThreshold = 0.5; // Порог для статичного состояния
+  // static const double _staticThreshold = 0.5; // Порог для статичного состояния
 
   int _steps = 0;
   double _distanceKm = 0;
@@ -357,15 +357,15 @@ class PedometerService extends ChangeNotifier {
     if (!_isDisposed) notifyListeners();
   }
 
-  void _resetMetrics() {
-    _steps = 0;
-    _distanceKm = 0;
-    _calories = 0;
-    _activeMinutes = 0;
-    _isWalking = false;
-    _accelerationHistory.clear();
-    _lastStepTime = null;
-  }
+  // void _resetMetrics() {
+  //   _steps = 0;
+  //   _distanceKm = 0;
+  //   _calories = 0;
+  //   _activeMinutes = 0;
+  //   _isWalking = false;
+  //   _accelerationHistory.clear();
+  //   _lastStepTime = null;
+  // }
 
   void _startSyncTimer() {
     if (_stepsService == null || _isDisposed) return;

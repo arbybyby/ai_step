@@ -126,14 +126,32 @@ class _LoginScreenState extends State<LoginScreen> {
         case GoogleSignIn.kSignInCanceledError:
           return 'Google sign-in was cancelled.';
         case GoogleSignIn.kSignInFailedError:
-          return 'Google rejected the sign-in request. Check OAuth configuration.';
+          return 'OAuth configuration error. Please check:\n'
+                 '• SHA-1 certificate fingerprint\n'
+                 '• Package name in Google Console\n'
+                 '• Client ID configuration';
         case 'network_error':
-          return 'Google sign-in failed due to network error.';
+          return 'Network error during Google sign-in. Check your internet connection.';
+        case 'sign_in_required':
+          return 'Google sign-in required. Please try again.';
+        case 'invalid_account':
+          return 'Invalid Google account. Please select a different account.';
         default:
-          return 'Google sign-in failed: ${error.message ?? error.code}';
+          return 'Google sign-in error (${error.code}): ${error.message ?? "Unknown error"}';
       }
     }
-    return 'Google sign-in failed. ${error.toString()}';
+    
+    // Handle common error messages
+    String errorStr = error.toString().toLowerCase();
+    if (errorStr.contains('oauth') || errorStr.contains('configuration')) {
+      return 'OAuth configuration error. Please contact support if this persists.';
+    } else if (errorStr.contains('network') || errorStr.contains('connection')) {
+      return 'Network error. Please check your internet connection and try again.';
+    } else if (errorStr.contains('cancelled') || errorStr.contains('canceled')) {
+      return 'Google sign-in was cancelled by user.';
+    }
+    
+    return 'Google sign-in failed: ${error.toString()}';
   }
 
   void _showSnackBar(String message, {bool isSuccess = false}) {
