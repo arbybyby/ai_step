@@ -55,6 +55,12 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       if (_authToken == null) {
         if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Ошибка: не найден токен авторизации. Пожалуйста, войдите заново.'),
+              backgroundColor: Colors.red,
+            ),
+          );
           Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
         }
         return;

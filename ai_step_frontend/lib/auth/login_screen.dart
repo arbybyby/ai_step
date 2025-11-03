@@ -44,7 +44,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (result.success) {
       _showSnackBar(result.message, isSuccess: true);
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+      // После успешного входа сразу переходим на профиль
+      Navigator.of(context).pushNamedAndRemoveUntil('/profile', (route) => false);
     } else {
       _showSnackBar(result.message);
     }
