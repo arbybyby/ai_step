@@ -300,7 +300,13 @@ class _HomeScreenState extends State<HomeScreen>
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           HapticFeedback.lightImpact();
-          Navigator.pushNamed(context, '/profile');
+          // If user is authenticated, go to profile. Otherwise redirect to login.
+          final authService = Provider.of<AuthService>(context, listen: false);
+          if (authService.isAuthenticated) {
+            Navigator.pushNamed(context, '/profile');
+          } else {
+            Navigator.pushNamed(context, '/login');
+          }
         },
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF047857),
