@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'google_oauth_config.dart';
 
 // Автоматическое определение правильного базового URL
 String get backendBaseUrl {
@@ -21,14 +22,14 @@ String get backendBaseUrl {
   }
 }
 
+// Google Client ID с поддержкой переменных окружения
 const String googleClientId = String.fromEnvironment(
   'GOOGLE_CLIENT_ID',
-  defaultValue:
-      '37802022899-a4o3o6qfoglpa0vju8amoubvpkg3ncjk.apps.googleusercontent.com',
+  defaultValue: GoogleOAuthConfig.webClientId,
 );
 
-bool get isGoogleSignInConfigured =>
-    !googleClientId.contains('YOUR_GOOGLE_CLIENT_ID');
+// Проверка конфигурации OAuth
+bool get isGoogleSignInConfigured => GoogleOAuthConfig.isConfigured;
 
 Uri apiUri(String path) {
   final normalizedPath = path.startsWith('/') ? path : '/$path';
