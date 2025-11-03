@@ -53,7 +53,13 @@ class _ProfileScreenState extends State<ProfileScreen>
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       
+      print('===== ProfileScreen _loadUserData =====');
+      print('AuthService authenticated: ${authService.isAuthenticated}');
+      print('AuthService token exists: ${authService.token != null}');
+      print('AuthService user exists: ${authService.user != null}');
+      
       if (!authService.isAuthenticated) {
+        print('User not authenticated, redirecting to login');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -67,11 +73,15 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
 
       _authToken = authService.token;
+      print('Token obtained: ${_authToken?.substring(0, 20)}...');
 
       final response = await authService.authenticatedRequest(
         method: 'GET',
         path: '/api/profile',
       );
+
+      print('Profile response status: ${response.statusCode}');
+      print('Profile response body: ${response.body}');
 
       if (!mounted) return;
 

@@ -76,12 +76,8 @@ class MyApp extends StatelessWidget {
           '/additional-data': (context) => DEV_MODE
               ? const AdditionalDataScreen()
               : const AuthGuard(child: AdditionalDataScreen()),
-          '/home': (context) => DEV_MODE
-              ? const HomeScreen()
-              : const AuthGuard(child: HomeScreen()),
-          '/profile': (context) => DEV_MODE
-              ? const ProfileScreen()
-              : const AuthGuard(child: ProfileScreen()),
+          '/home': (context) => const AuthGuard(child: HomeScreen()),
+          '/profile': (context) => const AuthGuard(child: ProfileScreen()),
           '/statistics': (context) => DEV_MODE
               ? const StatisticsScreen()
               : const AuthGuard(child: StatisticsScreen()),

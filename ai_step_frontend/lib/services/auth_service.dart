@@ -24,6 +24,7 @@ class AuthService extends ChangeNotifier {
 
   // Initialize service - check for existing session
   Future<void> initialize() async {
+    print('===== AuthService initialize() called =====');
     _isLoading = true;
     notifyListeners();
 
@@ -32,14 +33,20 @@ class AuthService extends ChangeNotifier {
       _token = prefs.getString(_tokenKey);
       final userJson = prefs.getString(_userKey);
       
+      print('Token from storage: ${_token != null ? "exists" : "null"}');
+      print('User from storage: ${userJson != null ? "exists" : "null"}');
+      
       if (userJson != null) {
         _user = User.fromJson(jsonDecode(userJson));
+        print('User parsed: ${_user!.email}');
       }
 
       // Validate token if exists
       if (_token != null) {
         final isValid = _isTokenValid(_token!);
+        print('Token validation result: $isValid');
         if (!isValid) {
+          print('Token invalid, logging out');
           await logout();
         }
       }
@@ -48,6 +55,7 @@ class AuthService extends ChangeNotifier {
       await logout();
     } finally {
       _isLoading = false;
+      print('AuthService initialization complete. isAuthenticated: $isAuthenticated');
       notifyListeners();
     }
   }
