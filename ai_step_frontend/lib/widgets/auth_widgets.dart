@@ -47,26 +47,45 @@ class _AuthTextFieldState extends State<AuthTextField> {
       decoration: InputDecoration(
         labelText: widget.labelText,
         hintText: widget.hintText,
+        labelStyle: TextStyle(
+          color: Colors.grey.shade600,
+          fontWeight: FontWeight.w500,
+        ),
+        hintStyle: TextStyle(
+          color: Colors.grey.shade400,
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade50,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
-            color: Colors.grey.shade300,
+            color: Colors.grey.shade200,
+            width: 1.5,
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).primaryColor,
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(
+            color: Color(0xFF10B981),
             width: 2,
           ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Colors.red,
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: Colors.red.shade400,
+            width: 1.5,
+          ),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: Colors.red.shade400,
+            width: 2,
           ),
         ),
         suffixIcon: widget.isPassword
@@ -83,8 +102,8 @@ class _AuthTextFieldState extends State<AuthTextField> {
               )
             : null,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
+          horizontal: 20,
+          vertical: 18,
         ),
       ),
     );
@@ -109,44 +128,47 @@ class AuthButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 50,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isSecondary 
-              ? Colors.white 
-              : Theme.of(context).primaryColor,
-          foregroundColor: isSecondary 
-              ? Theme.of(context).primaryColor 
-              : Colors.white,
-          side: isSecondary 
-              ? BorderSide(color: Theme.of(context).primaryColor) 
-              : null,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      height: 54,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: isSecondary ? null : const LinearGradient(
+            colors: [Color(0xFF047857), Color(0xFF10B981)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
           ),
-          elevation: isSecondary ? 0 : 2,
+          borderRadius: BorderRadius.circular(16),
+          border: isSecondary ? Border.all(color: Colors.grey.shade300, width: 1.5) : null,
         ),
-        child: isLoading
-            ? SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    isSecondary 
-                        ? Theme.of(context).primaryColor 
-                        : Colors.white,
+        child: ElevatedButton(
+          onPressed: isLoading ? null : onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: isSecondary ? Colors.white : Colors.transparent,
+            foregroundColor: isSecondary ? Colors.grey.shade700 : Colors.white,
+            shadowColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 0,
+          ),
+          child: isLoading
+              ? SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isSecondary ? Colors.grey.shade600 : Colors.white,
+                    ),
+                  ),
+                )
+              : Text(
+                  text,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              )
-            : Text(
-                text,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+        ),
       ),
     );
   }
@@ -166,35 +188,51 @@ class GoogleSignInButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 50,
+      height: 54,
       child: OutlinedButton.icon(
         onPressed: isLoading ? null : onPressed,
         icon: isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+            ? SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.grey.shade600),
+                ),
               )
-            : Image.asset(
-                'assets/images/google_logo.png',
+            : Container(
                 width: 20,
                 height: 20,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(Icons.login, size: 20);
-                },
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Image.asset(
+                  'assets/images/google_logo.png',
+                  width: 20,
+                  height: 20,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.g_mobiledata_rounded,
+                      size: 24,
+                      color: Colors.grey.shade600,
+                    );
+                  },
+                ),
               ),
         label: Text(
           isLoading ? 'Signing in...' : 'Continue with Google',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade700,
           ),
         ),
         style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.grey.shade50,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
-          side: BorderSide(color: Colors.grey.shade300),
+          side: BorderSide(color: Colors.grey.shade300, width: 1.5),
         ),
       ),
     );

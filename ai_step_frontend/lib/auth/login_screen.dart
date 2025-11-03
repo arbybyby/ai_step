@@ -149,127 +149,166 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Consumer<AuthService>(
-          builder: (context, authService, child) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Form(
-                key: _formKey,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF064E3B), Color(0xFF047857), Color(0xFF10B981)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Consumer<AuthService>(
+            builder: (context, authService, child) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 60),
+                    const SizedBox(height: 40),
                     
                     // Logo and Title
                     Column(
                       children: [
-                        Icon(
-                          Icons.fitness_center,
-                          size: 80,
-                          color: Theme.of(context).primaryColor,
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Icon(
+                            Icons.directions_walk_rounded,
+                            size: 60,
+                            color: Colors.white,
+                          ),
                         ),
-                        const SizedBox(height: 16),
-                        Text(
+                        const SizedBox(height: 24),
+                        const Text(
                           'Welcome Back',
                           style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey.shade800,
+                            fontSize: 32,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Sign in to your account',
+                          'Sign in to continue your fitness journey',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.grey.shade600,
+                            color: Colors.white.withOpacity(0.9),
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
                     
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 40),
                     
-                    // Email Field
-                    AuthTextField(
-                      controller: _emailController,
-                      labelText: 'Email',
-                      hintText: 'Enter your email',
-                      isEmail: true,
-                      validator: Validators.email,
-                      textInputAction: TextInputAction.next,
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Password Field
-                    AuthTextField(
-                      controller: _passwordController,
-                      labelText: 'Password',
-                      hintText: 'Enter your password',
-                      isPassword: true,
-                      validator: Validators.password,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: _handleLogin,
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Sign In Button
-                    AuthButton(
-                      text: 'Sign In',
-                      onPressed: _handleLogin,
-                      isLoading: authService.isLoading,
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Divider
-                    const AuthDivider(),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Google Sign In Button
-                    GoogleSignInButton(
-                      onPressed: _handleGoogleSignIn,
-                      isLoading: _isGoogleLoading,
-                    ),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // Sign Up Link
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "Don't have an account? ",
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 16,
+                    // Form Container
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).pushReplacementNamed('/signup');
-                          },
-                          child: Text(
-                            'Sign Up',
-                            style: TextStyle(
-                              color: Theme.of(context).primaryColor,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                        ],
+                      ),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Email Field
+                            AuthTextField(
+                              controller: _emailController,
+                              labelText: 'Email',
+                              hintText: 'Enter your email',
+                              isEmail: true,
+                              validator: Validators.email,
+                              textInputAction: TextInputAction.next,
                             ),
-                          ),
+                            
+                            const SizedBox(height: 16),
+                            
+                            // Password Field
+                            AuthTextField(
+                              controller: _passwordController,
+                              labelText: 'Password',
+                              hintText: 'Enter your password',
+                              isPassword: true,
+                              validator: Validators.password,
+                              textInputAction: TextInputAction.done,
+                              onFieldSubmitted: _handleLogin,
+                            ),
+                            
+                            const SizedBox(height: 24),
+                            
+                            // Sign In Button
+                            AuthButton(
+                              text: 'Sign In',
+                              onPressed: _handleLogin,
+                              isLoading: authService.isLoading,
+                            ),
+                            
+                            const SizedBox(height: 24),
+                            
+                            // Divider
+                            const AuthDivider(),
+                            
+                            const SizedBox(height: 24),
+                            
+                            // Google Sign In Button
+                            GoogleSignInButton(
+                              onPressed: _handleGoogleSignIn,
+                              isLoading: _isGoogleLoading,
+                            ),
+                            
+                            const SizedBox(height: 24),
+                            
+                            // Sign Up Link  
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "Don't have an account? ",
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).pushReplacementNamed('/signup');
+                                  },
+                                  child: Text(
+                                    'Sign Up',
+                                    style: TextStyle(
+                                      color: Theme.of(context).primaryColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
+                    
+                    const SizedBox(height: 40),
                   ],
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

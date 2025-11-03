@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     locale VARCHAR(10),
     timezone VARCHAR(50),
     units_preference VARCHAR(20) DEFAULT 'metric',
+    google_id VARCHAR(255) UNIQUE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     last_login_at TIMESTAMP
@@ -18,6 +19,9 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Create index on email for faster lookups
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- Create index on google_id for faster lookups
+CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
 
 -- Steps table
 CREATE TABLE IF NOT EXISTS steps (

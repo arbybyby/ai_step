@@ -31,6 +31,9 @@ public class User {
     @Column(name = "units_preference")
     private String unitsPreference = "metric";
     
+    @Column(name = "google_id", unique = true)
+    private String googleId;
+    
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
     
@@ -73,6 +76,9 @@ public class User {
 
     public String getUnitsPreference() { return unitsPreference; }
     public void setUnitsPreference(String unitsPreference) { this.unitsPreference = unitsPreference; }
+
+    public String getGoogleId() { return googleId; }
+    public void setGoogleId(String googleId) { this.googleId = googleId; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

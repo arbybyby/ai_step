@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import com.arbybyby.aistep.ai_step_backend.dto.AuthResponse;
+import com.arbybyby.aistep.ai_step_backend.dto.GoogleSignInRequest;
 import com.arbybyby.aistep.ai_step_backend.dto.LoginRequest;
 import com.arbybyby.aistep.ai_step_backend.dto.MessageResponse;
 import com.arbybyby.aistep.ai_step_backend.dto.RegisterRequest;
@@ -21,6 +22,7 @@ import com.arbybyby.aistep.ai_step_backend.models.User;
 import com.arbybyby.aistep.ai_step_backend.security.JwtUtils;
 import com.arbybyby.aistep.ai_step_backend.security.UserPrincipal;
 import com.arbybyby.aistep.ai_step_backend.service.AuthService;
+import com.arbybyby.aistep.ai_step_backend.service.GoogleTokenVerificationService;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -36,6 +38,9 @@ public class AuthController {
 
     @Autowired
     JwtUtils jwtUtils;
+    
+    @Autowired
+    GoogleTokenVerificationService googleTokenVerificationService;
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -100,6 +105,48 @@ public class AuthController {
             logger.error("Registration failed with exception: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new MessageResponse("Error: Registration failed! Details: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<?> googleSignIn(@Valid @RequestBody GoogleSignInRequest googleRequest) {
+        try {
+            logger.info("Attempting Google sign-in with token");
+            
+            // Verify the Google ID token
+            var payload = googleTokenVerificationService.verifyToken(googleRequest.getIdToken());
+            if (payload == null) {
+                logger.warn("Invalid Google ID token");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new MessageResponse("Invalid Google ID token"));
+            }
+
+            String email = payload.getEmail();
+            String firstName = (String) payload.get("given_name");
+            String lastName = (String) payload.get("family_name");
+            String googleId = payload.getSubject();
+
+            logger.info("Google token verified for email: {}", email);
+
+            // Find or create user
+            User user = authService.findOrCreateGoogleUser(email, firstName, lastName, googleId);
+            
+            // Create authentication token manually for Google users
+            String jwt = jwtUtils.generateTokenFromEmail(user.getEmail());
+
+            logger.info("Google sign-in successful for user: {}", email);
+
+            return ResponseEntity.ok(new AuthResponse(jwt,
+                    user.getId(),
+                    user.getEmail(),
+                    user.getFirstName(),
+                    user.getLastName(),
+                    user.getEmailVerified() != null ? user.getEmailVerified() : true));
+
+        } catch (Exception e) {
+            logger.error("Google sign-in failed: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Google sign-in failed"));
         }
     }
 

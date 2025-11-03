@@ -85,4 +85,45 @@ public class AuthService {
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email).orElse(null);
     }
+
+    public User findOrCreateGoogleUser(String email, String firstName, String lastName, String googleId) {
+        logger.info("Finding or creating Google user with email: {}", email);
+        
+        // Try to find existing user by email
+        var existingUser = userRepository.findByEmail(email);
+        if (existingUser.isPresent()) {
+            User user = existingUser.get();
+            // Update Google ID if it's not set
+            if (user.getGoogleId() == null || user.getGoogleId().isEmpty()) {
+                user.setGoogleId(googleId);
+                user.setUpdatedAt(Instant.now());
+                userRepository.save(user);
+                logger.info("Updated existing user with Google ID: {}", email);
+            }
+            return user;
+        }
+
+        // Create new user for Google sign-in
+        User newUser = new User();
+        newUser.setEmail(email);
+        newUser.setFirstName(firstName);
+        newUser.setLastName(lastName);
+        newUser.setGoogleId(googleId);
+        newUser.setEmailVerified(true); // Google users are pre-verified
+        newUser.setCreatedAt(Instant.now());
+        newUser.setUpdatedAt(Instant.now());
+        
+        // Generate a random password for Google users (they won't use it)
+        String randomPassword = generateRandomPassword();
+        newUser.setPassword(passwordEncoder.encode(randomPassword));
+
+        User savedUser = userRepository.save(newUser);
+        logger.info("Created new Google user with ID: {}", savedUser.getId());
+        return savedUser;
+    }
+    
+    private String generateRandomPassword() {
+        // Generate a random password for Google users
+        return java.util.UUID.randomUUID().toString();
+    }
 }
