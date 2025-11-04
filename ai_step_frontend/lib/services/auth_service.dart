@@ -32,15 +32,22 @@ class AuthService extends ChangeNotifier {
       _token = prefs.getString(_tokenKey);
       final userJson = prefs.getString(_userKey);
       
-      if (userJson != null) {
-        _user = User.fromJson(jsonDecode(userJson));
-      }
-
-      // Validate token if exists
       if (_token != null) {
-        final isValid = _isTokenValid(_token!);
-        if (!isValid) {
+        // Проверяем, не истек ли токен
+        if (!_isTokenValid(_token!)) {
           await logout();
+          return;
+        }
+        
+        if (userJson != null) {
+          _user = User.fromJson(jsonDecode(userJson));
+        }
+        
+        // Проверяем валидность токена на сервере
+        final isValidOnServer = await _validateTokenOnServer();
+        if (!isValidOnServer) {
+          await logout();
+          return;
         }
       }
     } catch (e) {
@@ -285,6 +292,21 @@ class AuthService extends ChangeNotifier {
   bool _isTokenValid(String token) {
     try {
       return !JwtDecoder.isExpired(token);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Проверяем токен на сервере
+  Future<bool> _validateTokenOnServer() async {
+    if (_token == null) return false;
+    
+    try {
+      final response = await http.get(
+        apiUri('/api/auth/validate'),
+        headers: authHeaders,
+      );
+      return response.statusCode == 200;
     } catch (e) {
       return false;
     }

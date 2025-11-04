@@ -90,12 +90,11 @@ class _ProfileScreenState extends State<ProfileScreen>
           _isLoading = false;
         });
       } else if (response.statusCode == 401 || response.statusCode == 403) {
-        // Token is invalid or expired, clear it and redirect to login
-        final authService = Provider.of<AuthService>(context, listen: false);
-        await authService.logout();
-        if (mounted) {
-          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-        }
+        // Token is invalid or expired - AuthService will handle this automatically
+        setState(() {
+          _isLoading = false;
+        });
+        _showSnackBar('Authentication error. Please login again.');
       } else {
         setState(() {
           _isLoading = false;
