@@ -272,6 +272,29 @@ class _LoginScreenState extends State<LoginScreen> {
                               onFieldSubmitted: _handleLogin,
                             ),
                             
+                            const SizedBox(height: 16),
+                            
+                            // Forgot Password Link
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).pushNamed('/reset-password');
+                                  },
+                                  child: Text(
+                                    'Забыли пароль?',
+                                    style: TextStyle(
+                                      color: Theme.of(context).primaryColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            
                             const SizedBox(height: 24),
                             
                             // Sign In Button

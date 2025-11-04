@@ -60,4 +60,30 @@ class Validators {
     
     return null;
   }
+
+  // Методы для совместимости с reset_password_screen
+  static String? validateEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Пожалуйста, введите email';
+    }
+    
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value)) {
+      return 'Пожалуйста, введите корректный email';
+    }
+    
+    return null;
+  }
+
+  static String? validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Пожалуйста, введите пароль';
+    }
+    
+    if (value.length < 6) {
+      return 'Пароль должен содержать минимум 6 символов';
+    }
+    
+    return null;
+  }
 }

@@ -20,6 +20,7 @@ import com.arbybyby.aistep.ai_step_backend.dto.MessageResponse;
 import com.arbybyby.aistep.ai_step_backend.dto.ProfileResponse;
 import com.arbybyby.aistep.ai_step_backend.dto.ProfileUpdateRequest;
 import com.arbybyby.aistep.ai_step_backend.dto.RegisterRequest;
+import com.arbybyby.aistep.ai_step_backend.dto.ResetPasswordRequest;
 import com.arbybyby.aistep.ai_step_backend.models.User;
 import com.arbybyby.aistep.ai_step_backend.security.JwtUtils;
 import com.arbybyby.aistep.ai_step_backend.security.UserPrincipal;
@@ -264,6 +265,29 @@ public class AuthController {
             logger.error("Error updating profile (compat): {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Reset password endpoint
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest resetRequest) {
+        try {
+            logger.info("Attempting to reset password for email: {}", resetRequest.getEmail());
+            
+            authService.resetPassword(resetRequest.getEmail(), resetRequest.getNewPassword());
+            
+            logger.info("Password reset successful for email: {}", resetRequest.getEmail());
+            return ResponseEntity.ok(new MessageResponse("Password reset successfully"));
+        } catch (IllegalArgumentException e) {
+            logger.warn("Password reset failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MessageResponse("Error: " + e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error resetting password: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Error: Internal server error"));
         }
     }
 }

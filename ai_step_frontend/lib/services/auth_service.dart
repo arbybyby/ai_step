@@ -467,6 +467,52 @@ class AuthService extends ChangeNotifier {
       throw Exception('Failed to update profile: $e');
     }
   }
+
+  // Reset password
+  Future<AuthResult> resetPassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final response = await http.post(
+        apiUri('/auth/reset-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'newPassword': newPassword,
+        }),
+      );
+
+      final responseBody = jsonDecode(response.body);
+      print('Reset password response status: ${response.statusCode}');
+      print('Reset password response body: $responseBody');
+
+      if (response.statusCode == 200) {
+        return AuthResult.success(
+          responseBody['message'] ?? 'Пароль успешно сброшен',
+        );
+      } else if (response.statusCode == 404) {
+        return AuthResult.error(
+          'Пользователь с таким email не найден',
+        );
+      } else {
+        return AuthResult.error(
+          responseBody['message'] ?? 'Ошибка при сбросе пароля',
+        );
+      }
+    } catch (e) {
+      print('Reset password error: $e');
+      return AuthResult.error(
+        'Произошла ошибка при сбросе пароля',
+      );
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }
 
 class ValidationException implements Exception {

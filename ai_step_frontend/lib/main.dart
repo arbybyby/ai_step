@@ -6,6 +6,7 @@ import 'auth/additional_data_screen.dart';
 import 'auth/login_screen.dart';
 import 'auth/onboarding_screen.dart';
 import 'auth/sign_up_screen.dart';
+import 'auth/reset_password_screen.dart';
 import 'homepage/home_screen.dart';
 import 'homepage/profile_screen.dart';
 import 'homepage/statistics_screen.dart';
@@ -79,6 +80,7 @@ class MyApp extends StatelessWidget {
           '/': (context) => const GuestGuard(child: OnboardingScreen()),
           '/login': (context) => const GuestGuard(child: LoginScreen()),
           '/signup': (context) => const GuestGuard(child: SignUpScreen()),
+          '/reset-password': (context) => const GuestGuard(child: ResetPasswordScreen()),
           '/additional-data': (context) => const AuthGuard(child: AdditionalDataScreen()),
           '/home': (context) => const AuthGuard(child: HomeScreen()),
           '/profile': (context) => const AuthGuard(child: ProfileScreen()),

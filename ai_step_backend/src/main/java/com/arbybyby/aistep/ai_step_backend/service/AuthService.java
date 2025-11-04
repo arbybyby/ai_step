@@ -11,6 +11,7 @@ import com.arbybyby.aistep.ai_step_backend.models.User;
 import com.arbybyby.aistep.ai_step_backend.repositories.UserRepository;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @Service
 public class AuthService {
@@ -120,6 +121,25 @@ public class AuthService {
         User savedUser = userRepository.save(newUser);
         logger.info("Created new Google user with ID: {}", savedUser.getId());
         return savedUser;
+    }
+    
+    public void resetPassword(String email, String newPassword) {
+        logger.info("Attempting to reset password for email: {}", email);
+        
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isEmpty()) {
+            logger.warn("Password reset failed: User not found with email: {}", email);
+            throw new IllegalArgumentException("User not found");
+        }
+        
+        User user = userOptional.get();
+        
+        // Update password with encoding
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setUpdatedAt(Instant.now());
+        
+        userRepository.save(user);
+        logger.info("Password successfully reset for user: {}", email);
     }
     
     private String generateRandomPassword() {
