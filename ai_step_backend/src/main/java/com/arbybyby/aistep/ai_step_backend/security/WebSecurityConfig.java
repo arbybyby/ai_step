@@ -64,6 +64,7 @@ public class WebSecurityConfig {
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/api/all").permitAll()
                 .requestMatchers("/api/health").permitAll()  // Health check endpoint
+                .requestMatchers("/error").permitAll()  // Error handling endpoint
                 .requestMatchers("/h2-console/**").permitAll()  // For H2 database console
                 .anyRequest().authenticated()
             )

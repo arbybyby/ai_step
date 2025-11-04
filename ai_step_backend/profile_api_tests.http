@@ -115,3 +115,33 @@ Content-Type: application/json
 ## 11. Health Check (no auth required)
 GET http://localhost:8080/api/health
 Content-Type: application/json
+
+###
+
+## 12. Test Validation Errors (should return 400 with validation details)
+PUT http://localhost:8080/api/profile
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "heightCm": 12.0,
+  "weightKg": 12.0,
+  "activityLevel": "moderate"
+}
+
+###
+
+## 13. Test Valid Data (should work)
+PUT http://localhost:8080/api/profile
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Doe", 
+  "heightCm": 175.5,
+  "weightKg": 70.2,
+  "gender": "male",
+  "activityLevel": "moderately_active",
+  "goal": "maintain"
+}

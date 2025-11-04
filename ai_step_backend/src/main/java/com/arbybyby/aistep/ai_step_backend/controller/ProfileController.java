@@ -14,8 +14,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.validation.FieldError;
 
 import java.util.Map;
+import java.util.HashMap;
 
 @CrossOrigin(
     origins = {"http://localhost:*", "http://192.168.1.82:*", "https://*"}, 
@@ -174,5 +178,26 @@ public class ProfileController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new MessageResponse("Error: " + e.getMessage()));
         }
+    }
+
+    /**
+     * Handle validation errors
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<?> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        logger.warn("Validation errors: {}", ex.getMessage());
+        
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", "Validation failed");
+        response.put("details", errors);
+        
+        return ResponseEntity.badRequest().body(response);
     }
 }
