@@ -100,17 +100,11 @@ class _AuthSplashScreenState extends State<AuthSplashScreen> {
   void _navigate(AuthService authService) {
     if (_hasNavigated || !mounted) return;
     
-    print('===== AuthSplashScreen _navigate =====');
-    print('isLoading: ${authService.isLoading}');
-    print('isAuthenticated: ${authService.isAuthenticated}');
-    
     if (!authService.isLoading) {
       _hasNavigated = true;
       
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        
-        print('Navigating to: ${authService.isAuthenticated ? "/home" : "/"}');
         
         if (authService.isAuthenticated) {
           Navigator.of(context).pushReplacementNamed('/home');

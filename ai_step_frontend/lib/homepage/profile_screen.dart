@@ -36,7 +36,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void initState() {
     super.initState();
-    print('===== ProfileScreen initState =====');
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -53,22 +52,13 @@ class _ProfileScreenState extends State<ProfileScreen>
   Future<void> _loadUserData() async {
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
-      
-      print('===== ProfileScreen _loadUserData =====');
-      print('AuthService authenticated: ${authService.isAuthenticated}');
-      print('AuthService token exists: ${authService.token != null}');
-      print('AuthService user exists: ${authService.user != null}');
 
       _authToken = authService.token;
-      print('Token obtained: ${_authToken?.substring(0, 20)}...');
 
       final response = await authService.authenticatedRequest(
         method: 'GET',
         path: '/api/profile',
       );
-
-      print('Profile response status: ${response.statusCode}');
-      print('Profile response body: ${response.body}');
 
       if (!mounted) return;
 
@@ -100,6 +90,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           _isLoading = false;
         });
       } else if (response.statusCode == 401 || response.statusCode == 403) {
+        // Token is invalid or expired, clear it and redirect to login
         final authService = Provider.of<AuthService>(context, listen: false);
         await authService.logout();
         if (mounted) {

@@ -12,13 +12,8 @@ class AuthGuard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthService>(
       builder: (context, authService, _) {
-        print('===== AuthGuard check =====');
-        print('AuthService isLoading: ${authService.isLoading}');
-        print('AuthService isAuthenticated: ${authService.isAuthenticated}');
-        
         // Show loading screen while checking authentication status
         if (authService.isLoading) {
-          print('AuthGuard: showing loading screen');
           return const Scaffold(
             body: Center(
               child: CircularProgressIndicator(),
@@ -28,7 +23,6 @@ class AuthGuard extends StatelessWidget {
 
         // Redirect to login if not authenticated
         if (!authService.isAuthenticated) {
-          print('AuthGuard: user not authenticated, redirecting to login');
           WidgetsBinding.instance.addPostFrameCallback((_) {
             Navigator.of(context).pushNamedAndRemoveUntil(
               '/login',
@@ -42,7 +36,6 @@ class AuthGuard extends StatelessWidget {
           );
         }
 
-        print('AuthGuard: user authenticated, showing protected content');
         // Show protected content if authenticated
         return child;
       },

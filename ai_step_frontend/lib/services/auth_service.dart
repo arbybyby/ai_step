@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -25,7 +24,6 @@ class AuthService extends ChangeNotifier {
 
   // Initialize service - check for existing session
   Future<void> initialize() async {
-    print('===== AuthService initialize() called =====');
     _isLoading = true;
     notifyListeners();
 
@@ -34,29 +32,21 @@ class AuthService extends ChangeNotifier {
       _token = prefs.getString(_tokenKey);
       final userJson = prefs.getString(_userKey);
       
-      print('Token from storage: ${_token != null ? "exists" : "null"}');
-      print('User from storage: ${userJson != null ? "exists" : "null"}');
-      
       if (userJson != null) {
         _user = User.fromJson(jsonDecode(userJson));
-        print('User parsed: ${_user!.email}');
       }
 
       // Validate token if exists
       if (_token != null) {
         final isValid = _isTokenValid(_token!);
-        print('Token validation result: $isValid');
         if (!isValid) {
-          print('Token invalid, logging out');
           await logout();
         }
       }
     } catch (e) {
-      print('Error initializing auth service: $e');
       await logout();
     } finally {
       _isLoading = false;
-      print('AuthService initialization complete. isAuthenticated: $isAuthenticated');
       notifyListeners();
     }
   }
@@ -228,11 +218,6 @@ class AuthService extends ChangeNotifier {
 
   // Get authenticated HTTP headers
   Map<String, String> get authHeaders {
-    print('Getting auth headers - token exists: ${_token != null}');
-    if (_token != null) {
-      print('Token preview: ${_token!.substring(0, math.min(20, _token!.length))}...');
-    }
-    
     if (_token == null) {
       return {'Content-Type': 'application/json'};
     }
@@ -251,12 +236,6 @@ class AuthService extends ChangeNotifier {
   }) async {
     final headers = {...authHeaders, ...?additionalHeaders};
     final uri = apiUri(path);
-
-    print('Making $method request to: $uri');
-    print('Headers: $headers');
-    if (body != null) {
-      print('Body: ${jsonEncode(body)}');
-    }
 
     switch (method.toUpperCase()) {
       case 'GET':
@@ -285,9 +264,6 @@ class AuthService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       
-      print('Saving session with token: ${authResponse.token.isNotEmpty ? "received" : "empty"}');
-      print('User data: ${authResponse.email}, ${authResponse.firstName} ${authResponse.lastName}');
-      
       _token = authResponse.token;
       _user = User(
         id: authResponse.id,
@@ -300,21 +276,16 @@ class AuthService extends ChangeNotifier {
       await prefs.setString(_tokenKey, _token!);
       await prefs.setString(_userKey, jsonEncode(_user!.toJson()));
       
-      print('Session saved to preferences');
       notifyListeners();
-      print('Listeners notified, isAuthenticated: $isAuthenticated');
     } catch (e) {
-      print('Error saving session: $e');
       throw Exception('Failed to save session');
     }
   }
 
   bool _isTokenValid(String token) {
     try {
-      // Check if token is expired using JWT decoder
       return !JwtDecoder.isExpired(token);
     } catch (e) {
-      print('Token validation error: $e');
       return false;
     }
   }
