@@ -68,29 +68,79 @@ class MyApp extends StatelessWidget {
           fontFamily: 'Roboto',
           scaffoldBackgroundColor: Colors.white,
         ),
-        initialRoute: DEV_MODE ? '/home' : '/',
+        home: const AuthSplashScreen(),
         routes: {
           '/': (context) => const GuestGuard(child: OnboardingScreen()),
           '/login': (context) => const GuestGuard(child: LoginScreen()),
           '/signup': (context) => const GuestGuard(child: SignUpScreen()),
-          '/additional-data': (context) => DEV_MODE
-              ? const AdditionalDataScreen()
-              : const AuthGuard(child: AdditionalDataScreen()),
+          '/additional-data': (context) => const AuthGuard(child: AdditionalDataScreen()),
           '/home': (context) => const AuthGuard(child: HomeScreen()),
-          '/profile': (context) => DEV_MODE
-              ? const ProfileScreen()
-              : const AuthGuard(child: ProfileScreen()),
-          '/statistics': (context) => DEV_MODE
-              ? const StatisticsScreen()
-              : const AuthGuard(child: StatisticsScreen()),
-          '/meals': (context) => DEV_MODE
-              ? const MealsScreen()
-              : const AuthGuard(child: MealsScreen()),
-          '/water': (context) => DEV_MODE
-              ? const WaterScreen()
-              : const AuthGuard(child: WaterScreen()),
+          '/profile': (context) => const AuthGuard(child: ProfileScreen()),
+          '/statistics': (context) => const AuthGuard(child: StatisticsScreen()),
+          '/meals': (context) => const AuthGuard(child: MealsScreen()),
+          '/water': (context) => const AuthGuard(child: WaterScreen()),
         },
       ),
+    );
+  }
+}
+
+// Splash screen that waits for AuthService to initialize
+class AuthSplashScreen extends StatelessWidget {
+  const AuthSplashScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthService>(
+      builder: (context, authService, _) {
+        // Wait for auth service to finish loading
+        if (authService.isLoading) {
+          return Scaffold(
+            body: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF064E3B), Color(0xFF047857), Color(0xFF10B981)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 3,
+                ),
+              ),
+            ),
+          );
+        }
+
+        // After loading, redirect based on auth state
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (authService.isAuthenticated) {
+            Navigator.of(context).pushReplacementNamed('/home');
+          } else {
+            Navigator.of(context).pushReplacementNamed('/');
+          }
+        });
+
+        return Scaffold(
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF064E3B), Color(0xFF047857), Color(0xFF10B981)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 3,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
