@@ -68,8 +68,9 @@ class MyApp extends StatelessWidget {
           fontFamily: 'Roboto',
           scaffoldBackgroundColor: Colors.white,
         ),
-        home: const AuthSplashScreen(),
+        initialRoute: '/splash',
         routes: {
+          '/splash': (context) => const AuthSplashScreen(),
           '/': (context) => const GuestGuard(child: OnboardingScreen()),
           '/login': (context) => const GuestGuard(child: LoginScreen()),
           '/signup': (context) => const GuestGuard(child: SignUpScreen()),
@@ -86,61 +87,58 @@ class MyApp extends StatelessWidget {
 }
 
 // Splash screen that waits for AuthService to initialize
-class AuthSplashScreen extends StatelessWidget {
+class AuthSplashScreen extends StatefulWidget {
   const AuthSplashScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Consumer<AuthService>(
-      builder: (context, authService, _) {
-        // Wait for auth service to finish loading
-        if (authService.isLoading) {
-          return Scaffold(
-            body: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF064E3B), Color(0xFF047857), Color(0xFF10B981)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 3,
-                ),
-              ),
-            ),
-          );
-        }
+  State<AuthSplashScreen> createState() => _AuthSplashScreenState();
+}
 
-        // After loading, redirect based on auth state
+class _AuthSplashScreenState extends State<AuthSplashScreen> {
+  bool _hasNavigated = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    if (!_hasNavigated) {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      
+      // Wait for auth to finish loading, then navigate
+      if (!authService.isLoading) {
+        _hasNavigated = true;
+        
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          
           if (authService.isAuthenticated) {
             Navigator.of(context).pushReplacementNamed('/home');
           } else {
             Navigator.of(context).pushReplacementNamed('/');
           }
         });
+      }
+    }
+  }
 
-        return Scaffold(
-          body: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF064E3B), Color(0xFF047857), Color(0xFF10B981)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: const Center(
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 3,
-              ),
-            ),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF064E3B), Color(0xFF047857), Color(0xFF10B981)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        );
-      },
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 3,
+          ),
+        ),
+      ),
     );
   }
 }
