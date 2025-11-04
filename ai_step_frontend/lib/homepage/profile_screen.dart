@@ -57,20 +57,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       print('AuthService authenticated: ${authService.isAuthenticated}');
       print('AuthService token exists: ${authService.token != null}');
       print('AuthService user exists: ${authService.user != null}');
-      
-      if (!authService.isAuthenticated) {
-        print('User not authenticated, redirecting to login');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ошибка: не найден токен авторизации. Пожалуйста, войдите заново.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-        }
-        return;
-      }
 
       _authToken = authService.token;
       print('Token obtained: ${_authToken?.substring(0, 20)}...');
