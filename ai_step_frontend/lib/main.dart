@@ -97,48 +97,54 @@ class AuthSplashScreen extends StatefulWidget {
 class _AuthSplashScreenState extends State<AuthSplashScreen> {
   bool _hasNavigated = false;
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void _navigate(AuthService authService) {
+    if (_hasNavigated || !mounted) return;
     
-    if (!_hasNavigated) {
-      final authService = Provider.of<AuthService>(context, listen: false);
+    print('===== AuthSplashScreen _navigate =====');
+    print('isLoading: ${authService.isLoading}');
+    print('isAuthenticated: ${authService.isAuthenticated}');
+    
+    if (!authService.isLoading) {
+      _hasNavigated = true;
       
-      // Wait for auth to finish loading, then navigate
-      if (!authService.isLoading) {
-        _hasNavigated = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
         
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          
-          if (authService.isAuthenticated) {
-            Navigator.of(context).pushReplacementNamed('/home');
-          } else {
-            Navigator.of(context).pushReplacementNamed('/');
-          }
-        });
-      }
+        print('Navigating to: ${authService.isAuthenticated ? "/home" : "/"}');
+        
+        if (authService.isAuthenticated) {
+          Navigator.of(context).pushReplacementNamed('/home');
+        } else {
+          Navigator.of(context).pushReplacementNamed('/');
+        }
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF064E3B), Color(0xFF047857), Color(0xFF10B981)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return Consumer<AuthService>(
+      builder: (context, authService, _) {
+        _navigate(authService);
+        
+        return Scaffold(
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF064E3B), Color(0xFF047857), Color(0xFF10B981)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 3,
+              ),
+            ),
           ),
-        ),
-        child: const Center(
-          child: CircularProgressIndicator(
-            color: Colors.white,
-            strokeWidth: 3,
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
