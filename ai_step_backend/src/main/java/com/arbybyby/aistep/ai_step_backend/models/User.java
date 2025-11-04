@@ -42,6 +42,25 @@ public class User {
     
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
+    
+    // Profile-specific fields
+    @Column(name = "height_cm")
+    private Double heightCm;
+    
+    @Column(name = "weight_kg")
+    private Double weightKg;
+    
+    private String gender;
+    
+    @Column(name = "activity_level")
+    private String activityLevel;
+    
+    private String goal;
+    
+    @Column(name = "birth_date")
+    private String birthDate;
+    
+    private Integer age;
 
     public User() {}
 
@@ -88,4 +107,26 @@ public class User {
 
     public Instant getLastLoginAt() { return lastLoginAt; }
     public void setLastLoginAt(Instant lastLoginAt) { this.lastLoginAt = lastLoginAt; }
+
+    // Profile-specific getters and setters
+    public Double getHeightCm() { return heightCm; }
+    public void setHeightCm(Double heightCm) { this.heightCm = heightCm; }
+
+    public Double getWeightKg() { return weightKg; }
+    public void setWeightKg(Double weightKg) { this.weightKg = weightKg; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+
+    public String getActivityLevel() { return activityLevel; }
+    public void setActivityLevel(String activityLevel) { this.activityLevel = activityLevel; }
+
+    public String getGoal() { return goal; }
+    public void setGoal(String goal) { this.goal = goal; }
+
+    public String getBirthDate() { return birthDate; }
+    public void setBirthDate(String birthDate) { this.birthDate = birthDate; }
+
+    public Integer getAge() { return age; }
+    public void setAge(Integer age) { this.age = age; }
 }

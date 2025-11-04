@@ -14,6 +14,7 @@ import 'homepage/water_tracking_screen.dart';
 import 'services/pedometer_service.dart';
 import 'services/auth_service.dart';
 import 'services/steps_service.dart';
+import 'services/profile_service.dart';
 import 'middleware/auth_guard.dart';
 
 // TODO: Set to false before production release!
@@ -44,6 +45,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProxyProvider<AuthService, StepsService>(
           create: (context) => StepsService(context.read<AuthService>()),
           update: (context, auth, previous) => previous ?? StepsService(auth),
+        ),
+        ChangeNotifierProxyProvider<AuthService, ProfileService>(
+          create: (context) => ProfileService(context.read<AuthService>()),
+          update: (context, auth, previous) => previous ?? ProfileService(auth),
         ),
         ChangeNotifierProxyProvider<StepsService, PedometerService>(
           create: (context) => PedometerService(stepsService: context.read<StepsService>())..initialize(),

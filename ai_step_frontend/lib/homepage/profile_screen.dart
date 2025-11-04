@@ -1,12 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
-import '../core/api_config.dart';
 import '../services/auth_service.dart';
+import '../services/profile_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -29,7 +26,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   String? _birthDate;
 
   bool _isLoading = true;
-  String? _authToken;
 
   late AnimationController _animationController;
 
@@ -51,50 +47,41 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Future<void> _loadUserData() async {
     try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-
-      _authToken = authService.token;
-
-      final response = await authService.authenticatedRequest(
-        method: 'GET',
-        path: '/api/profile',
-      );
+      final profileService = Provider.of<ProfileService>(context, listen: false);
+      
+      final success = await profileService.loadProfile();
 
       if (!mounted) return;
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-
+      if (success) {
         setState(() {
-          _name = '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}' .trim();
-          if (_name.isEmpty) _name = 'User';
-          _email = data['email'] ?? '';
-          // Эти поля пока не возвращаются бэкендом, но оставляем для будущего использования
-          _height = data['height_cm']?.toDouble();
-          _weight = data['weight_kg']?.toDouble();
-          _gender = data['gender'];
-          _activityLevel = data['activity_level'];
-          _goal = data['goal'] ?? 'maintain';
-          _birthDate = data['birth_date'];
+          _name = profileService.fullName;
+          _email = profileService.email;
+          _height = profileService.heightCm;
+          _weight = profileService.weightKg;
+          _gender = profileService.gender;
+          _activityLevel = profileService.activityLevel;
+          _goal = profileService.goal ?? 'maintain';
+          _birthDate = profileService.birthDate;
+          _age = profileService.age;
 
-          if (_birthDate != null && _birthDate!.isNotEmpty) {
-            final birthDate = DateTime.parse(_birthDate!);
-            final now = DateTime.now();
-            _age = now.year - birthDate.year;
-            if (now.month < birthDate.month ||
-                (now.month == birthDate.month && now.day < birthDate.day)) {
-              _age = _age! - 1;
+          // Если возраст не пришел с сервера, но есть дата рождения, вычисляем возраст
+          if (_age == null && _birthDate != null && _birthDate!.isNotEmpty) {
+            try {
+              final birthDate = DateTime.parse(_birthDate!);
+              final now = DateTime.now();
+              _age = now.year - birthDate.year;
+              if (now.month < birthDate.month ||
+                  (now.month == birthDate.month && now.day < birthDate.day)) {
+                _age = _age! - 1;
+              }
+            } catch (e) {
+              // Игнорируем ошибки парсинга даты
             }
           }
 
           _isLoading = false;
         });
-      } else if (response.statusCode == 401 || response.statusCode == 403) {
-        // Token is invalid or expired - AuthService will handle this automatically
-        setState(() {
-          _isLoading = false;
-        });
-        _showSnackBar('Authentication error. Please login again.');
       } else {
         setState(() {
           _isLoading = false;
@@ -127,25 +114,20 @@ class _ProfileScreenState extends State<ProfileScreen>
     String? birthDate,
   }) async {
     try {
-      final response = await http.post(
-        apiUri('/auth/profile'),
-        headers: {
-          'Authorization': 'Bearer $_authToken',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          if (height != null) 'height_cm': height,
-          if (weight != null) 'weight_kg': weight,
-          if (gender != null) 'gender': gender,
-          if (activityLevel != null) 'activity_level': activityLevel,
-          if (goal != null) 'goal': goal,
-          if (birthDate != null) 'birth_date': birthDate,
-        }),
+      final profileService = Provider.of<ProfileService>(context, listen: false);
+      
+      final success = await profileService.updateProfile(
+        heightCm: height,
+        weightKg: weight,
+        gender: gender,
+        activityLevel: activityLevel,
+        goal: goal,
+        birthDate: birthDate,
       );
 
       if (!mounted) return;
 
-      if (response.statusCode == 200) {
+      if (success) {
         HapticFeedback.mediumImpact();
         _showSnackBar('Profile updated successfully!', isSuccess: true);
         await _loadUserData();

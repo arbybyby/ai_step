@@ -1,0 +1,91 @@
+# Profile API Endpoints Tests
+
+## Prerequisites
+# 1. Start the backend server (mvn spring-boot:run)
+# 2. Register a user and get an auth token
+# 3. Replace {token} with your actual JWT token
+
+## 1. Get Profile
+GET http://localhost:8080/api/profile
+Authorization: Bearer {token}
+Content-Type: application/json
+
+###
+
+## 2. Get Profile (compatibility endpoint)
+GET http://localhost:8080/auth/profile
+Authorization: Bearer {token}
+Content-Type: application/json
+
+###
+
+## 3. Update Profile (Full Update)
+PUT http://localhost:8080/api/profile
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "heightCm": 175.5,
+  "weightKg": 70.2,
+  "gender": "male",
+  "activityLevel": "moderately_active",
+  "goal": "maintain",
+  "age": 25,
+  "locale": "en-US",
+  "timezone": "America/New_York",
+  "unitsPreference": "metric"
+}
+
+###
+
+## 4. Partial Update Profile (PATCH)
+PATCH http://localhost:8080/api/profile
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "heightCm": 180.0,
+  "weightKg": 75.0
+}
+
+###
+
+## 5. Update Profile via compatibility endpoint
+POST http://localhost:8080/auth/profile
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "heightCm": 165.0,
+  "weightKg": 55.0,
+  "gender": "female",
+  "goal": "lose"
+}
+
+###
+
+## 6. Test Registration (to get a token)
+POST http://localhost:8080/auth/signup
+Content-Type: application/json
+
+{
+  "firstName": "Test",
+  "lastName": "User", 
+  "email": "test@example.com",
+  "password": "testPassword123"
+}
+
+###
+
+## 7. Test Login (to get a token)
+POST http://localhost:8080/auth/signin
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "testPassword123"
+}

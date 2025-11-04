@@ -259,6 +259,12 @@ class AuthService extends ChangeNotifier {
           headers: headers,
           body: body != null ? jsonEncode(body) : null,
         );
+      case 'PATCH':
+        return await http.patch(
+          uri,
+          headers: headers,
+          body: body != null ? jsonEncode(body) : null,
+        );
       case 'DELETE':
         return await http.delete(uri, headers: headers);
       default:

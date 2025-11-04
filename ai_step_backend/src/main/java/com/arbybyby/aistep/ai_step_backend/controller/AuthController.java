@@ -17,12 +17,15 @@ import com.arbybyby.aistep.ai_step_backend.dto.AuthResponse;
 import com.arbybyby.aistep.ai_step_backend.dto.GoogleSignInRequest;
 import com.arbybyby.aistep.ai_step_backend.dto.LoginRequest;
 import com.arbybyby.aistep.ai_step_backend.dto.MessageResponse;
+import com.arbybyby.aistep.ai_step_backend.dto.ProfileResponse;
+import com.arbybyby.aistep.ai_step_backend.dto.ProfileUpdateRequest;
 import com.arbybyby.aistep.ai_step_backend.dto.RegisterRequest;
 import com.arbybyby.aistep.ai_step_backend.models.User;
 import com.arbybyby.aistep.ai_step_backend.security.JwtUtils;
 import com.arbybyby.aistep.ai_step_backend.security.UserPrincipal;
 import com.arbybyby.aistep.ai_step_backend.service.AuthService;
 import com.arbybyby.aistep.ai_step_backend.service.GoogleTokenVerificationService;
+import com.arbybyby.aistep.ai_step_backend.service.ProfileService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -44,6 +47,9 @@ public class AuthController {
     
     @Autowired
     GoogleTokenVerificationService googleTokenVerificationService;
+
+    @Autowired
+    ProfileService profileService;
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -215,6 +221,49 @@ public class AuthController {
             logger.error("Error getting Google config: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new MessageResponse("Error retrieving Google configuration"));
+        }
+    }
+
+    /**
+     * Get user profile - compatibility endpoint for Flutter app
+     */
+    @GetMapping("/profile") 
+    public ResponseEntity<?> getUserProfileCompat(Authentication authentication) {
+        try {
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            Long userId = userPrincipal.getId();
+
+            logger.info("=== GET /auth/profile (compat) ===");
+            logger.info("User ID: {}", userId);
+
+            ProfileResponse profile = profileService.getUserProfile(userId);
+            return ResponseEntity.ok(profile);
+        } catch (Exception e) {
+            logger.error("Error getting profile (compat): {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Update user profile - compatibility endpoint for Flutter app
+     */
+    @PostMapping("/profile")
+    public ResponseEntity<?> updateUserProfileCompat(@Valid @RequestBody ProfileUpdateRequest updateRequest, 
+                                                   Authentication authentication) {
+        try {
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            Long userId = userPrincipal.getId();
+
+            logger.info("=== POST /auth/profile (compat) ===");
+            logger.info("User ID: {}", userId);
+
+            ProfileResponse updatedProfile = profileService.updateUserProfile(userId, updateRequest);
+            return ResponseEntity.ok(updatedProfile);
+        } catch (Exception e) {
+            logger.error("Error updating profile (compat): {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Error: " + e.getMessage()));
         }
     }
 }
