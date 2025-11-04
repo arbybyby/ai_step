@@ -300,6 +300,13 @@ class _HomeScreenState extends State<HomeScreen>
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           HapticFeedback.lightImpact();
+          
+          final authService = Provider.of<AuthService>(context, listen: false);
+          print('===== Profile button pressed =====');
+          print('isAuthenticated: ${authService.isAuthenticated}');
+          print('token exists: ${authService.token != null}');
+          print('user exists: ${authService.user != null}');
+          
           Navigator.pushNamed(context, '/profile');
         },
         backgroundColor: Colors.white,

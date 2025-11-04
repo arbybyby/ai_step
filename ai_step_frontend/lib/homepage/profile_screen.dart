@@ -36,6 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void initState() {
     super.initState();
+    print('===== ProfileScreen initState =====');
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
