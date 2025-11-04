@@ -63,6 +63,7 @@ public class WebSecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/api/all").permitAll()
+                .requestMatchers("/api/health").permitAll()  // Health check endpoint
                 .requestMatchers("/h2-console/**").permitAll()  // For H2 database console
                 .anyRequest().authenticated()
             )

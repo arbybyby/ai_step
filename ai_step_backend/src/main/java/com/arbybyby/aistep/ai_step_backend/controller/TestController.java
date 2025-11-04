@@ -41,7 +41,7 @@ public class TestController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/profile")
+    @GetMapping("/test-profile")
     public ResponseEntity<?> getUserProfile(Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(401).body("Unauthorized");

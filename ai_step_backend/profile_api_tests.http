@@ -89,3 +89,29 @@ Content-Type: application/json
   "email": "test@example.com",
   "password": "testPassword123"
 }
+
+###
+
+## 8. Test Profile endpoint (old test endpoint)
+GET http://localhost:8080/api/test-profile
+Authorization: Bearer {token}
+Content-Type: application/json
+
+###
+
+## 9. Test Authentication
+GET http://localhost:8080/api/auth-test
+Authorization: Bearer {token}
+Content-Type: application/json
+
+###
+
+## 10. Test Authentication (without token - should fail)
+GET http://localhost:8080/api/auth-test
+Content-Type: application/json
+
+###
+
+## 11. Health Check (no auth required)
+GET http://localhost:8080/api/health
+Content-Type: application/json

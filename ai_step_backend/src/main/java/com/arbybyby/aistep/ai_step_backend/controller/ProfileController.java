@@ -15,6 +15,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestMethod;
 
+import java.util.Map;
+
 @CrossOrigin(
     origins = {"http://localhost:*", "http://192.168.1.82:*", "https://*"}, 
     allowedHeaders = {"*"}, 
@@ -43,20 +45,81 @@ public class ProfileController {
     }
 
     /**
+     * Health check endpoint (no auth required)
+     */
+    @GetMapping("/health")
+    public ResponseEntity<?> healthCheck() {
+        logger.info("=== Health check endpoint called ===");
+        return ResponseEntity.ok(Map.of(
+            "status", "ok",
+            "service", "profile-service",
+            "timestamp", System.currentTimeMillis()
+        ));
+    }
+
+    /**
+     * Test authentication endpoint
+     */
+    @GetMapping("/auth-test")
+    public ResponseEntity<?> testAuth(Authentication authentication) {
+        logger.info("=== Auth test endpoint called ===");
+        
+        if (authentication == null) {
+            logger.warn("Authentication is null");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new MessageResponse("No authentication found"));
+        }
+        
+        logger.info("Authentication principal: {}", authentication.getPrincipal().getClass().getName());
+        
+        try {
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            logger.info("User ID: {}, Email: {}", userPrincipal.getId(), userPrincipal.getEmail());
+            
+            return ResponseEntity.ok(Map.of(
+                "message", "Authentication successful",
+                "userId", userPrincipal.getId(),
+                "email", userPrincipal.getEmail(),
+                "authorities", authentication.getAuthorities()
+            ));
+        } catch (Exception e) {
+            logger.error("Error processing authentication: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
      * Get user profile
      */
     @GetMapping("/profile")
     public ResponseEntity<?> getUserProfile(Authentication authentication) {
         try {
+            logger.info("=== GET /api/profile ===");
+            logger.info("Authentication object: {}", authentication != null ? authentication.getClass().getSimpleName() : "null");
+            
+            if (authentication == null) {
+                logger.warn("Authentication is null - this should not happen if security is properly configured");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new MessageResponse("Authentication required"));
+            }
+            
+            logger.info("Authentication principal type: {}", authentication.getPrincipal().getClass().getSimpleName());
+            
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
             Long userId = userPrincipal.getId();
 
-            logger.info("=== GET /api/profile ===");
             logger.info("User ID: {}", userId);
+            logger.info("User Email: {}", userPrincipal.getEmail());
 
             ProfileResponse profile = profileService.getUserProfile(userId);
+            logger.info("Profile loaded successfully for user: {}", userId);
 
             return ResponseEntity.ok(profile);
+        } catch (ClassCastException e) {
+            logger.error("Cannot cast authentication principal to UserPrincipal: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Authentication error: invalid principal type"));
         } catch (Exception e) {
             logger.error("Error getting profile: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
