@@ -7,12 +7,16 @@ class ProfileService extends ChangeNotifier {
   
   Map<String, dynamic>? _profileData;
   bool _isLoading = false;
+  String? _lastValidationError;
+  FlutterProfileValidationResult? _lastValidationResult;
 
   ProfileService(this._authService);
 
   // Getters
   Map<String, dynamic>? get profileData => _profileData;
   bool get isLoading => _isLoading;
+  String? get lastValidationError => _lastValidationError;
+  FlutterProfileValidationResult? get lastValidationResult => _lastValidationResult;
 
   String get fullName {
     if (_profileData == null) return 'User';
@@ -155,6 +159,186 @@ class ProfileService extends ChangeNotifier {
   void clearProfile() {
     _profileData = null;
     _isLoading = false;
+    _lastValidationError = null;
+    _lastValidationResult = null;
     notifyListeners();
+  }
+
+  // Flutter Profile Validation Methods
+
+  /// Валидация данных профиля в реальном времени
+  Future<FlutterProfileValidationResult?> validateFlutterProfile({
+    required String? userName,
+    required int? heightCm,
+    required double? weightKg,
+    required int? age,
+    required String? activityLevel,
+    required String? gender,
+    required int? dailyStepGoal,
+  }) async {
+    _isLoading = true;
+    _lastValidationError = null;
+    notifyListeners();
+
+    try {
+      final profileData = FlutterProfileUpdateRequest(
+        userName: userName,
+        heightCm: heightCm,
+        weightKg: weightKg,
+        age: age,
+        activityLevel: activityLevel,
+        gender: gender,
+        dailyStepGoal: dailyStepGoal,
+      );
+
+      _lastValidationResult = await _authService.validateProfileData(profileData);
+      
+      _isLoading = false;
+      notifyListeners();
+      
+      return _lastValidationResult;
+    } catch (e) {
+      _lastValidationError = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Обновление профиля через Flutter endpoint с валидацией
+  Future<bool> updateFlutterProfile({
+    required String? userName,
+    required int? heightCm,
+    required double? weightKg,
+    required int? age,
+    required String? activityLevel,
+    required String? gender,
+    required int? dailyStepGoal,
+  }) async {
+    _isLoading = true;
+    _lastValidationError = null;
+    notifyListeners();
+
+    try {
+      // Сначала валидируем
+      final validation = await validateFlutterProfile(
+        userName: userName,
+        heightCm: heightCm,
+        weightKg: weightKg,
+        age: age,
+        activityLevel: activityLevel,
+        gender: gender,
+        dailyStepGoal: dailyStepGoal,
+      );
+
+      if (validation == null || !validation.valid) {
+        _lastValidationError = 'Validation failed: ${validation?.errors?.toString() ?? 'Unknown error'}';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Если валидация прошла - обновляем
+      final profileData = FlutterProfileUpdateRequest(
+        userName: userName,
+        heightCm: heightCm,
+        weightKg: weightKg,
+        age: age,
+        activityLevel: activityLevel,
+        gender: gender,
+        dailyStepGoal: dailyStepGoal,
+      );
+
+      await _authService.updateProfileFromFlutter(profileData);
+      
+      // Перезагружаем профиль
+      await loadProfile();
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+
+    } catch (e) {
+      if (e is ValidationException) {
+        _lastValidationError = 'Validation error: ${e.errors?.toString() ?? e.message}';
+      } else {
+        _lastValidationError = 'Update failed: $e';
+      }
+      
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Проверка конкретного поля на валидность
+  Future<String?> validateField(String fieldName, dynamic value) async {
+    try {
+      // Создаем минимальный объект для валидации конкретного поля
+      Map<String, dynamic> testData = {};
+      testData[fieldName] = value;
+
+      final response = await _authService.authenticatedRequest(
+        method: 'POST',
+        path: '/api/profile/flutter/validate',
+        body: testData,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 400) {
+        final validation = FlutterProfileValidationResult.fromJson(
+          jsonDecode(response.body)
+        );
+
+        if (validation.errors != null && validation.errors!.containsKey(fieldName)) {
+          return validation.errors![fieldName];
+        }
+
+        return null; // Поле валидно
+      } else {
+        return 'Server error during validation';
+      }
+    } catch (e) {
+      return 'Validation error: $e';
+    }
+  }
+
+  /// Очистка ошибок валидации
+  void clearValidationErrors() {
+    _lastValidationError = null;
+    _lastValidationResult = null;
+    notifyListeners();
+  }
+
+  /// BMI калькулятор для UI
+  double? calculateBMI(int? heightCm, double? weightKg) {
+    if (heightCm == null || weightKg == null || heightCm <= 0 || weightKg <= 0) {
+      return null;
+    }
+    
+    double heightM = heightCm / 100.0;
+    return weightKg / (heightM * heightM);
+  }
+
+  String getBMICategory(double bmi) {
+    if (bmi < 18.5) return 'Недостаточный вес';
+    if (bmi < 25.0) return 'Нормальный вес';
+    if (bmi < 30.0) return 'Избыточный вес';
+    return 'Ожирение';
+  }
+
+  /// Получение рекомендаций по целям шагов
+  String getStepGoalRecommendation(String? activityLevel, int? age) {
+    if (activityLevel == null || age == null) return 'Рекомендуется 10000 шагов в день';
+
+    switch (activityLevel.toUpperCase()) {
+      case 'LOW':
+        return age > 65 ? '6000-8000 шагов в день' : '8000-10000 шагов в день';
+      case 'MODERATE':
+        return age > 65 ? '8000-10000 шагов в день' : '10000-12000 шагов в день';
+      case 'HIGH':
+        return age > 65 ? '10000-12000 шагов в день' : '12000-15000 шагов в день';
+      default:
+        return 'Рекомендуется 10000 шагов в день';
+    }
   }
 }

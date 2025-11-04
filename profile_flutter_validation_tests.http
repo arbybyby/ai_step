@@ -1,0 +1,152 @@
+### Flutter Profile Validation Tests
+### This file tests the Flutter-specific validation endpoints
+
+### 1. Valid profile data
+POST http://localhost:8080/api/profile/flutter/validate
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "userName": "Александр",
+  "heightCm": 175,
+  "weightKg": 70,
+  "age": 25,
+  "activityLevel": "MODERATE",
+  "gender": "MALE",
+  "dailyStepGoal": 10000
+}
+
+### 2. Invalid name (too short)
+POST http://localhost:8080/api/profile/flutter/validate
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "userName": "А",
+  "heightCm": 175,
+  "weightKg": 70,
+  "age": 25,
+  "activityLevel": "MODERATE",
+  "gender": "MALE",
+  "dailyStepGoal": 10000
+}
+
+### 3. Invalid age (too young)
+POST http://localhost:8080/api/profile/flutter/validate
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "userName": "Мария",
+  "heightCm": 165,
+  "weightKg": 55,
+  "age": 10,
+  "activityLevel": "LOW",
+  "gender": "FEMALE",
+  "dailyStepGoal": 8000
+}
+
+### 4. Invalid height (too tall)
+POST http://localhost:8080/api/profile/flutter/validate
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "userName": "Гигант",
+  "heightCm": 300,
+  "weightKg": 100,
+  "age": 30,
+  "activityLevel": "HIGH",
+  "gender": "MALE",
+  "dailyStepGoal": 15000
+}
+
+### 5. Invalid weight (too light)
+POST http://localhost:8080/api/profile/flutter/validate
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "userName": "Легковес",
+  "heightCm": 170,
+  "weightKg": 20,
+  "age": 25,
+  "activityLevel": "MODERATE",
+  "gender": "MALE",
+  "dailyStepGoal": 10000
+}
+
+### 6. BMI Warning - Underweight
+POST http://localhost:8080/api/profile/flutter/validate
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "userName": "Худышка",
+  "heightCm": 180,
+  "weightKg": 50,
+  "age": 22,
+  "activityLevel": "LOW",
+  "gender": "MALE",
+  "dailyStepGoal": 8000
+}
+
+### 7. BMI Warning - Overweight
+POST http://localhost:8080/api/profile/flutter/validate
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "userName": "Крепыш",
+  "heightCm": 160,
+  "weightKg": 90,
+  "age": 35,
+  "activityLevel": "HIGH",
+  "gender": "FEMALE",
+  "dailyStepGoal": 12000
+}
+
+### 8. Invalid step goal (too high)
+POST http://localhost:8080/api/profile/flutter/validate
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "userName": "Ходок",
+  "heightCm": 175,
+  "weightKg": 75,
+  "age": 28,
+  "activityLevel": "HIGH",
+  "gender": "MALE",
+  "dailyStepGoal": 100000
+}
+
+### 9. Empty/null fields validation
+POST http://localhost:8080/api/profile/flutter/validate
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "userName": null,
+  "heightCm": null,
+  "weightKg": null,
+  "age": null,
+  "activityLevel": null,
+  "gender": null,
+  "dailyStepGoal": null
+}
+
+### 10. Invalid enum values
+POST http://localhost:8080/api/profile/flutter/validate
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "userName": "Тестовый",
+  "heightCm": 175,
+  "weightKg": 70,
+  "age": 25,
+  "activityLevel": "INVALID_LEVEL",
+  "gender": "OTHER",
+  "dailyStepGoal": 10000
+}

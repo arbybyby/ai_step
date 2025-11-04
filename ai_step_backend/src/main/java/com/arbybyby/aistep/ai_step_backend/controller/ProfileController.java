@@ -3,8 +3,10 @@ package com.arbybyby.aistep.ai_step_backend.controller;
 import com.arbybyby.aistep.ai_step_backend.dto.MessageResponse;
 import com.arbybyby.aistep.ai_step_backend.dto.ProfileResponse;
 import com.arbybyby.aistep.ai_step_backend.dto.ProfileUpdateRequest;
+import com.arbybyby.aistep.ai_step_backend.dto.FlutterProfileUpdateRequest;
 import com.arbybyby.aistep.ai_step_backend.security.UserPrincipal;
 import com.arbybyby.aistep.ai_step_backend.service.ProfileService;
+import com.arbybyby.aistep.ai_step_backend.utils.ProfileValidationUtils;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,10 +36,12 @@ public class ProfileController {
     private static final Logger logger = LoggerFactory.getLogger(ProfileController.class);
 
     private final ProfileService profileService;
+    private final ProfileValidationUtils validationUtils;
 
     @Autowired
-    public ProfileController(ProfileService profileService) {
+    public ProfileController(ProfileService profileService, ProfileValidationUtils validationUtils) {
         this.profileService = profileService;
+        this.validationUtils = validationUtils;
     }
 
     /**
@@ -199,5 +203,76 @@ public class ProfileController {
         response.put("details", errors);
         
         return ResponseEntity.badRequest().body(response);
+    }
+
+    /**
+     * Flutter-specific profile update endpoint with enhanced validation
+     */
+    @PutMapping("/flutter/profile")
+    public ResponseEntity<?> updateUserProfileFromFlutter(@Valid @RequestBody FlutterProfileUpdateRequest flutterRequest, 
+                                                        Authentication authentication) {
+        try {
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            Long userId = userPrincipal.getId();
+
+            logger.info("=== PUT /api/flutter/profile ===");
+            logger.info("User ID: {}", userId);
+            logger.info("Flutter update request: firstName={}, lastName={}, heightCm={}, weightKg={}, gender={}", 
+                       flutterRequest.getFirstName(), flutterRequest.getLastName(), 
+                       flutterRequest.getHeightCm(), flutterRequest.getWeightKg(), flutterRequest.getGender());
+
+            ProfileResponse updatedProfile = profileService.updateUserProfileFromFlutter(userId, flutterRequest);
+
+            return ResponseEntity.ok(updatedProfile);
+        } catch (Exception e) {
+            logger.error("Error updating profile from Flutter: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Flutter-specific profile validation endpoint
+     */
+    @PostMapping("/flutter/validate")
+    public ResponseEntity<?> validateProfileData(@Valid @RequestBody FlutterProfileUpdateRequest flutterRequest, 
+                                               Authentication authentication) {
+        try {
+            logger.info("=== POST /api/flutter/validate ===");
+            
+            // Используем профессиональную валидацию
+            ProfileValidationUtils.ValidationResult validation = validationUtils.validateFlutterProfileData(flutterRequest);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("valid", validation.isValid());
+            
+            if (validation.hasErrors()) {
+                response.put("errors", validation.getErrors());
+            }
+            
+            if (validation.hasWarnings()) {
+                response.put("warnings", validation.getWarnings());
+            }
+            
+            // Добавляем полезную информацию
+            if (flutterRequest.getHeightCm() != null && flutterRequest.getWeightKg() != null) {
+                double bmi = validationUtils.calculateBMI(flutterRequest.getHeightCm(), flutterRequest.getWeightKg());
+                response.put("calculatedBMI", Math.round(bmi * 10.0) / 10.0);
+                response.put("bmiCategory", validationUtils.getBMICategory(bmi));
+            }
+            
+            if (validation.isValid()) {
+                response.put("message", "All data is valid");
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("message", "Validation failed");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+        } catch (Exception e) {
+            logger.error("Error validating profile data from Flutter: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Validation error: " + e.getMessage()));
+        }
     }
 }

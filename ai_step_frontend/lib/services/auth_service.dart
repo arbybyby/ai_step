@@ -8,6 +8,72 @@ import '../core/api_config.dart';
 import '../core/google_oauth_config.dart';
 import '../models/auth_models.dart';
 
+// Profile models for validation
+class FlutterProfileValidationResult {
+  final bool valid;
+  final String? message;
+  final Map<String, String>? errors;
+  final Map<String, String>? warnings;
+  final double? calculatedBMI;
+  final String? bmiCategory;
+
+  FlutterProfileValidationResult({
+    required this.valid,
+    this.message,
+    this.errors,
+    this.warnings,
+    this.calculatedBMI,
+    this.bmiCategory,
+  });
+
+  factory FlutterProfileValidationResult.fromJson(Map<String, dynamic> json) {
+    return FlutterProfileValidationResult(
+      valid: json['valid'] ?? false,
+      message: json['message'],
+      errors: json['errors'] != null 
+        ? Map<String, String>.from(json['errors'])
+        : null,
+      warnings: json['warnings'] != null 
+        ? Map<String, String>.from(json['warnings'])
+        : null,
+      calculatedBMI: json['calculatedBMI']?.toDouble(),
+      bmiCategory: json['bmiCategory'],
+    );
+  }
+}
+
+class FlutterProfileUpdateRequest {
+  final String? userName;
+  final int? heightCm;
+  final double? weightKg;
+  final int? age;
+  final String? activityLevel;
+  final String? gender;
+  final int? dailyStepGoal;
+
+  FlutterProfileUpdateRequest({
+    this.userName,
+    this.heightCm,
+    this.weightKg,
+    this.age,
+    this.activityLevel,
+    this.gender,
+    this.dailyStepGoal,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userName': userName,
+      'heightCm': heightCm,
+      'weightKg': weightKg,
+      'age': age,
+      'activityLevel': activityLevel,
+      'gender': gender,
+      'dailyStepGoal': dailyStepGoal,
+    };
+  }
+}
+
 class AuthService extends ChangeNotifier {
   static const String _tokenKey = 'auth_token';
   static const String _userKey = 'auth_user';
@@ -322,5 +388,103 @@ class AuthService extends ChangeNotifier {
   bool get isTokenValid {
     if (_token == null) return false;
     return _isTokenValid(_token!);
+  }
+
+  // Flutter Profile Validation Methods
+  Future<FlutterProfileValidationResult> validateProfileData(
+      FlutterProfileUpdateRequest profileData) async {
+    try {
+      final response = await authenticatedRequest(
+        method: 'POST',
+        path: '/api/profile/flutter/validate',
+        body: profileData.toJson(),
+      );
+
+      final responseData = jsonDecode(response.body);
+      
+      if (response.statusCode == 200 || response.statusCode == 400) {
+        return FlutterProfileValidationResult.fromJson(responseData);
+      } else {
+        throw Exception('Server error: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to validate profile data: $e');
+    }
+  }
+
+  Future<User?> updateProfileFromFlutter(
+      FlutterProfileUpdateRequest profileData) async {
+    try {
+      // Сначала валидируем данные
+      final validation = await validateProfileData(profileData);
+      
+      if (!validation.valid) {
+        throw ValidationException(
+          'Validation failed', 
+          validation.errors,
+          validation.warnings
+        );
+      }
+
+      // Если валидация прошла, обновляем профиль
+      final response = await authenticatedRequest(
+        method: 'PUT',
+        path: '/api/profile/flutter',
+        body: profileData.toJson(),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        
+        // Обновляем локального пользователя если есть изменения
+        if (responseData.containsKey('firstName') || 
+            responseData.containsKey('lastName') ||
+            responseData.containsKey('email')) {
+          
+          _user = User(
+            id: _user?.id ?? responseData['id'],
+            email: responseData['email'] ?? _user?.email ?? '',
+            firstName: responseData['firstName'] ?? _user?.firstName ?? '',
+            lastName: responseData['lastName'] ?? _user?.lastName ?? '',
+            isEmailVerified: _user?.isEmailVerified ?? false,
+          );
+          
+          // Сохраняем обновленного пользователя
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_userKey, jsonEncode(_user!.toJson()));
+          notifyListeners();
+        }
+        
+        return _user;
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to update profile');
+      }
+    } catch (e) {
+      if (e is ValidationException) {
+        rethrow;
+      }
+      throw Exception('Failed to update profile: $e');
+    }
+  }
+}
+
+class ValidationException implements Exception {
+  final String message;
+  final Map<String, String>? errors;
+  final Map<String, String>? warnings;
+
+  ValidationException(this.message, this.errors, this.warnings);
+
+  @override
+  String toString() {
+    String result = message;
+    if (errors != null && errors!.isNotEmpty) {
+      result += '\nErrors: ${errors.toString()}';
+    }
+    if (warnings != null && warnings!.isNotEmpty) {
+      result += '\nWarnings: ${warnings.toString()}';
+    }
+    return result;
   }
 }
