@@ -305,18 +305,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             
                             const SizedBox(height: 24),
-                            
-                            // Divider
-                            const AuthDivider(),
-                            
-                            const SizedBox(height: 24),
-                            
-                            // Google Sign In Button
-                            GoogleSignInButton(
-                              onPressed: _handleGoogleSignIn,
-                              isLoading: _isGoogleLoading,
-                            ),
-                            
+                          
                             const SizedBox(height: 24),
                             
                             // Sign Up Link  

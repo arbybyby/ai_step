@@ -349,16 +349,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     const SizedBox(height: 24),
                     
                     // Divider
-                    const AuthDivider(),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Google Sign In Button
-                    GoogleSignInButton(
-                      onPressed: _handleGoogleSignIn,
-                      isLoading: _isGoogleLoading,
-                    ),
-                    
+                   
                     const SizedBox(height: 32),
                     
                             // Sign In Link
