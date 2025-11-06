@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/auth_service.dart';
+import '../widgets/account_deleted_listener.dart';
 
 class AuthGuard extends StatelessWidget {
   final Widget child;
@@ -23,9 +24,10 @@ class AuthGuard extends StatelessWidget {
 
         // Redirect to login if not authenticated
         if (!authService.isAuthenticated) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            await authService.logout();
             Navigator.of(context).pushNamedAndRemoveUntil(
-              '/login',
+              '/',
               (route) => false,
             );
           });
@@ -37,7 +39,9 @@ class AuthGuard extends StatelessWidget {
         }
 
         // Show protected content if authenticated
-        return child;
+        return AccountDeletedListener(
+          child: child,
+        );
       },
     );
   }
@@ -52,15 +56,9 @@ class GuestGuard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthService>(
       builder: (context, authService, _) {
-        // Show loading screen while checking authentication status
-        if (authService.isLoading) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
+        // Don't show loading screen for guest pages - let the page handle its own loading state
+        // This allows SnackBars and other UI elements to be displayed properly
+        
         // Redirect to home if already authenticated
         if (authService.isAuthenticated) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -76,7 +74,7 @@ class GuestGuard extends StatelessWidget {
           );
         }
 
-        // Show guest content if not authenticated
+        // Show guest content (the page itself will handle loading state through Consumer)
         return child;
       },
     );

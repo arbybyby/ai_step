@@ -171,6 +171,25 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Проверяем, был ли аккаунт удален ранее
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (authService.accountDeleted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _showSnackBar(
+            'Ваш аккаунт был удалён администратором',
+            isSuccess: false,
+          );
+          authService.resetAccountDeletedFlag();
+        }
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(

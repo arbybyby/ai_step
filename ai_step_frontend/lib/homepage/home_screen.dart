@@ -380,7 +380,12 @@ class _HomeScreenState extends State<HomeScreen>
                     context,
                     listen: false,
                   );
+                  final pedometerService = Provider.of<PedometerService>(
+                    context,
+                    listen: false,
+                  );
                   await authService.logout();
+                  pedometerService.clearSteps();
                   if (mounted) {
                     Navigator.of(
                       context,

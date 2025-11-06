@@ -7,6 +7,7 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import '../core/api_config.dart';
 import '../core/google_oauth_config.dart';
 import '../models/auth_models.dart';
+import 'account_deleted_handler.dart';
 
 // Profile models for validation
 class FlutterProfileValidationResult {
@@ -81,12 +82,14 @@ class AuthService extends ChangeNotifier {
   String? _token;
   User? _user;
   bool _isLoading = false;
+  bool _accountDeleted = false;
 
   // Getters
   String? get token => _token;
   User? get user => _user;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _token != null && _user != null;
+  bool get accountDeleted => _accountDeleted;
 
   // Initialize service - check for existing session
   Future<void> initialize() async {
@@ -278,15 +281,20 @@ class AuthService extends ChangeNotifier {
   Future<void> logout() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_tokenKey);
-      await prefs.remove(_userKey);
-      
+      await prefs.clear(); // Clear all data
       _token = null;
       _user = null;
+      _accountDeleted = false;
       notifyListeners();
     } catch (e) {
       print('Logout error: $e');
     }
+  }
+
+  // Reset account deleted flag
+  void resetAccountDeletedFlag() {
+    _accountDeleted = false;
+    notifyListeners();
   }
 
   // Get authenticated HTTP headers
@@ -310,32 +318,49 @@ class AuthService extends ChangeNotifier {
     final headers = {...authHeaders, ...?additionalHeaders};
     final uri = apiUri(path);
 
+    http.Response response;
+    
     switch (method.toUpperCase()) {
       case 'GET':
-        return await http.get(uri, headers: headers);
+        response = await http.get(uri, headers: headers);
+        break;
       case 'POST':
-        return await http.post(
+        response = await http.post(
           uri,
           headers: headers,
           body: body != null ? jsonEncode(body) : null,
         );
+        break;
       case 'PUT':
-        return await http.put(
+        response = await http.put(
           uri,
           headers: headers,
           body: body != null ? jsonEncode(body) : null,
         );
+        break;
       case 'PATCH':
-        return await http.patch(
+        response = await http.patch(
           uri,
           headers: headers,
           body: body != null ? jsonEncode(body) : null,
         );
+        break;
       case 'DELETE':
-        return await http.delete(uri, headers: headers);
+        response = await http.delete(uri, headers: headers);
+        break;
       default:
         throw ArgumentError('Unsupported HTTP method: $method');
     }
+
+    // Проверяем, был ли аккаунт удалён
+    if (AccountDeletedHandler.isAccountDeletedError(response)) {
+      debugPrint('Account deleted detected - logging out user');
+      _accountDeleted = true;
+      await logout();
+      notifyListeners();
+    }
+
+    return response;
   }
 
   // Private methods

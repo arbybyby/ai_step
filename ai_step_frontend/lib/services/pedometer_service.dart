@@ -11,6 +11,18 @@ import 'steps_service.dart';
 /// Provides step metrics for the home screen and falls back to a lightweight
 /// simulator when real pedometer data is unavailable (e.g. on web/desktop).
 class PedometerService extends ChangeNotifier {
+  /// Сбросить шаги и производные метрики (для выхода из аккаунта)
+  void clearSteps() {
+    _steps = 0;
+    _distanceKm = 0;
+    _calories = 0;
+    _activeMinutes = 0;
+    _lastSyncedSteps = 0;
+    _baselineSteps = null;
+    _lastRecordedDate = null;
+    _accelerationHistory.clear();
+    notifyListeners();
+  }
   PedometerService({
     double strideLengthInMeters = 0.78, // average adult walking stride
     double caloriesPerStep = 0.04, // rough kcal estimate per step

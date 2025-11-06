@@ -40,7 +40,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authService = Provider.of<AuthService>(context, listen: false);
-    
+
     print('Starting sign up process...');
 
     final result = await authService.signUp(
@@ -55,53 +55,99 @@ class _SignUpScreenState extends State<SignUpScreen> {
     print('Sign up result: ${result.success}, message: ${result.message}');
     print('User authenticated after signup: ${authService.isAuthenticated}');
     print('User data after signup: ${authService.user?.toJson()}');
+    print('Auth service isLoading: ${authService.isLoading}');
 
     if (result.success) {
       _showSnackBar(result.message, isSuccess: true);
-      
+
       // Check if user is now authenticated (auto-login successful)
       if (authService.isAuthenticated) {
         // Auto-login successful, go to home
         print('Auto-login successful, navigating to home');
         if (mounted) {
-          Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/home', (route) => false);
         }
       } else {
         // Registration successful but auto-login failed, go to login page
-        print('Registration successful but auto-login failed, navigating to login');
+        print(
+          'Registration successful but auto-login failed, navigating to login',
+        );
         if (mounted) {
-          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/login', (route) => false);
         }
       }
     } else {
-      _showSnackBar(result.message);
+      // Handle registration errors with user-friendly messages
+      final errorMessage = _getErrorMessage(result.message);
+      print('Showing error message: $errorMessage');
+
+      // Show the snackbar immediately
+      _showSnackBar(errorMessage);
+
+      // Don't navigate or do anything else - just keep the user on this screen
+      print('Registration failed, keeping user on sign up screen');
     }
+  }
+
+  String _getErrorMessage(String serverMessage) {
+    // Convert server error messages to user-friendly messages
+    final message = serverMessage.toLowerCase();
+
+    print('Processing error message: $message');
+
+    // Check for specific error patterns
+    if ((message.contains('email') && message.contains('already')) ||
+        (message.contains('email') && message.contains('taken')) ||
+        (message.contains('email') && message.contains('exist'))) {
+      return 'An account with this email already exists';
+    } else if (message.contains('invalid email')) {
+      return 'Invalid email format';
+    } else if (message.contains('password')) {
+      return 'Password does not meet requirements';
+    } else if (message.contains('network')) {
+      return 'Network error. Please check your internet connection';
+    } else if (message.contains('server') || message.contains('500')) {
+      return 'Server error. Please try again later';
+    } else if (message.contains('timeout')) {
+      return 'Request timed out. Please try again';
+    }
+
+    // Return original message if no specific pattern found
+    return serverMessage;
   }
 
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isGoogleLoading = true);
 
-    // Validate OAuth configuration first
-    final authService = Provider.of<AuthService>(context, listen: false);
-    final configResult = await authService.validateGoogleOAuthConfig();
-    
-    if (!configResult.success) {
-      if (mounted) {
-        _showSnackBar(configResult.message);
-        setState(() => _isGoogleLoading = false);
-      }
-      return;
-    }
-
-    final googleSignIn = _buildGoogleSignIn();
-
     try {
+      // Validate OAuth configuration first
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final configResult = await authService.validateGoogleOAuthConfig();
+
+      if (!configResult.success) {
+        if (mounted) {
+          setState(() => _isGoogleLoading = false);
+          await Future.delayed(const Duration(milliseconds: 100));
+          if (mounted) {
+            _showSnackBar(configResult.message);
+          }
+        }
+        return;
+      }
+
+      final googleSignIn = _buildGoogleSignIn();
+
       await googleSignIn.signOut();
       final account = await googleSignIn.signIn();
       if (!mounted) return;
 
       if (account == null) {
         _showSnackBar('Sign-in was cancelled.');
+        setState(() => _isGoogleLoading = false);
         return;
       }
 
@@ -111,10 +157,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       final idToken = auth.idToken;
       if (idToken == null) {
         _showSnackBar('Could not retrieve Google ID token.');
+        setState(() => _isGoogleLoading = false);
         return;
       }
 
-      final authService = Provider.of<AuthService>(context, listen: false);
       final result = await authService.signInWithGoogle(idToken);
 
       if (!mounted) return;
@@ -122,18 +168,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (result.success) {
         final message = 'Welcome ${account.displayName ?? account.email}!';
         _showSnackBar(message, isSuccess: true);
-        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/home', (route) => false);
       } else {
-        _showSnackBar(result.message);
+        // Handle Google sign-in registration errors
+        final errorMessage = _getErrorMessage(result.message);
+        setState(() => _isGoogleLoading = false);
+
+        // Add delay to ensure loading indicator is hidden
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (mounted) {
+          _showSnackBar(errorMessage);
+        }
       }
     } catch (error, stackTrace) {
       print('Google sign-in error: $error');
       print('Stack trace: $stackTrace');
       if (mounted) {
-        _showSnackBar(_googleSignInErrorMessage(error));
+        setState(() => _isGoogleLoading = false);
+
+        // Add delay to ensure loading indicator is hidden
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (mounted) {
+          _showSnackBar(_googleSignInErrorMessage(error));
+        }
       }
-    } finally {
-      if (mounted) setState(() => _isGoogleLoading = false);
     }
   }
 
@@ -160,9 +220,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
           return 'Google sign-in was cancelled.';
         case GoogleSignIn.kSignInFailedError:
           return 'OAuth configuration error. Please check:\n'
-                 '• SHA-1 certificate fingerprint\n'
-                 '• Package name in Google Console\n'
-                 '• Client ID configuration';
+              '• SHA-1 certificate fingerprint\n'
+              '• Package name in Google Console\n'
+              '• Client ID configuration';
         case 'network_error':
           return 'Network error during Google sign-in. Check your internet connection.';
         case 'sign_in_required':
@@ -173,26 +233,39 @@ class _SignUpScreenState extends State<SignUpScreen> {
           return 'Google sign-in error (${error.code}): ${error.message ?? "Unknown error"}';
       }
     }
-    
+
     // Handle common error messages
     String errorStr = error.toString().toLowerCase();
     if (errorStr.contains('oauth') || errorStr.contains('configuration')) {
       return 'OAuth configuration error. Please contact support if this persists.';
-    } else if (errorStr.contains('network') || errorStr.contains('connection')) {
+    } else if (errorStr.contains('network') ||
+        errorStr.contains('connection')) {
       return 'Network error. Please check your internet connection and try again.';
-    } else if (errorStr.contains('cancelled') || errorStr.contains('canceled')) {
+    } else if (errorStr.contains('cancelled') ||
+        errorStr.contains('canceled')) {
       return 'Google sign-in was cancelled by user.';
     }
-    
+
     return 'Google sign-in failed: ${error.toString()}';
   }
 
-  void _showSnackBar(String message, {bool isSuccess = false}) {
+  void _showSnackBar(
+    String message, {
+    bool isSuccess = false,
+    int durationSeconds = 3,
+  }) {
+    // Increase duration for error messages to ensure they're visible longer
+    final duration = isSuccess
+        ? Duration(seconds: durationSeconds)
+        : Duration(seconds: durationSeconds + 2);
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: isSuccess ? Colors.green : Colors.red,
-        duration: const Duration(seconds: 3),
+        duration: duration,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
@@ -217,7 +290,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 40),
-                    
+
                     // Logo and Title
                     Column(
                       children: [
@@ -254,9 +327,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 40),
-                    
+
                     // Form Container
                     Container(
                       padding: const EdgeInsets.all(24),
@@ -276,82 +349,77 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                    
-                    // First Name Field
-                    AuthTextField(
-                      controller: _firstNameController,
-                      labelText: 'First Name',
-                      hintText: 'Enter your first name',
-                      validator: Validators.firstName,
-                      textInputAction: TextInputAction.next,
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Last Name Field
-                    AuthTextField(
-                      controller: _lastNameController,
-                      labelText: 'Last Name',
-                      hintText: 'Enter your last name',
-                      validator: Validators.lastName,
-                      textInputAction: TextInputAction.next,
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Email Field
-                    AuthTextField(
-                      controller: _emailController,
-                      labelText: 'Email',
-                      hintText: 'Enter your email',
-                      isEmail: true,
-                      validator: Validators.email,
-                      textInputAction: TextInputAction.next,
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Password Field
-                    AuthTextField(
-                      controller: _passwordController,
-                      labelText: 'Password',
-                      hintText: 'Create a password',
-                      isPassword: true,
-                      validator: Validators.password,
-                      textInputAction: TextInputAction.next,
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Confirm Password Field
-                    AuthTextField(
-                      controller: _confirmPasswordController,
-                      labelText: 'Confirm Password',
-                      hintText: 'Confirm your password',
-                      isPassword: true,
-                      validator: (value) => Validators.confirmPassword(
-                        value,
-                        _passwordController.text,
-                      ),
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: _handleSignUp,
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Sign Up Button
-                    AuthButton(
-                      text: 'Create Account',
-                      onPressed: _handleSignUp,
-                      isLoading: authService.isLoading,
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Divider
-                   
-                    const SizedBox(height: 32),
-                    
+                            // First Name Field
+                            AuthTextField(
+                              controller: _firstNameController,
+                              labelText: 'First Name',
+                              hintText: 'Enter your first name',
+                              validator: Validators.firstName,
+                              textInputAction: TextInputAction.next,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Last Name Field
+                            AuthTextField(
+                              controller: _lastNameController,
+                              labelText: 'Last Name',
+                              hintText: 'Enter your last name',
+                              validator: Validators.lastName,
+                              textInputAction: TextInputAction.next,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Email Field
+                            AuthTextField(
+                              controller: _emailController,
+                              labelText: 'Email',
+                              hintText: 'Enter your email',
+                              isEmail: true,
+                              validator: Validators.email,
+                              textInputAction: TextInputAction.next,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Password Field
+                            AuthTextField(
+                              controller: _passwordController,
+                              labelText: 'Password',
+                              hintText: 'Create a password',
+                              isPassword: true,
+                              validator: Validators.password,
+                              textInputAction: TextInputAction.next,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Confirm Password Field
+                            AuthTextField(
+                              controller: _confirmPasswordController,
+                              labelText: 'Confirm Password',
+                              hintText: 'Confirm your password',
+                              isPassword: true,
+                              validator: (value) => Validators.confirmPassword(
+                                value,
+                                _passwordController.text,
+                              ),
+                              textInputAction: TextInputAction.done,
+                              onFieldSubmitted: _handleSignUp,
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // Sign Up Button
+                            AuthButton(
+                              text: 'Create Account',
+                              onPressed: _handleSignUp,
+                              isLoading: authService.isLoading,
+                            ),
+
+                            // Divider
+
                             // Sign In Link
                             const SizedBox(height: 24),
                             Row(
@@ -366,7 +434,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 ),
                                 GestureDetector(
                                   onTap: () {
-                                    Navigator.of(context).pushReplacementNamed('/login');
+                                    Navigator.of(
+                                      context,
+                                    ).pushReplacementNamed('/login');
                                   },
                                   child: Text(
                                     'Sign In',
@@ -383,7 +453,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 40),
                   ],
                 ),
