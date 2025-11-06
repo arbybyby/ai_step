@@ -16,8 +16,11 @@ public class StepsRepository : IStepRepository
     public async Task<DailyStepsResult> GetDailyStepsAsync(long userId, DateOnly date)
     {
         using var context = _contextFactory.CreateDbContext();
+        var dayStart = date.ToDateTime(new TimeOnly(0, 0), DateTimeKind.Utc);
+        var dayEnd = date.ToDateTime(new TimeOnly(0, 0), DateTimeKind.Utc).AddDays(1);
+
         var steps = await context.Steps
-            .Where(s => s.UserId == userId && s.RecordedDate == date)
+            .Where(s => s.UserId == userId && s.RecordedAt >= dayStart && s.RecordedAt < dayEnd)
             .ToListAsync();
 
         return new DailyStepsResult

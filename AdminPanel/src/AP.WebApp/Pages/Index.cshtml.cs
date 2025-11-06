@@ -76,6 +76,7 @@ namespace AP.WebApp.Pages
         {
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var result = await _stepsRepository.GetDailyStepsAsync(userId, today);
+            _logger.LogInformation("Loaded daily steps for user ID {UserId} - {Id}: {TotalSteps} steps.", userId, result.UserId, result.TotalSteps);
             DailyStepsResults.Add(result);
         }
     }

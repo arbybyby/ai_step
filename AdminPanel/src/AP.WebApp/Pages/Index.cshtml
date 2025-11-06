@@ -158,7 +158,7 @@
                                 var dailySteps = Model.DailyStepsResults.Where(x => x.UserId == user.Id).ToList();
                                 if (dailySteps.Any())
                                 {
-                                    @dailySteps[0].TotalSteps;
+                                    @dailySteps.Max()?.TotalSteps;
                                 }
                                 else
                                 {
