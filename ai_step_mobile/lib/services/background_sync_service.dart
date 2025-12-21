@@ -23,45 +23,57 @@ void callbackDispatcher() {
 }
 
 Future<void> _performSync() async {
+  print('_performSync: Starting sync operation...');
+  
   StepStorageService? storageService;
   var storageReady = false;
   try {
     storageService = StepStorageService();
     await storageService.init();
     storageReady = true;
+    print('_performSync: Hive storage initialized successfully');
   } catch (e) {
-    print('BackgroundSyncService: Hive init failed in background isolate: $e');
+    print('_performSync: Hive init failed: $e');
   }
 
   final apiService = StepsApiService();
 
   try {
     // Get current step data (local and remote)
+    print('_performSync: Getting local data...');
     StepData? localData;
     if (storageReady && storageService != null) {
       localData = await storageService.getCurrentDaySteps();
+      print('_performSync: Local data from Hive: ${localData?.stepsCount ?? "null"}');
     } else {
       final sp = await SharedPreferences.getInstance();
       final json = sp.getString('current_day');
       if (json != null) {
         try {
           localData = StepData.fromJson(jsonDecode(json));
+          print('_performSync: Local data from SharedPreferences: ${localData.stepsCount}');
         } catch (e) {
+          print('_performSync: Failed to parse SharedPreferences data: $e');
           localData = null;
         }
       }
     }
 
     StepData? remoteData;
+    print('_performSync: Getting remote data from backend...');
     try {
       remoteData = await apiService.getCurrentDaySteps();
+      print('_performSync: Remote data: ${remoteData.stepsCount} steps');
     } catch (e) {
+      print('_performSync: Failed to get remote data: $e');
       remoteData = null;
     }
 
     // Merge logic
+    print('_performSync: Starting merge logic (local=${localData?.stepsCount}, remote=${remoteData?.stepsCount})');
     if (localData != null && remoteData != null) {
       if (localData.stepsCount > remoteData.stepsCount) {
+        print('_performSync: Local > Remote, pushing local to backend');
         await apiService.saveSteps(localData.stepsCount);
         if (storageReady && storageService != null) {
           await storageService.setLastSyncTime(DateTime.now());
@@ -195,6 +207,15 @@ class BackgroundSyncService {
   }
 
   static Future<void> syncNow() async {
-    await _performSync();
+    print('\n=== BackgroundSyncService.syncNow START ===');
+    try {
+      await _performSync();
+      print('=== BackgroundSyncService.syncNow END (success) ===\n');
+    } catch (e, st) {
+      print('BackgroundSyncService.syncNow ERROR: $e');
+      print('BackgroundSyncService.syncNow stackTrace: $st');
+      print('=== BackgroundSyncService.syncNow END (error) ===\n');
+      rethrow;
+    }
   }
 }

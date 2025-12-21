@@ -46,12 +46,12 @@ class StepStorageService {
   Future<int> getGoal() async {
     final box = _getBox();
     final goal = box.get('goal');
-    if (goal == null) return 10000;
+    if (goal == null) return 400;
     if (goal is int) return goal;
     if (goal is String) {
-      return int.tryParse(goal) ?? 10000;
+      return int.tryParse(goal) ?? 400;
     }
-    return 10000;
+    return 400;
   }
 
   Future<void> setGoal(int goal) async {

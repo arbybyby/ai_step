@@ -6,5 +6,7 @@ public interface IStepsRepository
 {
     public Task<DayStepsInfo> GetDayInfo(int userID, DateOnly date);
 
+    public Task<WeekStepsInfo> GetWeekInfo(int userID);
+
     public Task Save(DayStepsInfo dayStepsInfo);
 }

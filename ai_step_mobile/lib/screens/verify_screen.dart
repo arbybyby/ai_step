@@ -100,30 +100,112 @@ class _VerifyScreenState extends State<VerifyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final _height = MediaQuery.of(context).size.height;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Verify account')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            TextFormField(
-              initialValue: _email,
-              decoration: const InputDecoration(labelText: 'Email'),
-              keyboardType: TextInputType.emailAddress,
-              onSaved: (v) => _email = v?.trim() ?? '',
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter email' : null,
+      backgroundColor: Colors.transparent,
+      body: Container(
+        width: double.infinity,
+        constraints: BoxConstraints(minHeight: _height),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0F8A5F), Color(0xFF1AC07B)],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 8),
+                Container(
+                  width: 84,
+                  height: 84,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.verified_user, size: 40, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Text('Verify Account', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                const Text('Enter the verification code sent to your email', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 14)),
+                const SizedBox(height: 22),
+
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 6))],
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextFormField(
+                          initialValue: _email,
+                          decoration: InputDecoration(
+                            hintText: 'Email',
+                            filled: true,
+                            fillColor: const Color(0xFFF5F6F8),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          onSaved: (v) => _email = v?.trim() ?? '',
+                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter email' : null,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          decoration: InputDecoration(
+                            hintText: 'Verification code',
+                            filled: true,
+                            fillColor: const Color(0xFFF5F6F8),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          ),
+                          onSaved: (v) => _code = v?.trim() ?? '',
+                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter code' : null,
+                        ),
+                        const SizedBox(height: 18),
+
+                        GestureDetector(
+                          onTap: _isLoading ? null : _submit,
+                          child: Container(
+                            height: 52,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(colors: [Color(0xFF0DA96B), Color(0xFF06C17A)]),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                              child: _isLoading
+                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(Colors.white), strokeWidth: 2))
+                                  : const Text('Verify', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: _isLoading ? null : _resend,
+                          child: const Text('Resend code', style: TextStyle(color: Color(0xFF8E3A44))),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+              ],
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              decoration: const InputDecoration(labelText: 'Verification code'),
-              onSaved: (v) => _code = v?.trim() ?? '',
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter code' : null,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(onPressed: _isLoading ? null : _submit, child: _isLoading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Verify')),
-            TextButton(onPressed: _isLoading ? null : _resend, child: const Text('Resend code')),
-          ]),
+          ),
         ),
       ),
     );

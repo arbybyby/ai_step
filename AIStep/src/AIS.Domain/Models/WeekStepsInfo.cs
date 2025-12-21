@@ -6,7 +6,7 @@ public class WeekStepsInfo
 
     public DayStepsInfo? BestDay { get; set; }
 
-    public List<DayStepsInfo> DayStepsInfo { set; get; }
+    public List<DayStepsInfo>? DayStepsInfo { set; get; }
 
     public int TotalSteps { get; set; }
 }

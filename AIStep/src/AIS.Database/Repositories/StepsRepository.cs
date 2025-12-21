@@ -28,6 +28,30 @@ public class StepsRepository : IStepsRepository
         return MapToDomain(entity);
     }
 
+    public async Task<WeekStepsInfo> GetWeekInfo(int userID)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var daysToSubtract = ((int)DateTime.UtcNow.DayOfWeek + 6) % 7;
+        var weekStart = today.AddDays(-daysToSubtract);
+        var weekEnd = weekStart.AddDays(6);
+
+        var entities = await _dbContext.DayStepsInfos
+            .Where(d => d.UserID == userID && d.Date >= weekStart && d.Date <= weekEnd)
+            .ToListAsync();
+
+        List<DayStepsInfo> dayStepsInfos = entities.Select(MapToDomain).ToList();
+        int totalSteps = dayStepsInfos.Sum(d => d.StepsCount);
+        DayStepsInfo bestDay = dayStepsInfos.OrderByDescending(d => d.StepsCount).First();
+
+        return new WeekStepsInfo
+        {
+            UserID = userID,
+            DayStepsInfo = dayStepsInfos,
+            TotalSteps = totalSteps,
+            BestDay = bestDay
+        };
+    }
+
     public async Task Save(DayStepsInfo dayStepsInfo)
     {
         var entity = MapToEntity(dayStepsInfo);

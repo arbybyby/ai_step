@@ -13,8 +13,9 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
+    // Use @mipmap/ic_launcher which is the default app icon
     const AndroidInitializationSettings androidInitializationSettings =
-      AndroidInitializationSettings('ic_launcher');
+      AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const DarwinInitializationSettings iosInitializationSettings =
         DarwinInitializationSettings(

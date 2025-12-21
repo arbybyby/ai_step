@@ -11,7 +11,10 @@ class StepCounterService {
   // Sensor baseline holds the sensor cumulative value that corresponds to 0 steps for today
   int? _sensorBaseline;
 
-  Future<void> init(Function(int) onStepCountChanged) async {
+  Future<void> init(Function(int) onStepCountChanged, {int initialSteps = 0}) async {
+    // Use last known steps (from storage/backend) so sensor baseline
+    // is computed relative to that value instead of resetting to 0.
+    _lastStepCount = initialSteps;
     // Request permissions for activity recognition on Android
     if (Platform.isAndroid) {
       final activityStatus = await Permission.activityRecognition.request();

@@ -7,7 +7,7 @@ import 'dart:convert';
 import '../models/step_data.dart';
 
 class StepsApiService {
-  final String baseUrl = 'https://192.168.1.81:5051';
+  final String baseUrl = 'https://192.168.1.124:5051';
   final http.Client httpClient;
 
   StepsApiService({http.Client? httpClient})
@@ -48,14 +48,23 @@ class StepsApiService {
   }
 
   Future<StepData> getCurrentDaySteps() async {
+    print('\n=== StepsApiService.getCurrentDaySteps START ===');
     final userId = await _getUserId();
     if (userId == null) {
+      print('StepsApiService.getCurrentDaySteps: ERROR - User ID not found!');
       throw Exception('User ID not found');
     }
 
     final token = await _getToken();
-    print('StepsApiService.getCurrentDaySteps: userId=$userId tokenPresent=${token.isNotEmpty}');
+    print('StepsApiService.getCurrentDaySteps: userId=$userId, tokenLength=${token.length}, tokenPresent=${token.isNotEmpty}');
+    
+    if (token.isEmpty) {
+      print('StepsApiService.getCurrentDaySteps: ERROR - Token is empty!');
+      throw Exception('No authentication token found');
+    }
 
+    print('StepsApiService.getCurrentDaySteps: Making GET request to $baseUrl/api/steps/current-day');
+    
     http.Response response;
     try {
       response = await httpClient.get(
@@ -84,12 +93,17 @@ class StepsApiService {
     }
 
     if (response.statusCode == 200) {
-      return StepData.fromJson(jsonDecode(response.body));
+      print('StepsApiService.getCurrentDaySteps: SUCCESS - status=200, body=${response.body}');
+      final data = StepData.fromJson(jsonDecode(response.body));
+      print('=== StepsApiService.getCurrentDaySteps END ===\n');
+      return data;
     } else if (response.statusCode == 401) {
-      print('StepsApiService.getCurrentDaySteps: 401 response body: ${response.body}');
+      print('StepsApiService.getCurrentDaySteps: ERROR 401 Unauthorized - body: ${response.body}');
+      print('=== StepsApiService.getCurrentDaySteps END ===\n');
       throw Exception('Unauthorized');
     } else {
-      print('StepsApiService.getCurrentDaySteps: failed status=${response.statusCode} body=${response.body}');
+      print('StepsApiService.getCurrentDaySteps: ERROR status=${response.statusCode} body=${response.body}');
+      print('=== StepsApiService.getCurrentDaySteps END ===\n');
       throw Exception('Failed to fetch steps: ${response.statusCode}');
     }
   }
@@ -166,12 +180,12 @@ class StepsApiService {
 
   Future<String> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    // support different token key names
-    final token = prefs.getString('auth_token') ?? prefs.getString('accessToken') ?? prefs.getString('access_token') ?? '';
+    // support different token key names (try many common variants)
+    final token = prefs.getString('auth_token') ?? prefs.getString('accessToken') ?? prefs.getString('access_token') ?? prefs.getString('token') ?? prefs.getString('access') ?? '';
     print('StepsApiService._getToken: Retrieved token (length=${token.length}, isEmpty=${token.isEmpty})');
     if (token.isEmpty) {
       print('StepsApiService._getToken: WARNING - No token found in SharedPreferences!');
-      print('StepsApiService._getToken: Checked keys: auth_token, accessToken, access_token');
+      print('StepsApiService._getToken: Checked keys: auth_token, accessToken, access_token, token, access');
     }
     return token;
   }

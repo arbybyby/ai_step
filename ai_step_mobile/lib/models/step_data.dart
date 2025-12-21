@@ -10,8 +10,10 @@ class StepData {
   });
 
   factory StepData.fromJson(Map<String, dynamic> json) {
+    // Handle both userId and userID (backend sends userID with capital ID)
+    final uid = json['userId'] ?? json['userID'] ?? json['id'];
     return StepData(
-      userId: json['userId'] as int,
+      userId: uid is int ? uid : int.parse(uid.toString()),
       date: json['date'] as String,
       stepsCount: json['stepsCount'] as int,
     );

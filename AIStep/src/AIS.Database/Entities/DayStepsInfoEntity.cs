@@ -11,5 +11,5 @@ public class DayStepsInfoEntity
 
     public DateOnly Date { get; set; }
 
-    public long StepsCount { get; set; }
+    public int StepsCount { get; set; }
 }

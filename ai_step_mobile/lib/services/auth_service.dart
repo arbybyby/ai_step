@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   // Update this to your real API base URL
-  static const String baseUrl = 'https://192.168.1.81:5051';
+  static const String baseUrl = 'https://192.168.1.124:5051';
 
   // Create HTTP client that accepts self-signed certificates
   static http.Client _getHttpClient() {
@@ -72,26 +72,30 @@ class AuthService {
   static Future<http.Response> login({required String email, required String password}) async {
     final uri = Uri.parse('$baseUrl/api/auth/login');
     final body = jsonEncode({'email': email, 'password': password});
-    print('Sending request to: $uri');
-    print('Request body: $body');
+    print('\n=== AuthService.login START ===');
+    print('AuthService.login: Sending request to: $uri');
     try {
       final client = _getHttpClient();
       final response = await client.post(uri, headers: {'Content-Type': 'application/json'}, body: body);
-      print('Response received - Status: ${response.statusCode}');
+      print('AuthService.login: Response received - Status: ${response.statusCode}');
+      print('AuthService.login: Response body: ${response.body}');
       // If login succeeded, try to extract and persist tokens from response body
       if ((response.statusCode == 200 || response.statusCode == 201) && response.body.isNotEmpty) {
         try {
           final decoded = response.body.startsWith('{') ? jsonDecode(response.body) : null;
           if (decoded != null) {
+            print('AuthService.login: Decoded response keys: ${decoded.keys.toList()}');
             await _saveTokensFromBody(decoded);
           }
         } catch (e) {
-          print('Failed to parse/save tokens: $e');
+          print('AuthService.login: Failed to parse/save tokens: $e');
         }
       }
+      print('=== AuthService.login END ===\n');
       return response;
     } catch (e) {
-      print('Request failed: $e');
+      print('AuthService.login: Request failed: $e');
+      print('=== AuthService.login END ===\n');
       rethrow;
     }
   }
@@ -153,8 +157,8 @@ class AuthService {
       String? accessExp;
       String? refreshExp;
 
-      // Try different key name variants
-      access = maybeTokens['accessToken']?.toString() ?? maybeTokens['AccessToken']?.toString() ?? map['accessToken']?.toString() ?? map['AccessToken']?.toString();
+      // Try different key name variants, and include common short keys like 'token' or 'access_token'
+      access = maybeTokens['accessToken']?.toString() ?? maybeTokens['AccessToken']?.toString() ?? maybeTokens['token']?.toString() ?? maybeTokens['access_token']?.toString() ?? map['accessToken']?.toString() ?? map['AccessToken']?.toString() ?? map['token']?.toString() ?? map['access_token']?.toString();
       refresh = maybeTokens['refreshToken']?.toString() ?? maybeTokens['RefreshToken']?.toString() ?? map['refreshToken']?.toString() ?? map['RefreshToken']?.toString();
       accessExp = maybeTokens['accessTokenExpiration']?.toString() ?? maybeTokens['AccessTokenExpiration']?.toString() ?? map['accessTokenExpiration']?.toString() ?? map['AccessTokenExpiration']?.toString();
       refreshExp = maybeTokens['refreshTokenExpiration']?.toString() ?? maybeTokens['RefreshTokenExpiration']?.toString() ?? map['refreshTokenExpiration']?.toString() ?? map['RefreshTokenExpiration']?.toString();
@@ -164,8 +168,10 @@ class AuthService {
       if (access != null) {
         print('AuthService._saveTokensFromBody: Saving accessToken (length=${access.length})');
         await sp.setString('accessToken', access);
+        // also save under common alternate key for compatibility
+        await sp.setString('auth_token', access);
         saved = true;
-        print('AuthService._saveTokensFromBody: accessToken saved successfully');
+        print('AuthService._saveTokensFromBody: accessToken saved successfully (also saved as auth_token)');
       } else {
         print('AuthService._saveTokensFromBody: WARNING - No access token found in response');
       }
@@ -182,6 +188,25 @@ class AuthService {
       if (refreshExp != null) {
         await sp.setString('refreshTokenExpiration', refreshExp);
         saved = true;
+      }
+      // If response included user id, persist it for StepsApiService._getUserId
+      try {
+        if (map.containsKey('userId')) {
+          final uid = map['userId']?.toString();
+          if (uid != null && uid.isNotEmpty) {
+            await sp.setString('user_id', uid);
+            print('AuthService._saveTokensFromBody: saved user_id=$uid');
+          }
+        }
+        if (map.containsKey('id')) {
+          final uid = map['id']?.toString();
+          if (uid != null && uid.isNotEmpty) {
+            await sp.setString('user_id', uid);
+            print('AuthService._saveTokensFromBody: saved user_id (from id)=$uid');
+          }
+        }
+      } catch (e) {
+        print('AuthService._saveTokensFromBody: failed to save user id: $e');
       }
       if (saved) {
         print('AuthService._saveTokensFromBody: Tokens saved to SharedPreferences');

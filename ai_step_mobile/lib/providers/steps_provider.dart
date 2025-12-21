@@ -32,44 +32,64 @@ class CurrentDayStepsNotifier extends StateNotifier<AsyncValue<StepData?>> {
       : super(const AsyncValue.loading());
 
   Future<void> fetchCurrentDaySteps() async {
+    print('\n=== CurrentDayStepsNotifier.fetchCurrentDaySteps START ===');
     state = const AsyncValue.loading();
     try {
+      print('fetchCurrentDaySteps: Calling _apiService.getCurrentDaySteps()...');
       final apiData = await _apiService.getCurrentDaySteps();
+      print('fetchCurrentDaySteps: API returned: userId=${apiData.userId}, date=${apiData.date}, stepsCount=${apiData.stepsCount}');
+      
+      print('fetchCurrentDaySteps: Getting local data...');
       final localData = await _storageService.getCurrentDaySteps();
+      print('fetchCurrentDaySteps: Local data: ${localData?.stepsCount ?? "null"}');
 
       if (localData != null && localData.stepsCount > apiData.stepsCount) {
+        print('fetchCurrentDaySteps: Local has more steps (${localData.stepsCount} > ${apiData.stepsCount}), pushing to backend');
         // local has more steps -> try to push to backend, but don't overwrite local
         try {
           await _apiService.saveSteps(localData.stepsCount);
           await _storageService.setLastSyncTime(DateTime.now());
           await _storageService.clearSyncQueue();
+          print('fetchCurrentDaySteps: Pushed local steps to backend successfully');
         } catch (e) {
+          print('fetchCurrentDaySteps: Failed to push local steps: $e');
           // queue for later if push fails
           await _storageService.addToSyncQueue(localData.stepsCount);
         }
         state = AsyncValue.data(localData);
       } else {
+        print('fetchCurrentDaySteps: Backend has equal or more steps, updating local');
         // backend has equal or more steps -> update local storage and state
         await _storageService.saveCurrentDaySteps(apiData);
         state = AsyncValue.data(apiData);
+        print('fetchCurrentDaySteps: State updated with backend data: ${apiData.stepsCount} steps');
       }
     } catch (e, st) {
+      print('fetchCurrentDaySteps: ERROR: $e');
+      print('fetchCurrentDaySteps: StackTrace: $st');
       // Try to get from cache on error
       final cached = await _storageService.getCurrentDaySteps();
       if (cached != null) {
+        print('fetchCurrentDaySteps: Using cached data: ${cached.stepsCount} steps');
         state = AsyncValue.data(cached);
       } else {
+        print('fetchCurrentDaySteps: No cached data, setting error state');
         state = AsyncValue.error(e, st);
       }
     }
+    print('=== CurrentDayStepsNotifier.fetchCurrentDaySteps END ===\n');
   }
 
   Future<void> updateSteps(int steps) async {
+    print('CurrentDayStepsNotifier.updateSteps: Updating to $steps steps');
     final currentState = state;
     if (currentState is AsyncData && currentState.value != null) {
       final updated = currentState.value!.copyWith(stepsCount: steps);
       await _storageService.saveCurrentDaySteps(updated);
       state = AsyncValue.data(updated);
+      print('CurrentDayStepsNotifier.updateSteps: State updated and saved locally');
+    } else {
+      print('CurrentDayStepsNotifier.updateSteps: Current state is not AsyncData or value is null');
     }
   }
 
