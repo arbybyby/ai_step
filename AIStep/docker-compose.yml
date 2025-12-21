@@ -1,0 +1,19 @@
+services:
+  ais.appapi:
+    image: ${DOCKER_REGISTRY-}aisappapi
+    build:
+      context: .
+      dockerfile: src/AIS.AppAPI/Dockerfile
+    environment:
+      - Email__SmtpHost=mailhog
+      - Email__SmtpPort=1025
+      - Email__From=noreply@ais.local
+      - Email__Password=
+    depends_on:
+      - mailhog
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"  # SMTP server
+      - "8025:8025"  # Web UI
