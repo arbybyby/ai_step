@@ -18,6 +18,8 @@ public class AppDBContext : DbContext
 
     public DbSet<DayStepsInfoEntity> DayStepsInfos { get; set; }
 
+    public DbSet<WaterInfoEntity> WaterInfos { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

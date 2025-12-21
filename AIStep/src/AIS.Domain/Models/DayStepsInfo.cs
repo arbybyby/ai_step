@@ -9,4 +9,6 @@ public class DayStepsInfo
     public DateOnly Date { get; set; }
 
     public int StepsCount { get; set; }
+
+    public double DistanceKM { get; set; }
 }

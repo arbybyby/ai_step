@@ -16,7 +16,7 @@ public class StepsRepository : IStepsRepository
         _dbContext = dbContext;
     }
 
-    public async Task<DayStepsInfo> GetDayInfo(int userID, DateOnly date)
+    public async Task<DayStepsInfo> GetDayInfoAsync(int userID, DateOnly date)
     {
         var entity = await _dbContext.DayStepsInfos.FirstOrDefaultAsync(d => d.UserID == userID && d.Date == date);
 
@@ -28,7 +28,7 @@ public class StepsRepository : IStepsRepository
         return MapToDomain(entity);
     }
 
-    public async Task<WeekStepsInfo> GetWeekInfo(int userID)
+    public async Task<WeekStepsInfo> GetWeekInfoAsync(int userID)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var daysToSubtract = ((int)DateTime.UtcNow.DayOfWeek + 6) % 7;
@@ -52,7 +52,7 @@ public class StepsRepository : IStepsRepository
         };
     }
 
-    public async Task Save(DayStepsInfo dayStepsInfo)
+    public async Task SaveAsync(DayStepsInfo dayStepsInfo)
     {
         var entity = MapToEntity(dayStepsInfo);
         
@@ -80,6 +80,7 @@ public class StepsRepository : IStepsRepository
             UserID = dayStepsInfoEntity.UserID,
             Date = dayStepsInfoEntity.Date,
             StepsCount = dayStepsInfoEntity.StepsCount,
+            DistanceKM = dayStepsInfoEntity.DistanceKM
         };
     }
 
@@ -91,6 +92,7 @@ public class StepsRepository : IStepsRepository
             UserID = dayStepsInfo.UserID,
             Date = dayStepsInfo.Date,
             StepsCount = dayStepsInfo.StepsCount,
+            DistanceKM = dayStepsInfo.DistanceKM
         };
     }
 }

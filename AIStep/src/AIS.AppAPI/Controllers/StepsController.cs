@@ -2,7 +2,7 @@
 
 using AIS.Domain.Exceptions;
 using AIS.Domain.Models;
-using AIS.Domain.Repositories;
+using AIS.Domain.Services;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,20 +14,20 @@ namespace AIS.AppAPI.Controllers;
 [Authorize]
 public class StepsController : ControllerBase
 {
-    private readonly IStepsRepository _stepsRepository;
+    private readonly StepsService _stepsService;
     private readonly ILogger<StepsController> _logger;
 
-    public StepsController(IStepsRepository stepsRepository, ILogger<StepsController> logger)
+    public StepsController(StepsService stepsService, ILogger<StepsController> logger)
     {
-        _stepsRepository = stepsRepository;
         _logger = logger;
+        _stepsService = stepsService;
     }
 
     [HttpGet("current-day")]
     public async Task<IActionResult> GetDayStepsInfoAsync()
     {
         var idValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrWhiteSpace(idValue) || !int.TryParse(idValue, out int userId))
+        if (string.IsNullOrWhiteSpace(idValue) || !int.TryParse(idValue, out int userID))
         {
             _logger.LogWarning("User id claim missing or invalid. Claim value: {ClaimValue}", idValue);
             return Unauthorized();
@@ -35,7 +35,7 @@ public class StepsController : ControllerBase
 
         try
         {
-            DayStepsInfo result = await _stepsRepository.GetDayInfo(userId, DateOnly.FromDateTime(DateTime.Now));
+            DayStepsInfo result = await _stepsService.GetDayStepsInfoAsync(userID);
             return Ok(result);
         }
         catch (DayStepsNotFoundException ex)
@@ -54,7 +54,7 @@ public class StepsController : ControllerBase
     public async Task<IActionResult> SaveDayInfo(int steps)
     {
         var idValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrWhiteSpace(idValue) || !int.TryParse(idValue, out int userId))
+        if (string.IsNullOrWhiteSpace(idValue) || !int.TryParse(idValue, out int userID))
         {
             _logger.LogWarning("User id claim missing or invalid. Claim value: {ClaimValue}", idValue);
             return Unauthorized();
@@ -62,15 +62,9 @@ public class StepsController : ControllerBase
 
         try
         {
-            _logger.LogInformation("Saving day steps info for user {UserId} with {Steps} steps.", userId, steps);
-            var dayStepsInfo = new DayStepsInfo()
-            {
-                UserID = userId,
-                StepsCount = steps,
-                Date = DateOnly.FromDateTime(DateTime.Now)
-            };
+            _logger.LogInformation("Saving day steps info for user {UserId} with {Steps} steps.", userID, steps);
 
-            await _stepsRepository.Save(dayStepsInfo);
+            await _stepsService.SaveAsync(userID, steps);
 
             return Ok();
         }

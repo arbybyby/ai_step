@@ -6,7 +6,7 @@ public interface IWaterTrackerRepository
 {
     public Task Save(WaterInfo waterInfo);
 
-    public Task<WaterInfo> Get(int userId);
+    public Task<WaterInfo?> Get(int userId);
 
     public Task Update(WaterInfo waterInfo);
 }

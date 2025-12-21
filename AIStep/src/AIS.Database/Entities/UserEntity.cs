@@ -15,6 +15,10 @@ public class UserEntity
 
     public string PasswordHash { get; set; } = null!;
 
+    public double HeightCm { get; set; }
+
+    public double WeightKg { get; set; }
+
     public bool IsVerified { get; set; }
 
     public DateTime CreatedAt { get; set; }

@@ -4,9 +4,9 @@ namespace AIS.Domain.Repositories;
 
 public interface IStepsRepository
 {
-    public Task<DayStepsInfo> GetDayInfo(int userID, DateOnly date);
+    public Task<DayStepsInfo> GetDayInfoAsync(int userID, DateOnly date);
 
-    public Task<WeekStepsInfo> GetWeekInfo(int userID);
+    public Task<WeekStepsInfo> GetWeekInfoAsync(int userID);
 
-    public Task Save(DayStepsInfo dayStepsInfo);
+    public Task SaveAsync(DayStepsInfo dayStepsInfo);
 }

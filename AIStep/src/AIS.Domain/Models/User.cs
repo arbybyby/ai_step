@@ -10,6 +10,10 @@ public class User
 
     public string LastName { get; set; } = string.Empty;
 
+    public double HeightCm { get; set; }
+
+    public double WeightKg { get; set; }
+
     public bool IsVerified { get; set; }
 
     public DateTime CreatedAt { get; set; }

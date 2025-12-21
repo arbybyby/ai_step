@@ -47,7 +47,10 @@ public class UserRepository : IUserRepository
             entity.FirstName = user.FirstName;
             entity.LastName = user.LastName;
             entity.IsVerified = user.IsVerified;
+            entity.WeightKg = user.WeightKg;
+            entity.HeightCm = user.HeightCm;
             entity.CreatedAt = user.CreatedAt;
+
             _context.Users.Update(entity);
         }
         await Task.CompletedTask;
@@ -76,6 +79,8 @@ public class UserRepository : IUserRepository
             Email = entity.Email,
             FirstName = entity.FirstName,
             LastName = entity.LastName,
+            WeightKg = entity.WeightKg,
+            HeightCm = entity.HeightCm,
             IsVerified = entity.IsVerified,
             CreatedAt = entity.CreatedAt
         };
@@ -89,6 +94,8 @@ public class UserRepository : IUserRepository
             Email = user.Email,
             FirstName = user.FirstName,
             LastName = user.LastName,
+            WeightKg = user.WeightKg,
+            HeightCm = user.HeightCm,
             IsVerified = user.IsVerified,
             CreatedAt = user.CreatedAt,
             PasswordHash = string.Empty
