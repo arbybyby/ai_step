@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/auth_service.dart';
 import '../providers/steps_provider.dart';
 import '../services/step_counter_service.dart';
 import '../services/background_sync_service.dart';
@@ -20,6 +22,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _lastSyncedSteps = 0;
   bool _goalAchieved = false;
   Timer? _syncTimer;
+  bool _isLoggingOut = false;
+  DateTime _lastManualSyncAttempt = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void initState() {
@@ -45,15 +49,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ref.read(currentDayStepsProvider.notifier).fetchCurrentDaySteps();
     }
 
-    // Set up periodic sync timer (every 1 minute)
-    _syncTimer = Timer.periodic(const Duration(minutes: 1), (_) async {
+    // Set up frequent periodic sync timer (every 15 seconds)
+    _syncTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
+      print('HomeScreen: Sync timer triggered. Current: $_currentSteps, LastSynced: $_lastSyncedSteps');
       if (mounted && _currentSteps > _lastSyncedSteps) {
+        print('HomeScreen: Attempting sync...');
         await _syncSteps();
+      } else {
+        print('HomeScreen: No sync needed - steps already synced or no new steps');
       }
     });
   }
 
   void _onStepCountChanged(int steps) {
+    print('HomeScreen._onStepCountChanged: Steps changed to $steps (previous: $_currentSteps)');
     setState(() {
       _currentSteps = steps;
     });
@@ -67,16 +76,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     // Update steps in provider
     ref.read(currentDayStepsProvider.notifier).updateSteps(steps);
+
+    // Attempt an immediate sync if we have a significant increase,
+    // but throttle to avoid spamming sync calls.
+    final now = DateTime.now();
+    final stepsDiff = steps - _lastSyncedSteps;
+    if (stepsDiff >= 10 && now.difference(_lastManualSyncAttempt) > const Duration(seconds: 30)) {
+      print('HomeScreen._onStepCountChanged: Triggering immediate sync (diff: $stepsDiff)');
+      _lastManualSyncAttempt = now;
+      _syncSteps();
+    }
   }
 
   Future<void> _syncSteps() async {
+    print('HomeScreen._syncSteps: Syncing $_currentSteps steps');
     try {
       await ref.read(currentDayStepsProvider.notifier).syncSteps(_currentSteps);
       setState(() {
         _lastSyncedSteps = _currentSteps;
       });
+      print('HomeScreen._syncSteps: Sync successful, lastSyncedSteps updated to $_lastSyncedSteps');
     } catch (e) {
+      print('HomeScreen._syncSteps: Sync failed: $e');
       NotificationService().showSyncErrorNotification();
+      // Don't update _lastSyncedSteps on failure, will retry on next timer tick
     }
   }
 
@@ -111,6 +134,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: const Icon(Icons.refresh),
             onPressed: _manualSync,
             tooltip: 'Sync now',
+          ),
+          IconButton(
+            icon: _isLoggingOut ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.logout),
+            onPressed: _isLoggingOut ? null : _onLogoutPressed,
+            tooltip: 'Logout',
           ),
         ],
       ),
@@ -163,6 +191,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _onLogoutPressed() async {
+    if (_isLoggingOut) return;
+    setState(() => _isLoggingOut = true);
+    try {
+      await AuthService.logout();
+      final sp = await SharedPreferences.getInstance();
+      await sp.setBool('isLoggedIn', false);
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed('/signin');
+    } catch (e) {
+      print('HomeScreen._onLogoutPressed: logout failed: $e');
+      if (!mounted) return;
+      await showDialog<void>(context: context, builder: (ctx) => AlertDialog(title: const Text('Logout failed'), content: Text('Could not logout: $e'), actions: [TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('OK'))]));
+    } finally {
+      if (mounted) setState(() => _isLoggingOut = false);
+    }
   }
 
   Widget _buildStepsDisplay(int goal) {

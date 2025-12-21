@@ -1,146 +1,68 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:pedometer/pedometer.dart';
 
 class StepCounterService {
-  late StreamSubscription? _stepCountSubscription;
+  StreamSubscription<StepCount>? _stepCountSubscription;
   int _lastStepCount = 0;
-  Timer? _pollingTimer;
-  final Health _health = Health();
   bool _isInitialized = false;
 
+  // Sensor baseline holds the sensor cumulative value that corresponds to 0 steps for today
+  int? _sensorBaseline;
+
   Future<void> init(Function(int) onStepCountChanged) async {
-    // First, request Android activity recognition permission
+    // Request permissions for activity recognition on Android
     if (Platform.isAndroid) {
       final activityStatus = await Permission.activityRecognition.request();
       print('Activity recognition permission: $activityStatus');
-      
       if (!activityStatus.isGranted) {
         print('Activity recognition permission not granted');
-        // Continue anyway, Health Connect might still work
       }
     }
-    
-    // Configure the health plugin
-    await _health.configure();
-    
-    // Define step types to request
-    final types = [HealthDataType.STEPS];
-    
-    // Request permissions - on Android this requires Health Connect
+
+    // Try to subscribe to the device pedometer sensor first
     try {
-      // Check if Health Connect is available (Android 14+) or installed
-      if (Platform.isAndroid) {
-        final status = await _health.getHealthConnectSdkStatus();
-        print('Health Connect SDK status: $status');
-        
-        if (status == HealthConnectSdkStatus.sdkUnavailable) {
-          print('Health Connect SDK is not available on this device');
-          // You need to install Health Connect from Play Store
-        }
-        
-        // Install Health Connect if needed
-        if (status == HealthConnectSdkStatus.sdkUnavailableProviderUpdateRequired) {
-          print('Health Connect needs to be updated');
-          await _health.installHealthConnect();
-          return;
-        }
-      }
-      
-      // Request authorization with read permissions
-      final hasPermissions = await _health.hasPermissions(types);
-      print('Has health permissions: $hasPermissions');
-      
-      if (hasPermissions != true) {
-        final authorized = await _health.requestAuthorization(
-          types,
-          permissions: [HealthDataAccess.READ],
-        );
-        print('Health authorization result: $authorized');
-        
-        if (!authorized) {
-          print('Health permissions not granted');
-          return;
-        }
-      }
-      
+      _stepCountSubscription = Pedometer.stepCountStream.listen(
+        (StepCount event) async {
+          await _handleSensorStep(event, onStepCountChanged);
+        },
+        onError: (error) {
+          print('Pedometer stream error: $error');
+        },
+        cancelOnError: false,
+      );
+
       _isInitialized = true;
-      print('StepCounterService initialized successfully');
-    } catch (e, stackTrace) {
-      print('Permission request error: $e');
-      print('Stack trace: $stackTrace');
+      print('StepCounterService: using device pedometer sensor');
+    } catch (e) {
+      print('Failed to initialize pedometer: $e');
+      _isInitialized = false;
     }
 
-    // Poll for step data every 10 seconds
-    _pollingTimer = Timer.periodic(Duration(seconds: 10), (_) async {
-      await _updateStepCount(onStepCountChanged);
-    });
-
-    // Initial fetch
-    await _updateStepCount(onStepCountChanged);
+    // No Health/Health Connect integration needed — app counts steps itself via sensor
   }
 
-  Future<void> _updateStepCount(Function(int) onStepCountChanged) async {
-    if (!_isInitialized) {
-      print('StepCounterService not initialized, skipping update');
-      return;
-    }
-    
-    try {
-      final now = DateTime.now();
-      final startOfDay = DateTime(now.year, now.month, now.day);
-      
-      print('Fetching steps from $startOfDay to $now');
-      
-      // Use getTotalStepsInInterval for a simpler approach
-      final totalSteps = await _health.getTotalStepsInInterval(startOfDay, now);
-      
-      print('Total steps fetched: $totalSteps');
+  Future<void> _handleSensorStep(StepCount event, Function(int) onStepCountChanged) async {
+    final sensorSteps = event.steps;
 
-      if (totalSteps != null && totalSteps != _lastStepCount) {
-        _lastStepCount = totalSteps;
-        onStepCountChanged(totalSteps);
-        print('Step count updated: $totalSteps');
-      } else if (totalSteps == null) {
-        print('No step data available. Make sure Health Connect is connected and has step data.');
-        
-        // Try alternative method: fetch health data points directly
-        try {
-          final healthData = await _health.getHealthDataFromTypes(
-            types: [HealthDataType.STEPS],
-            startTime: startOfDay,
-            endTime: now,
-          );
-          
-          print('Health data points found: ${healthData.length}');
-          
-          if (healthData.isNotEmpty) {
-            // Sum all step data
-            int steps = 0;
-            for (var point in healthData) {
-              if (point.value is NumericHealthValue) {
-                steps += (point.value as NumericHealthValue).numericValue.toInt();
-              }
-            }
-            print('Calculated steps from health data: $steps');
-            if (steps > 0 && steps != _lastStepCount) {
-              _lastStepCount = steps;
-              onStepCountChanged(steps);
-            }
-          }
-        } catch (e) {
-          print('Alternative step fetch error: $e');
-        }
-      }
-    } catch (e, stackTrace) {
-      print('Step count error: $e');
-      print('Stack trace: $stackTrace');
+    if (_sensorBaseline == null) {
+      // Compute baseline using last known step count — no Health integration
+      _sensorBaseline = sensorSteps - _lastStepCount;
+      print('Computed sensor baseline (no health): $_sensorBaseline');
+    }
+
+    final calculated = (_sensorBaseline != null) ? sensorSteps - _sensorBaseline! : sensorSteps;
+
+    if (calculated != _lastStepCount) {
+      _lastStepCount = calculated;
+      onStepCountChanged(calculated);
+      print('Sensor step update: $calculated');
     }
   }
+
 
   void dispose() {
-    _pollingTimer?.cancel();
     _stepCountSubscription?.cancel();
   }
 

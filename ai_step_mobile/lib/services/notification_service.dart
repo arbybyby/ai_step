@@ -14,7 +14,7 @@ class NotificationService {
 
   Future<void> init() async {
     const AndroidInitializationSettings androidInitializationSettings =
-        AndroidInitializationSettings('app_icon');
+      AndroidInitializationSettings('ic_launcher');
 
     const DarwinInitializationSettings iosInitializationSettings =
         DarwinInitializationSettings(
@@ -50,6 +50,7 @@ class NotificationService {
       channelDescription: 'Notifications for step goals',
       importance: Importance.max,
       priority: Priority.high,
+      icon: 'ic_launcher',
       showWhen: true,
     );
 
@@ -64,12 +65,16 @@ class NotificationService {
       iOS: iosNotificationDetails,
     );
 
-    await _flutterLocalNotificationsPlugin.show(
-      1,
-      '🎉 Goal Achieved!',
-      'You reached your daily goal of $steps steps!',
-      notificationDetails,
-    );
+    try {
+      await _flutterLocalNotificationsPlugin.show(
+        1,
+        '🎉 Goal Achieved!',
+        'You reached your daily goal of $steps steps!',
+        notificationDetails,
+      );
+    } catch (e) {
+      print('NotificationService.showGoalAchievedNotification: failed to show notification: $e');
+    }
   }
 
   Future<void> showSyncErrorNotification() async {
@@ -80,6 +85,7 @@ class NotificationService {
       channelDescription: 'Notifications for sync errors',
       importance: Importance.low,
       priority: Priority.low,
+      icon: 'ic_launcher',
     );
 
     const DarwinNotificationDetails iosNotificationDetails =
@@ -93,11 +99,15 @@ class NotificationService {
       iOS: iosNotificationDetails,
     );
 
-    await _flutterLocalNotificationsPlugin.show(
-      2,
-      'Sync Error',
-      'Failed to sync steps with server. Will retry later.',
-      notificationDetails,
-    );
+    try {
+      await _flutterLocalNotificationsPlugin.show(
+        2,
+        'Sync Error',
+        'Failed to sync steps with server. Will retry later.',
+        notificationDetails,
+      );
+    } catch (e) {
+      print('NotificationService.showSyncErrorNotification: failed to show notification: $e');
+    }
   }
 }

@@ -62,6 +62,7 @@ public class StepsController : ControllerBase
 
         try
         {
+            _logger.LogInformation("Saving day steps info for user {UserId} with {Steps} steps.", userId, steps);
             var dayStepsInfo = new DayStepsInfo()
             {
                 UserID = userId,

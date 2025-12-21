@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   // Update this to your real API base URL
-  static const String baseUrl = 'https://192.168.1.124:5051';
+  static const String baseUrl = 'https://192.168.1.81:5051';
 
   // Create HTTP client that accepts self-signed certificates
   static http.Client _getHttpClient() {
@@ -162,12 +162,18 @@ class AuthService {
       final sp = await SharedPreferences.getInstance();
       var saved = false;
       if (access != null) {
+        print('AuthService._saveTokensFromBody: Saving accessToken (length=${access.length})');
         await sp.setString('accessToken', access);
         saved = true;
+        print('AuthService._saveTokensFromBody: accessToken saved successfully');
+      } else {
+        print('AuthService._saveTokensFromBody: WARNING - No access token found in response');
       }
       if (refresh != null) {
+        print('AuthService._saveTokensFromBody: Saving refreshToken (length=${refresh.length})');
         await sp.setString('refreshToken', refresh);
         saved = true;
+        print('AuthService._saveTokensFromBody: refreshToken saved successfully');
       }
       if (accessExp != null) {
         await sp.setString('accessTokenExpiration', accessExp);
@@ -177,7 +183,11 @@ class AuthService {
         await sp.setString('refreshTokenExpiration', refreshExp);
         saved = true;
       }
-      if (saved) print('Tokens saved to SharedPreferences');
+      if (saved) {
+        print('AuthService._saveTokensFromBody: Tokens saved to SharedPreferences');
+      } else {
+        print('AuthService._saveTokensFromBody: WARNING - No tokens were saved!');
+      }
     } catch (e) {
       print('Error saving tokens: $e');
     }

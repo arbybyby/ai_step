@@ -7,6 +7,7 @@ import 'screens/signin_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
 import 'services/step_storage_service.dart';
+import 'services/background_sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,6 +15,13 @@ void main() async {
   // Initialize storage services
   final storageService = StepStorageService();
   await storageService.init();
+  // Initialize background sync (WorkManager) early so periodic tasks
+  // can be registered and survive app restarts.
+  try {
+    await BackgroundSyncService.init();
+  } catch (e) {
+    print('Failed to init BackgroundSyncService in main: $e');
+  }
   
   runApp(const ProviderScope(child: MyApp()));
 }
