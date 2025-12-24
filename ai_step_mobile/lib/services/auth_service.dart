@@ -4,10 +4,11 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'step_storage_service.dart';
 
 class AuthService {
   // Update this to your real API base URL
-  static const String baseUrl = 'https://192.168.1.124:5051';
+  static const String baseUrl = 'https://192.168.43.31:5051';
 
   // Create HTTP client that accepts self-signed certificates
   static http.Client _getHttpClient() {
@@ -229,21 +230,31 @@ class AuthService {
       final client = _getHttpClient();
       final response = await client.post(uri, headers: {'Content-Type': 'application/json'}, body: body);
       print('logout Response - Status: ${response.statusCode}, Body: ${response.body}');
-      // Clear local tokens and login flag regardless of server result to avoid stale state
-      await sp.remove('accessToken');
-      await sp.remove('refreshToken');
-      await sp.remove('accessTokenExpiration');
-      await sp.remove('refreshTokenExpiration');
-      await sp.setBool('isLoggedIn', false);
+      // Clear all SharedPreferences to remove any user-specific state
+      try {
+        await sp.clear();
+        print('AuthService.logout: SharedPreferences cleared');
+      } catch (e) {
+        print('AuthService.logout: Failed to clear SharedPreferences: $e');
+      }
+
+      // Clear local pedometer/step storage
+      try {
+        await StepStorageService().clear();
+        print('AuthService.logout: StepStorageService cleared');
+      } catch (e) {
+        print('AuthService.logout: Failed to clear StepStorageService: $e');
+      }
       return (response.statusCode == 200 || response.statusCode == 201);
     } catch (e) {
       print('Logout request failed: $e');
       try {
-        await sp.remove('accessToken');
-        await sp.remove('refreshToken');
-        await sp.remove('accessTokenExpiration');
-        await sp.remove('refreshTokenExpiration');
-        await sp.setBool('isLoggedIn', false);
+        await sp.clear();
+        print('AuthService.logout (catch): SharedPreferences cleared');
+      } catch (_) {}
+      try {
+        await StepStorageService().clear();
+        print('AuthService.logout (catch): StepStorageService cleared');
       } catch (_) {}
       return false;
     }

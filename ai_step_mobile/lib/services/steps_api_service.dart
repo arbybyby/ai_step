@@ -7,7 +7,7 @@ import 'dart:convert';
 import '../models/step_data.dart';
 
 class StepsApiService {
-  final String baseUrl = 'https://192.168.1.124:5051';
+  final String baseUrl = 'https://192.168.43.31:5051';
   final http.Client httpClient;
 
   StepsApiService({http.Client? httpClient})

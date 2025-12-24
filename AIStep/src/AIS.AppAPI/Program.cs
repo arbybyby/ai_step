@@ -49,6 +49,9 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
+// Register domain service required by StepsController
+builder.Services.AddScoped<StepsService>();
+
 // Настройка JWT аутентификации
 var jwtSecret = builder.Configuration["Jwt:Secret"]
     ?? throw new InvalidOperationException("Jwt:Secret не настроен");

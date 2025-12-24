@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../providers/steps_provider.dart';
 import '../models/step_data.dart';
 import '../services/step_counter_service.dart';
+import '../services/step_storage_service.dart';
 import '../services/background_sync_service.dart';
 import '../services/notification_service.dart';
 import 'dart:async';
@@ -556,19 +557,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     setState(() => _isLoggingOut = true);
     
     try {
+      print('HomeScreen._onLogoutPressed: Stopping sync timer and pedometer');
+      _syncTimer?.cancel();
+      try {
+        _stepCounterService.dispose();
+      } catch (e) {
+        print('HomeScreen._onLogoutPressed: Failed to dispose StepCounterService: $e');
+      }
+
+      print('HomeScreen._onLogoutPressed: Clearing local step storage');
+      try {
+        await StepStorageService().clear();
+        print('HomeScreen._onLogoutPressed: StepStorageService cleared');
+      } catch (e) {
+        print('HomeScreen._onLogoutPressed: Failed to clear StepStorageService: $e');
+      }
+
       print('HomeScreen._onLogoutPressed: Calling AuthService.logout()');
       await AuthService.logout();
       print('HomeScreen._onLogoutPressed: AuthService.logout() completed');
-      
+
       final sp = await SharedPreferences.getInstance();
-      await sp.setBool('isLoggedIn', false);
-      print('HomeScreen._onLogoutPressed: Updated SharedPreferences');
-      
+      try {
+        await sp.clear();
+        print('HomeScreen._onLogoutPressed: SharedPreferences cleared');
+      } catch (e) {
+        print('HomeScreen._onLogoutPressed: Failed to clear SharedPreferences: $e');
+      }
+
       if (!mounted) {
         print('HomeScreen._onLogoutPressed: Widget unmounted after logout');
         return;
       }
-      
+
       print('HomeScreen._onLogoutPressed: Navigating to /signin');
       Navigator.of(context).pushReplacementNamed('/signin');
     } catch (e, stackTrace) {

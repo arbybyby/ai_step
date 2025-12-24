@@ -114,8 +114,20 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() => _isLoggingOut = true);
     try {
       await AuthService.logout();
+      // Ensure local storage and prefs cleared
+      try {
+        await StepStorageService().clear();
+        print('main._onLogoutPressed: StepStorageService cleared');
+      } catch (e) {
+        print('main._onLogoutPressed: Failed to clear StepStorageService: $e');
+      }
       final sp = await SharedPreferences.getInstance();
-      await sp.setBool('isLoggedIn', false);
+      try {
+        await sp.clear();
+        print('main._onLogoutPressed: SharedPreferences cleared');
+      } catch (e) {
+        print('main._onLogoutPressed: Failed to clear SharedPreferences: $e');
+      }
       // Navigate to sign-in regardless of server response
       if (!mounted) return;
       Navigator.of(context).pushReplacementNamed('/signin');
