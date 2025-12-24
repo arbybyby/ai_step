@@ -7,7 +7,6 @@ public class AppDBContext : DbContext
 {
     public AppDBContext(DbContextOptions<AppDBContext> options) : base(options)
     {
-        Database.EnsureCreated();
     }
 
     public DbSet<UserEntity> Users { get; set; }

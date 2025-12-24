@@ -9,15 +9,16 @@ services:
       - Email__SmtpPort=1025
       - Email__From=noreply@ais.local
       - Email__Password=
-      - ASPNETCORE_URLS=https://+:5051;http://+:5050
-      - ASPNETCORE_HTTPS_PORTS=5051
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=${ASPNETCORE_Kestrel__Certificates__Default__Password:-}
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=
+      - ASPNETCORE_HTTPS_PORTS=
+      - ConnectionStrings__SQLite=Data Source=/app/data/AIStep.db
     ports:
-      - "5050:5050"
-      - "5051:5051"
+      - "8080:8080"
+      - "8081:8081"
     volumes:
-      - ~/.aspnet/https:/https:ro
+      - dataprotection-keys:/app/DataProtection-Keys
+      - ais-db:/app/data
     depends_on:
       - mailhog
 
@@ -26,3 +27,7 @@ services:
     ports:
       - "1025:1025"  # SMTP server
       - "8025:8025"  # Web UI
+
+volumes:
+  dataprotection-keys:
+  ais-db:

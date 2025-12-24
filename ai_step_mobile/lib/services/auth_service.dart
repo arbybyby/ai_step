@@ -8,7 +8,7 @@ import 'step_storage_service.dart';
 
 class AuthService {
   // Update this to your real API base URL
-  static const String baseUrl = 'https://192.168.43.31:5051';
+  static const String baseUrl = 'https://192.168.1.195:8081';
 
   // Create HTTP client that accepts self-signed certificates
   static http.Client _getHttpClient() {
