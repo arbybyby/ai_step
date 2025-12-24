@@ -9,45 +9,16 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 using System.Text;
-using System.Security.Cryptography.X509Certificates;
-using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Try to read certificate configuration
-var certPath = builder.Configuration["Kestrel:Certificates:Default:Path"]
-    ?? builder.Configuration["ASPNETCORE_Kestrel__Certificates__Default__Path"];
-var certPassword = builder.Configuration["Kestrel:Certificates:Default:Password"]
-    ?? builder.Configuration["ASPNETCORE_Kestrel__Certificates__Default__Password"];
 
 // Настройка Kestrel для HTTP и HTTPS
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenAnyIP(80); // HTTP
-    options.ListenAnyIP(443, listenOptions =>
+    options.ListenAnyIP(5050); // HTTP
+    options.ListenAnyIP(5051, listenOptions =>
     {
-        if (!string.IsNullOrEmpty(certPath) && File.Exists(certPath))
-        {
-            try
-            {
-                var certBytes = File.ReadAllBytes(certPath);
-                var cert = string.IsNullOrEmpty(certPassword)
-                    ? new X509Certificate2(certBytes)
-                    : new X509Certificate2(certBytes, certPassword);
-
-                listenOptions.UseHttps(cert);
-            }
-            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.Cryptography.CryptographicException)
-            {
-                Console.WriteLine($"Failed to load certificate at '{certPath}': {ex.Message}. Falling back to default HTTPS configuration.");
-                listenOptions.UseHttps();
-            }
-        }
-        else
-        {
-            Console.WriteLine("Certificate path not configured or file not found. Using default HTTPS configuration.");
-            listenOptions.UseHttps();
-        }
+        listenOptions.UseHttps(); // HTTPS с dev сертификатом
     });
 });
 
@@ -96,8 +67,6 @@ builder.Services.AddAuthentication(options =>
     {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-        ValidateIssuer = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidateAudience = true,
         ValidAudience = builder.Configuration["Jwt:Audience"],
         ValidateLifetime = true,
