@@ -9,6 +9,14 @@ services:
       - Email__SmtpPort=1025
       - Email__From=noreply@ais.local
       - Email__Password=
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${ASPNETCORE_Kestrel__Certificates__Default__Password:-}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certs/aspnetapp.pfx:/https/aspnetapp.pfx:ro
     depends_on:
       - mailhog
 
