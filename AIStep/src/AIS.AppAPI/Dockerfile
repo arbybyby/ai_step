@@ -7,15 +7,16 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-# Генерируем dev-сертификат для HTTPS
-RUN dotnet dev-certs https --clean && \
-    dotnet dev-certs https -ep /app/https/aspnetapp.pfx -p DevCertPassword && \
-    dotnet dev-certs https --trust
-
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+
+# Генерируем dev-сертификат для HTTPS (требует SDK)
+RUN mkdir -p /app/https && \
+    dotnet dev-certs https --clean && \
+    dotnet dev-certs https -ep /app/https/aspnetapp.pfx -p DevCertPassword && \
+    dotnet dev-certs https --trust
 COPY ["src/AIS.AppAPI/AIS.AppAPI.csproj", "src/AIS.AppAPI/"]
 COPY ["src/AIS.Domain/AIS.Domain.csproj", "src/AIS.Domain/"]
 COPY ["src/AIS.Database/AIS.Database.csproj", "src/AIS.Database/"]
@@ -33,9 +34,10 @@ RUN dotnet publish "./AIS.AppAPI.csproj" -c $BUILD_CONFIGURATION -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+COPY --from=build /app/https /app/https
 
-# Создаем директории для данных и сертификатов
-RUN mkdir -p /app/data /app/https && \
+# Создаем директории для данных
+RUN mkdir -p /app/data && \
     chown -R $APP_UID:$APP_UID /app/data /app/https
 
 USER $APP_UID
