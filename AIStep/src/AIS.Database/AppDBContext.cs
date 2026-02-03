@@ -1,12 +1,18 @@
-﻿using AIS.Database.Entities;
+﻿using AIS.Database.Configurations;
+using AIS.Database.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace AIS.Database;
 
 public class AppDBContext : DbContext
 {
-    public AppDBContext(DbContextOptions<AppDBContext> options) : base(options)
+    private readonly IConfiguration _configuration;
+
+    public AppDBContext(IConfiguration configuration)
     {
+        _configuration = configuration;
+        Database.EnsureCreated();
     }
 
     public DbSet<UserEntity> Users { get; set; }
@@ -21,26 +27,17 @@ public class AppDBContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.ApplyConfiguration(new UserConfiguration());
+        modelBuilder.ApplyConfiguration(new VerificationCodeConfiguration());
+        modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
+
         base.OnModelCreating(modelBuilder);
+    }
 
-        modelBuilder.Entity<UserEntity>(entity =>
-        {
-            entity.HasIndex(e => e.Email).IsUnique();
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
-        });
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseNpgsql(_configuration.GetConnectionString("PSQL"));
 
-        modelBuilder.Entity<VerificationCodeEntity>(entity =>
-        {
-            entity.HasIndex(e => new { e.Email, e.Code });
-        });
-
-        modelBuilder.Entity<RefreshTokenEntity>(entity =>
-        {
-            entity.HasIndex(e => e.Token);
-            entity.HasOne(e => e.User)
-                .WithMany()
-                .HasForeignKey(e => e.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
+        base.OnConfiguring(optionsBuilder);
     }
 }

@@ -5,29 +5,58 @@ services:
       context: .
       dockerfile: src/AIS.AppAPI/Dockerfile
     environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=https://+:8081;http://+:8080
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=DevCertPassword
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/app/https/aspnetapp.pfx
+      - ConnectionStrings__PSQL=Host=db;Port=5432;Database=${POSTGRES_DB-aisdb};Username=${POSTGRES_USER-aisuser};Password=${POSTGRES_PASSWORD-aispassword}
+      - ConnectionStrings__SQLite=Data Source=/app/data/AISep.db
       - Email__SmtpHost=mailhog
       - Email__SmtpPort=1025
       - Email__From=noreply@ais.local
       - Email__Password=
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=
-      - ASPNETCORE_HTTPS_PORTS=
-      - ConnectionStrings__SQLite=Data Source=/app/data/AIStep.db
+      - Jwt__Secret=${JWT_SECRET:-YourSuperSecretKeyThatIsAtLeast32CharactersLong!}
+      - Jwt__Issuer=AIS.AppAPI
+      - Jwt__Audience=AIS.Client
+      - Jwt__AccessTokenExpirationMinutes=60
+      - Jwt__RefreshTokenExpirationDays=7
     ports:
       - "8080:8080"
       - "8081:8081"
     volumes:
-      - dataprotection-keys:/app/DataProtection-Keys
       - ais-db:/app/data
     depends_on:
       - mailhog
+      - db
+    networks:
+      - ais-network
+
+  db:
+    image: postgres:15-alpine
+    container_name: ais-db
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER-aisuser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD-aispassword}
+      - POSTGRES_DB=${POSTGRES_DB-aisdb}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ais-db-data:/var/lib/postgresql/data
+    networks:
+      - ais-network
 
   mailhog:
     image: mailhog/mailhog:latest
     ports:
       - "1025:1025"  # SMTP server
       - "8025:8025"  # Web UI
+    networks:
+      - ais-network
 
 volumes:
-  dataprotection-keys:
   ais-db:
+  ais-db-data:
+
+networks:
+  ais-network:
+    driver: bridge

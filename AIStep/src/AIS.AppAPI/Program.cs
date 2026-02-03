@@ -7,18 +7,24 @@ using AIS.Domain.Repositories;
 using AIS.Domain.Services;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Настройка Data Protection для Docker
-var keysDirectory = new DirectoryInfo("/app/DataProtection-Keys");
-builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(keysDirectory)
-    .SetApplicationName("AIS.AppAPI");
+// Улучшенное логирование для Docker
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
+if (builder.Environment.IsDevelopment() || builder.Environment.EnvironmentName == "Docker")
+{
+    builder.Logging.SetMinimumLevel(LogLevel.Information);
+}
+
+var logger = LoggerFactory.Create(config => config.AddConsole()).CreateLogger("Startup");
+
+logger.LogInformation("Starting application in {Environment} environment", builder.Environment.EnvironmentName);
 
 builder.Services.AddCors(options =>
 {
@@ -32,15 +38,13 @@ builder.Services.AddCors(options =>
         });
 });
 
-// Конфигурация базы данных
-builder.Services.AddDbContext<AppDBContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("SQLite")));
-
 // Регистрация репозиториев
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IStepsRepository, StepsRepository>();
 builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+
+builder.Services.AddScoped<AppDBContext>();
 
 // Регистрация сервисов
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -51,8 +55,27 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<StepsService>();
 
 // Настройка JWT аутентификации
-var jwtSecret = builder.Configuration["Jwt:Secret"]
-    ?? throw new InvalidOperationException("Jwt:Secret не настроен");
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
+
+logger.LogInformation("JWT Configuration - Issuer: {Issuer}, Audience: {Audience}, Secret Length: {SecretLength}",
+    jwtIssuer, jwtAudience, jwtSecret?.Length ?? 0);
+
+if (string.IsNullOrEmpty(jwtSecret))
+{
+    throw new InvalidOperationException("Jwt:Secret не настроен");
+}
+
+if (string.IsNullOrEmpty(jwtIssuer))
+{
+    throw new InvalidOperationException("Jwt:Issuer не настроен");
+}
+
+if (string.IsNullOrEmpty(jwtAudience))
+{
+    throw new InvalidOperationException("Jwt:Audience не настроен");
+}
 
 builder.Services.AddAuthentication(options =>
 {
@@ -65,10 +88,43 @@ builder.Services.AddAuthentication(options =>
     {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+        ValidateIssuer = true,
+        ValidIssuer = jwtIssuer,
         ValidateAudience = true,
-        ValidAudience = builder.Configuration["Jwt:Audience"],
+        ValidAudience = jwtAudience,
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
+    };
+
+    // Добавляем логирование для отладки
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            var contextLogger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            contextLogger.LogError("Authentication failed: {Message}", context.Exception.Message);
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            var contextLogger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            contextLogger.LogInformation("Token validated for user: {User}", context.Principal?.Identity?.Name);
+            return Task.CompletedTask;
+        },
+        OnChallenge = context =>
+        {
+            var contextLogger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            contextLogger.LogWarning("Authentication challenge: {Error}, {ErrorDescription}",
+                context.Error, context.ErrorDescription);
+            return Task.CompletedTask;
+        },
+        OnMessageReceived = context =>
+        {
+            var contextLogger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+            contextLogger.LogDebug("Token received: {HasToken}", !string.IsNullOrEmpty(token));
+            return Task.CompletedTask;
+        }
     };
 });
 
@@ -77,73 +133,20 @@ builder.Services.AddAuthorization();
 // Add services to the container.
 builder.Services.AddControllers();
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Ensure database is created (creates SQLite file and tables if missing)
-using (var scope = app.Services.CreateScope())
-{
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    
-    try
-    {
-        var sqliteConn = builder.Configuration.GetConnectionString("SQLite");
-        if (!string.IsNullOrWhiteSpace(sqliteConn))
-        {
-            var sqliteBuilder = new SqliteConnectionStringBuilder(sqliteConn);
-            var dataSource = sqliteBuilder.DataSource;
-            
-            if (!string.IsNullOrEmpty(dataSource))
-            {
-                logger.LogInformation("SQLite database path: {DataSource}", dataSource);
-                
-                var dir = Path.GetDirectoryName(dataSource);
-                if (!string.IsNullOrEmpty(dir))
-                {
-                    if (!Directory.Exists(dir))
-                    {
-                        logger.LogInformation("Creating directory: {Directory}", dir);
-                        Directory.CreateDirectory(dir);
-                        logger.LogInformation("Directory created successfully");
-                    }
-                    else
-                    {
-                        logger.LogInformation("Directory already exists: {Directory}", dir);
-                    }
-                }
-                
-                // Verify directory is writable by attempting to create a test file
-                var testFile = Path.Combine(dir ?? ".", ".write-test");
-                try
-                {
-                    File.WriteAllText(testFile, "test");
-                    File.Delete(testFile);
-                    logger.LogInformation("Directory write test successful");
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Directory is not writable. Check permissions for: {Directory}", dir);
-                }
-            }
-        }
-        
-        logger.LogInformation("Ensuring database is created...");
-        var db = scope.ServiceProvider.GetRequiredService<AppDBContext>();
-        db.Database.EnsureCreated();
-        logger.LogInformation("Database created successfully");
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "Failed to create database. Application will continue but database operations may fail.");
-    }
-}
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseCors("AllowFlutterPolicy");
@@ -154,5 +157,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+logger.LogInformation("Application configured successfully");
 
 app.Run();

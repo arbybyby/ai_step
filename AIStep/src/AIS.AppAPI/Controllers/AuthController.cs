@@ -14,11 +14,13 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly IJwtService _jwtService;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService, IJwtService jwtService)
+    public AuthController(IAuthService authService, IJwtService jwtService, ILogger<AuthController> logger)
     {
         _authService = authService;
         _jwtService = jwtService;
+        _logger = logger;
     }
 
     [HttpPost("register")]
@@ -164,6 +166,8 @@ public class AuthController : ControllerBase
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var email = User.FindFirst(ClaimTypes.Email)?.Value;
+        _logger.LogInformation("Current user ID: {UserId}, Email: {Email}", userId, email);
+
 
         return Ok(new
         {

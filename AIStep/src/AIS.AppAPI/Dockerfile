@@ -7,27 +7,10 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-# Install gosu for switching users in entrypoint
-RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
-
-# Создаём директории для HTTPS сертификата и DataProtection ключей
-RUN mkdir -p /https && chmod 755 /https && \
-    mkdir -p /app/DataProtection-Keys && \
-    mkdir -p /app/data && \
-    chown -R $APP_UID:$APP_UID /app/DataProtection-Keys && \
-    chmod 700 /app/DataProtection-Keys
-
-# Create entrypoint script inline to avoid line ending issues
-RUN echo '#!/bin/bash' > /usr/local/bin/docker-entrypoint.sh && \
-    echo 'set -e' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo 'if [ -d "/app/data" ]; then' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    echo "Fixing ownership of /app/data..."' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    chown -R $APP_UID:$APP_UID /app/data' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    chmod 755 /app/data' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    echo "Permissions fixed"' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo 'fi' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo 'exec gosu $APP_UID dotnet AIS.AppAPI.dll "$@"' >> /usr/local/bin/docker-entrypoint.sh && \
-    chmod +x /usr/local/bin/docker-entrypoint.sh
+# Генерируем dev-сертификат для HTTPS
+RUN dotnet dev-certs https --clean && \
+    dotnet dev-certs https -ep /app/https/aspnetapp.pfx -p DevCertPassword && \
+    dotnet dev-certs https --trust
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
@@ -51,4 +34,9 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+# Создаем директории для данных и сертификатов
+RUN mkdir -p /app/data /app/https && \
+    chown -R $APP_UID:$APP_UID /app/data /app/https
+
+USER $APP_UID
+ENTRYPOINT ["dotnet", "AIS.AppAPI.dll"]
