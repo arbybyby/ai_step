@@ -59,17 +59,18 @@ public class WaterController : ControllerBase
             return Unauthorized();
         }
 
-        try
-        {
+        // try
+        // {
             await _waterTrackerService.AddAsync(userID, amount);
             return Ok();
-        }
-        catch (Exception)
-        {
-            return Problem(
-                detail: "An unexpected error occurred while adding water.",
-                statusCode: StatusCodes.Status500InternalServerError);
-        }
+        // }
+        // catch (Exception ex)
+        // {
+        //     _logger.LogError("Error: {Error}", ex.Message);
+        //     return Problem(
+        //         detail: "An unexpected error occurred while adding water.",
+        //         statusCode: StatusCodes.Status500InternalServerError);
+        // }
     }
 
     [HttpDelete("remove")]

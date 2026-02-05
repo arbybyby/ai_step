@@ -19,7 +19,12 @@ public class WaterTrackingRepository : IWaterTrackerRepository
     public async Task<WaterInfo?> Get(int userId)
     {
         WaterInfoEntity entity = await _appDBContext.WaterInfos
-            .FirstOrDefaultAsync(w => w.UserID == userId) ?? throw new WaterInfoNotFoundException("Water info not found");
+            .FirstOrDefaultAsync(w => w.UserID == userId);
+
+        if (entity is null)
+        {
+            return null;
+        }
 
         return MapToDomain(entity);
     }

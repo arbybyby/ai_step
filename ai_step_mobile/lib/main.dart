@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/signin_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/water_tracker_screen.dart';
 import 'services/auth_service.dart';
 import 'services/step_storage_service.dart';
 import 'services/background_sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Load environment variables from .env (optional file in project root)
+  try {
+    await dotenv.load();
+    print('Loaded .env variables: ${dotenv.env.keys.join(', ')}');
+  } catch (e) {
+    print('No .env file found or failed to load: $e');
+  }
   
   // Initialize storage services
   final storageService = StepStorageService();
@@ -39,6 +48,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/home': (context) => const HomeScreen(),
         '/home_old': (context) => const MyHomePage(title: 'AI Step'),
+        '/water': (context) => const WaterTrackerScreen(),
         '/signup': (context) => const SignUpScreen(),
         '/signin': (context) => const SignInScreen(),
       },

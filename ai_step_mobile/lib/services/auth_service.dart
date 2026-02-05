@@ -4,11 +4,23 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'step_storage_service.dart';
 
 class AuthService {
-  // Update this to your real API base URL
-  static const String baseUrl = 'https://192.168.1.195:8081';
+  // Read base URL from environment variable `API_BASE_URL` or fallback to default
+  static String get baseUrl {
+    const fallback = 'https://192.168.43.31:8081';
+    try {
+      if (dotenv.isInitialized) {
+        final v = dotenv.env['API_BASE_URL'];
+        if (v != null && v.isNotEmpty) return v;
+      }
+    } catch (e) {
+      print('AuthService.baseUrl: dotenv access failed: $e');
+    }
+    return fallback;
+  }
 
   // Create HTTP client that accepts self-signed certificates
   static http.Client _getHttpClient() {

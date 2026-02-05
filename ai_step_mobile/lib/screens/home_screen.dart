@@ -26,6 +26,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _isSyncing = false;
   bool _isLoggingOut = false;
   DateTime _lastManualSyncAttempt = DateTime.fromMillisecondsSinceEpoch(0);
+  String _displayName = '';
 
   @override
   void initState() {
@@ -141,6 +142,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         print('=== HomeScreen: Periodic sync tick END ===\n');
       }
     });
+
+      // Try to fetch user profile to display name for greeting
+      try {
+        final me = await AuthService.getMe();
+        if (mounted && me.isNotEmpty) {
+          String name = '';
+          // Prefer PascalCase properties (backend C# style)
+          final firstPascal = me['FirstName']?.toString() ?? '';
+          final lastPascal = me['LastName']?.toString() ?? '';
+          if (firstPascal.isNotEmpty || lastPascal.isNotEmpty) {
+            name = (firstPascal + (lastPascal.isNotEmpty ? ' $lastPascal' : '')).trim();
+          } else if (me['firstName'] != null && me['firstName'].toString().isNotEmpty) {
+            name = me['firstName'].toString();
+          } else if (me['name'] != null && me['name'].toString().isNotEmpty) {
+            name = me['name'].toString();
+          } else if (me['email'] != null && me['email'].toString().isNotEmpty) {
+            // fallback to email local-part
+            final email = me['email'].toString();
+            name = email.split('@').first;
+          }
+          if (name.isNotEmpty) {
+            setState(() => _displayName = name);
+          }
+        }
+      } catch (e) {
+        // ignore profile fetch errors - greeting will use generic text
+        print('HomeScreen: could not fetch profile for greeting: $e');
+      }
   }
 
   void _onStepCountChanged(int steps) {
@@ -168,6 +197,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _lastManualSyncAttempt = now;
       _syncSteps();
     }
+  }
+
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    final String greet;
+    if (hour >= 5 && hour < 12) {
+      greet = 'Good Morning';
+    } else if (hour >= 12 && hour < 18) {
+      greet = 'Good Afternoon';
+    } else {
+      greet = 'Good Evening';
+    }
+    final name = (_displayName.isNotEmpty) ? ', ${_displayName}' : '';
+    return '$greet$name!';
   }
 
   Future<void> _syncSteps() async {
@@ -239,7 +282,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Good Evening, Kirill!',
+                                _greeting(),
                                 style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white70),
                               ),
                               const SizedBox(height: 6),
@@ -307,7 +350,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       children: [
                         Expanded(child: _tileCard(icon: Icons.restaurant, title: 'Meals', subtitle: 'Track food')),
                         const SizedBox(width: 12),
-                        Expanded(child: _tileCard(icon: Icons.opacity, title: 'Water', subtitle: 'Stay hydrated')),
+                        Expanded(child: _tileCard(icon: Icons.opacity, title: 'Water', subtitle: 'Stay hydrated', onTap: () => Navigator.of(context).pushNamed('/water'))),
                       ],
                     ),
 
@@ -498,8 +541,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _tileCard({required IconData icon, required String title, required String subtitle}) {
-    return Container(
+  Widget _tileCard({required IconData icon, required String title, required String subtitle, VoidCallback? onTap}) {
+    final card = Container(
       height: 110,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 6))]),
@@ -511,6 +554,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
     );
+
+    if (onTap != null) {
+      return InkWell(onTap: onTap, borderRadius: BorderRadius.circular(16), child: card);
+    }
+    return card;
   }
 
   Widget _dailyTipCard() {

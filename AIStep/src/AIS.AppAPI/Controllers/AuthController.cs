@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 
 using System.Security.Claims;
 
+using AIS.Domain.Repositories;
+
 namespace AIS.AppAPI.Controllers;
 
 [ApiController]
@@ -14,13 +16,15 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly IJwtService _jwtService;
+    private readonly IUserRepository _userRepository;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService, IJwtService jwtService, ILogger<AuthController> logger)
+    public AuthController(IAuthService authService, IJwtService jwtService, ILogger<AuthController> logger, IUserRepository userRepository)
     {
         _authService = authService;
         _jwtService = jwtService;
         _logger = logger;
+        _userRepository = userRepository;
     }
 
     [HttpPost("register")]
@@ -162,17 +166,17 @@ public class AuthController : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public IActionResult GetCurrentUser()
+    public async Task<IActionResult> GetCurrentUser()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var email = User.FindFirst(ClaimTypes.Email)?.Value;
-        _logger.LogInformation("Current user ID: {UserId}, Email: {Email}", userId, email);
-
-
-        return Ok(new
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(userIdString) || !int.TryParse(userIdString, out int userId))
         {
-            userId,
-            email
-        });
+            return Unauthorized(new { message = "User not found" });
+        }
+
+        var user = await _userRepository.GetByIdAsync(userId);
+        _logger.LogInformation("Current user ID: {UserId}, Email: {Email}", userId, user.Email);
+
+        return Ok(user);
     }
 }

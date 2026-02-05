@@ -9,8 +9,7 @@ services:
       - ASPNETCORE_URLS=https://+:8081;http://+:8080
       - ASPNETCORE_Kestrel__Certificates__Default__Password=DevCertPassword
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/app/https/aspnetapp.pfx
-      - ConnectionStrings__PSQL=Host=db;Port=5432;Database=${POSTGRES_DB-aisdb};Username=${POSTGRES_USER-aisuser};Password=${POSTGRES_PASSWORD-aispassword}
-      - ConnectionStrings__SQLite=Data Source=/app/data/AISep.db
+      - ConnectionStrings__PSQL=Host=db;Port=5432;Database=${POSTGRES_DB:-aisdb};Username=${POSTGRES_USER:-aisuser};Password=${POSTGRES_PASSWORD:-aispassword}
       - Email__SmtpHost=mailhog
       - Email__SmtpPort=1025
       - Email__From=noreply@ais.local
@@ -35,9 +34,9 @@ services:
     image: postgres:15-alpine
     container_name: ais-db
     environment:
-      - POSTGRES_USER=${POSTGRES_USER-aisuser}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD-aispassword}
-      - POSTGRES_DB=${POSTGRES_DB-aisdb}
+      - POSTGRES_USER=${POSTGRES_USER:-aisuser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-aispassword}
+      - POSTGRES_DB=${POSTGRES_DB:-aisdb}
     ports:
       - "5432:5432"
     volumes:

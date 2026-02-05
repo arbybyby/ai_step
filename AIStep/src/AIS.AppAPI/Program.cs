@@ -41,6 +41,7 @@ builder.Services.AddCors(options =>
 // Регистрация репозиториев
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IStepsRepository, StepsRepository>();
+builder.Services.AddScoped<IWaterTrackerRepository, WaterTrackingRepository>();
 builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
@@ -50,6 +51,7 @@ builder.Services.AddScoped<AppDBContext>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<WaterTrackerService>();
 
 // Register domain service required by StepsController
 builder.Services.AddScoped<StepsService>();

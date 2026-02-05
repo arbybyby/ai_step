@@ -41,9 +41,21 @@ public class StepsService
 
     public async Task<DayStepsInfo> GetDayStepsInfoAsync(int userID)
     {
-        DayStepsInfo result = await _stepsRepository.GetDayInfoAsync(userID, DateOnly.FromDateTime(DateTime.Now));
-
-        return result;
+        try
+        {
+            DayStepsInfo result = await _stepsRepository.GetDayInfoAsync(userID, DateOnly.FromDateTime(DateTime.Now));
+            return result;
+        }
+        catch (DayStepsNotFoundException)
+        {
+            return new DayStepsInfo
+            {
+                UserID = userID,
+                Date = DateOnly.FromDateTime(DateTime.Now),
+                StepsCount = 0,
+                DistanceKM = 0.0
+            };
+        }
     }
 
     private double EstimateStrideMeters(double height, bool heightIsCm = true, double strideFactor = 0.415)
