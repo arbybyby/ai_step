@@ -9,7 +9,7 @@ services:
       - ASPNETCORE_URLS=https://+:8001;http://+:8000
       - ASPNETCORE_Kestrel__Certificates__Default__Password=DevCertPassword
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/app/https/aspnetapp.pfx
-      - ConnectionStrings__PSQL=Host=db;Port=5432;Database=${POSTGRES_DB:-aisdb};Username=${POSTGRES_USER:-aisuser};Password=${POSTGRES_PASSWORD:-aispassword}
+      - ConnectionStrings__PSQL=Host=ais.db;Port=5432;Database=${POSTGRES_DB:-aisdb};Username=${POSTGRES_USER:-aisuser};Password=${POSTGRES_PASSWORD:-aispassword}
       - Jwt__Secret=${JWT_SECRET:-YourSuperSecretKeyThatIsAtLeast32CharactersLong!}
       - Jwt__Issuer=AIS.AppAPI
       - Jwt__Audience=AIS.Client
@@ -20,8 +20,15 @@ services:
       - "8000:8000"
       - "8001:8001"
     depends_on:
-      - ais.db
-      - ais.mailhog
+      ais.db:
+        condition: service_healthy
+      ais.mailhog:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - ais-network
     restart: unless-stopped
@@ -36,11 +43,10 @@ services:
       - ASPNETCORE_URLS=https://+:8081;http://+:8080
       - ASPNETCORE_Kestrel__Certificates__Default__Password=DevCertPassword
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/app/https/aspnetapp.pfx
-      - ConnectionStrings__PSQL=Host=db;Port=5432;Database=${POSTGRES_DB:-aisdb};Username=${POSTGRES_USER:-aisuser};Password=${POSTGRES_PASSWORD:-aispassword}
-      - Email__SmtpHost=mailhog
+      - ConnectionStrings__PSQL=Host=ais.db;Port=5432;Database=${POSTGRES_DB:-aisdb};Username=${POSTGRES_USER:-aisuser};Password=${POSTGRES_PASSWORD:-aispassword}
+      - Email__SmtpHost=ais.mailhog
       - Email__SmtpPort=1025
       - Email__From=noreply@ais.local
-      - Email__Password=
       - Jwt__Secret=${JWT_SECRET:-YourSuperSecretKeyThatIsAtLeast32CharactersLong!}
       - Jwt__Issuer=AIS.AppAPI
       - Jwt__Audience=AIS.Client
@@ -49,12 +55,18 @@ services:
     ports:
       - "8080:8080"
       - "8081:8081"
-    volumes:
-      - ais-db:/app/data
     depends_on:
-      - ais.mailhog
-      - ais.db
-      - ais.rabbitmq
+      ais.db:
+        condition: service_healthy
+      ais.mailhog:
+        condition: service_healthy
+      ais.rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - ais-network
     restart: unless-stopped
@@ -70,6 +82,11 @@ services:
       - "5432:5432"
     volumes:
       - ais-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - ais-network
     restart: unless-stopped
@@ -77,8 +94,13 @@ services:
   ais.mailhog:
     image: mailhog/mailhog:latest
     ports:
-      - "1025:1025"  # SMTP server
-      - "8025:8025"  # Web UI
+      - "1025:1025"
+      - "8025:8025"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8025"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - ais-network
     restart: unless-stopped
@@ -91,20 +113,20 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
     ports:
-        - "5672:5672"
-        - "15672:15672"
+      - "5672:5672"
+      - "15672:15672"
     volumes:
-        - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-        test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
-        interval: 10s
-        timeout: 5s
-        retries: 5
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - ais-network
+    restart: unless-stopped
 
 volumes:
-  ais-db:
   ais-db-data:
   rabbitmq_data:
 
