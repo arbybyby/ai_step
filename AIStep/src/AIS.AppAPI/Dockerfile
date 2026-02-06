@@ -23,7 +23,7 @@ COPY ["src/AIS.Database/AIS.Database.csproj", "src/AIS.Database/"]
 RUN dotnet restore "./src/AIS.AppAPI/AIS.AppAPI.csproj"
 COPY . .
 WORKDIR "/src/src/AIS.AppAPI"
-RUN dotnet build "./AIS.AppAPI.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "./AIS.AppAPI.csproj" -c $BUILD_CONFIGURATION -o /app/build --no-restore
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
@@ -33,12 +33,20 @@ RUN dotnet publish "./AIS.AppAPI.csproj" -c $BUILD_CONFIGURATION -o /app/publish
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
+
+# Install dos2unix for line ending conversion
+RUN apt-get update && apt-get install -y dos2unix && rm -rf /var/lib/apt/lists/*
+
 COPY --from=publish /app/publish .
 COPY --from=build /app/https /app/https
+COPY --from=build /src/src/AIS.AppAPI/docker-entrypoint.sh ./
 
-# Создаем директории для данных
-RUN mkdir -p /app/data && \
-    chown -R $APP_UID:$APP_UID /app/data /app/https
+# Fix line endings (CRLF -> LF) and set permissions
+RUN dos2unix ./docker-entrypoint.sh && \
+    chmod +x ./docker-entrypoint.sh && \
+    ls -la ./docker-entrypoint.sh && \
+    mkdir -p /app/data && \
+    chown -R 1000:1000 /app /app/data /app/https
 
-USER $APP_UID
-ENTRYPOINT ["dotnet", "AIS.AppAPI.dll"]
+USER 1000
+ENTRYPOINT ["./docker-entrypoint.sh"]

@@ -1,4 +1,31 @@
 services:
+  ais.adminpanel:
+    image: ${DOCKER_REGISTRY-}aisadminpanel
+    build:
+      context: .
+      dockerfile: src/AIS.AdminPanel/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=https://+:8001;http://+:8000
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=DevCertPassword
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/app/https/aspnetapp.pfx
+      - ConnectionStrings__PSQL=Host=db;Port=5432;Database=${POSTGRES_DB:-aisdb};Username=${POSTGRES_USER:-aisuser};Password=${POSTGRES_PASSWORD:-aispassword}
+      - Jwt__Secret=${JWT_SECRET:-YourSuperSecretKeyThatIsAtLeast32CharactersLong!}
+      - Jwt__Issuer=AIS.AppAPI
+      - Jwt__Audience=AIS.Client
+      - Jwt__AccessTokenExpirationMinutes=60
+      - Jwt__RefreshTokenExpirationDays=7
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    depends_on:
+      - db
+      - mailhog
+    networks:
+      - ais-network
+    restart: unless-stopped 
+
   ais.appapi:
     image: ${DOCKER_REGISTRY-}aisappapi
     build:
@@ -29,6 +56,7 @@ services:
       - db
     networks:
       - ais-network
+    restart: unless-stopped
 
   db:
     image: postgres:15-alpine
@@ -43,6 +71,7 @@ services:
       - ais-db-data:/var/lib/postgresql/data
     networks:
       - ais-network
+    restart: unless-stopped
 
   mailhog:
     image: mailhog/mailhog:latest
@@ -51,6 +80,7 @@ services:
       - "8025:8025"  # Web UI
     networks:
       - ais-network
+    restart: unless-stopped
 
 volumes:
   ais-db:

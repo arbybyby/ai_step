@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Ensure /app/data directory has correct ownership for UID 1000
+# Ensure /app/data directory has correct ownership for APP_UID
 if [ -d "/app/data" ]; then
     echo "Fixing ownership of /app/data..."
     chown -R 1000:1000 /app/data
@@ -10,4 +10,4 @@ if [ -d "/app/data" ]; then
 fi
 
 # Run the application
-exec dotnet AIS.AppAPI.dll "$@"
+exec dotnet AIS.AdminPanel.dll "$@"
