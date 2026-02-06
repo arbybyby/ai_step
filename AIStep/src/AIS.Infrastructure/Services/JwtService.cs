@@ -1,4 +1,4 @@
-﻿using AIS.Database.Entities;
+﻿using AIS.Infrastructure.Entities;
 using AIS.Domain.Models;
 using AIS.Domain.Repositories;
 using AIS.Domain.Services;
@@ -11,7 +11,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace AIS.Database.Services;
+namespace AIS.Infrastructure.Services;
 
 public class JwtService : IJwtService
 {

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace AIS.Database.Entities;
+namespace AIS.Infrastructure.Entities;
 
 public class RefreshTokenEntity
 {

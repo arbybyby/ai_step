@@ -60,6 +60,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="MediatR" Version="14.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.1">
@@ -74,7 +75,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AIS.Domain\AIS.Domain.csproj" />
-    <ProjectReference Include="..\AIS.Database\AIS.Database.csproj" />
+    <ProjectReference Include="..\AIS.Infrastructure\AIS.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

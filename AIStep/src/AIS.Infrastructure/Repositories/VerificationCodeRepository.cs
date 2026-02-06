@@ -1,9 +1,10 @@
-﻿using AIS.Database.Entities;
-using AIS.Domain.Models;
+﻿using AIS.Domain.Models;
 using AIS.Domain.Repositories;
+using AIS.Infrastructure.Entities;
+
 using Microsoft.EntityFrameworkCore;
 
-namespace AIS.Database.Repositories;
+namespace AIS.Infrastructure.Repositories;
 
 public class VerificationCodeRepository : IVerificationCodeRepository
 {

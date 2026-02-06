@@ -20,11 +20,11 @@ services:
       - "8000:8000"
       - "8001:8001"
     depends_on:
-      - db
-      - mailhog
+      - ais.db
+      - ais.mailhog
     networks:
       - ais-network
-    restart: unless-stopped 
+    restart: unless-stopped
 
   ais.appapi:
     image: ${DOCKER_REGISTRY-}aisappapi
@@ -52,13 +52,14 @@ services:
     volumes:
       - ais-db:/app/data
     depends_on:
-      - mailhog
-      - db
+      - ais.mailhog
+      - ais.db
+      - ais.rabbitmq
     networks:
       - ais-network
     restart: unless-stopped
 
-  db:
+  ais.db:
     image: postgres:15-alpine
     container_name: ais-db
     environment:
@@ -73,7 +74,7 @@ services:
       - ais-network
     restart: unless-stopped
 
-  mailhog:
+  ais.mailhog:
     image: mailhog/mailhog:latest
     ports:
       - "1025:1025"  # SMTP server
@@ -82,9 +83,30 @@ services:
       - ais-network
     restart: unless-stopped
 
+  ais.rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: ais-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+    ports:
+        - "5672:5672"
+        - "15672:15672"
+    volumes:
+        - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+        test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+    networks:
+      - ais-network
+
 volumes:
   ais-db:
   ais-db-data:
+  rabbitmq_data:
 
 networks:
   ais-network:

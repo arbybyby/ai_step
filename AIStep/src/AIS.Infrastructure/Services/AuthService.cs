@@ -1,13 +1,14 @@
-﻿using AIS.Database.Entities;
-using AIS.Database.Repositories;
-using AIS.Domain.Models;
+﻿using AIS.Domain.Models;
 using AIS.Domain.Repositories;
 using AIS.Domain.Services;
 
 using System.Security.Cryptography;
 using System.Text;
 
-namespace AIS.Database.Services;
+using AIS.Infrastructure.Entities;
+using AIS.Infrastructure.Repositories;
+
+namespace AIS.Infrastructure.Services;
 
 public class AuthService : IAuthService
 {

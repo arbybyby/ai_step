@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using System.Net;
 using System.Net.Mail;
 
-namespace AIS.Database.Services;
+namespace AIS.Infrastructure.Services;
 
 public class EmailService : IEmailService
 {

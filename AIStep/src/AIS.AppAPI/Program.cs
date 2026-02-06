@@ -1,10 +1,12 @@
 ﻿using System.Text;
 
-using AIS.Database;
-using AIS.Database.Repositories;
-using AIS.Database.Services;
+using AIS.AppAPI.HostedServices;
+using AIS.Infrastructure;
+using AIS.Infrastructure.Repositories;
+using AIS.Infrastructure.Services;
 using AIS.Domain.Repositories;
 using AIS.Domain.Services;
+using AIS.Infrastructure.RabbitMQ;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -37,6 +39,14 @@ builder.Services.AddCors(options =>
                 .AllowCredentials();
         });
 });
+
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+});
+
+builder.Services.AddSingleton<RabbitConsumer>();
+builder.Services.AddHostedService<RabbitMqConsumerHostedService>();
 
 // Регистрация репозиториев
 builder.Services.AddScoped<IUserRepository, UserRepository>();

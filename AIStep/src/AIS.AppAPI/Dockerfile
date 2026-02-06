@@ -19,7 +19,7 @@ RUN mkdir -p /app/https && \
     dotnet dev-certs https --trust
 COPY ["src/AIS.AppAPI/AIS.AppAPI.csproj", "src/AIS.AppAPI/"]
 COPY ["src/AIS.Domain/AIS.Domain.csproj", "src/AIS.Domain/"]
-COPY ["src/AIS.Database/AIS.Database.csproj", "src/AIS.Database/"]
+COPY ["src/AIS.Infrastructure/AIS.Infrastructure.csproj", "src/AIS.Infrastructure/"]
 RUN dotnet restore "./src/AIS.AppAPI/AIS.AppAPI.csproj"
 COPY . .
 WORKDIR "/src/src/AIS.AppAPI"

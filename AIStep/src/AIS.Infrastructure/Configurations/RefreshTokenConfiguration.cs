@@ -1,9 +1,9 @@
-﻿using AIS.Database.Entities;
+﻿using AIS.Infrastructure.Entities;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AIS.Database.Configurations;
+namespace AIS.Infrastructure.Configurations;
 
 public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshTokenEntity>
 {

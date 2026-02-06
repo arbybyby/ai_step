@@ -7,6 +7,6 @@
   </Project>
   <Project Path="src/AIS.AdminPanel/AIS.AdminPanel.csproj" />
   <Project Path="src/AIS.AppAPI/AIS.AppAPI.csproj" />
-  <Project Path="src/AIS.Database/AIS.Database.csproj" />
   <Project Path="src/AIS.Domain/AIS.Domain.csproj" />
+  <Project Path="src/AIS.Infrastructure/AIS.Infrastructure.csproj" />
 </Solution>

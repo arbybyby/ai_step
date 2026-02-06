@@ -1,9 +1,10 @@
-﻿using AIS.Database.Configurations;
-using AIS.Database.Entities;
+﻿using AIS.Infrastructure.Configurations;
+using AIS.Infrastructure.Entities;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
-namespace AIS.Database;
+namespace AIS.Infrastructure;
 
 public class AppDBContext : DbContext
 {
