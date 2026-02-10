@@ -8,6 +8,7 @@
   <ItemGroup>
     <None Include=".env.example" />
     <None Include=".env" />
+    <None Include="USER_CREATION.md" />
     <None Include="docker-compose.override.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
     </None>

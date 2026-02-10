@@ -364,3 +364,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /src/AIS.AppAPI/appsettings.Development.json
+/src/AIS.AdminPanel/appsettings.Development.json
+

@@ -1,3 +1,5 @@
+здесь будет всякая нужная хрень
+
 чтобы зайти в базу:
 docker exec -it ais-db psql -U ais -d ais-db
 
@@ -11,9 +13,10 @@ SELECT \* FROM users; — посмотреть список созданных �
 
 рандомный челик
 
-INSERT INTO admins ("Email", "FirstName", "LastName", "PasswordHash" ) VALUES ( 'golubenkokirill@gmail.com', 'Kirill', 'Golubenko', '$2a$10$5DIZVYhksizgNamu8KfS/eWc.uNk40jJOiWJehYjg58tlyAAf1O4e');
+INSERT INTO "Users" ("Email", "FirstName", "LastName", "PasswordHash", "HeightCm", "WeightKg","IsVerified" )
+VALUES ( 'golubenkokirill@gmail.com', 'Kirill', 'Golubenko', '$2a$10$5DIZVYhksizgNamu8KfS/eWc.uNk40jJOiWJehYjg58tlyAAf1O4e', 168, 48, true);
 
-DELETE FROM admins WHERE "Email" = 'golubenkokirill@gmail.com';
+DELETE FROM "Users" WHERE "Email" = 'golubenkokirill@gmail.com';
 
 логин golubenkokirill@gmail.com
-пароль securepassword123
+пароль qweqweqwe
