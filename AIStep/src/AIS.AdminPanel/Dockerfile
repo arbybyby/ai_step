@@ -14,9 +14,18 @@ RUN mkdir -p /app/https && \
     dotnet dev-certs https -ep /app/https/aspnetapp.pfx -p DevCertPassword && \
     dotnet dev-certs https --trust
 
+# --- FIX: Copy ALL project files to allow successful restoration of dependencies ---
 COPY ["src/AIS.AdminPanel/AIS.AdminPanel.csproj", "src/AIS.AdminPanel/"]
+COPY ["src/AIS.Domain/AIS.Domain.csproj", "src/AIS.Domain/"]
+COPY ["src/AIS.Infrastructure/AIS.Infrastructure.csproj", "src/AIS.Infrastructure/"]
+
+# Restore based on the full dependency tree
 RUN dotnet restore "src/AIS.AdminPanel/AIS.AdminPanel.csproj"
+
+# Copy the rest of the source code
 COPY . .
+
+# Build the project
 WORKDIR "/src/src/AIS.AdminPanel"
 RUN dotnet build "./AIS.AdminPanel.csproj" -c $BUILD_CONFIGURATION -o /app/build --no-restore
 

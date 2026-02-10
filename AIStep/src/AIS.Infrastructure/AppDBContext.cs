@@ -1,4 +1,4 @@
-﻿using AIS.Infrastructure.Configurations;
+﻿﻿using AIS.Infrastructure.Configurations;
 using AIS.Infrastructure.Entities;
 
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +17,9 @@ public class AppDBContext : DbContext
     }
 
     public DbSet<UserEntity> Users { get; set; }
-    
+
+    public DbSet<AdminEntity> Admins { get; set; }
+
     public DbSet<VerificationCodeEntity> VerificationCodes { get; set; }
 
     public DbSet<RefreshTokenEntity> RefreshTokens { get; set; }
@@ -26,9 +28,12 @@ public class AppDBContext : DbContext
 
     public DbSet<WaterInfoEntity> WaterInfos { get; set; }
 
+    public DbSet<MealEntity> Meals { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new UserConfiguration());
+        modelBuilder.ApplyConfiguration(new AdminConfiguration());
         modelBuilder.ApplyConfiguration(new VerificationCodeConfiguration());
         modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
 

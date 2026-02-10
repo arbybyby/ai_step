@@ -4,6 +4,8 @@ services:
     build:
       context: .
       dockerfile: src/AIS.AdminPanel/Dockerfile
+    volumes:
+      - dataprotection_keys:/keys
     environment:
       - ASPNETCORE_ENVIRONMENT=Docker
       - ASPNETCORE_URLS=https://+:8001;http://+:8000
@@ -38,6 +40,8 @@ services:
     build:
       context: .
       dockerfile: src/AIS.AppAPI/Dockerfile
+    volumes:
+      - dataprotection_keys:/keys
     environment:
       - ASPNETCORE_ENVIRONMENT=Docker
       - ASPNETCORE_URLS=https://+:8081;http://+:8080
@@ -129,6 +133,7 @@ services:
 volumes:
   ais-db-data:
   rabbitmq_data:
+  dataprotection_keys:
 
 networks:
   ais-network:

@@ -1,10 +1,12 @@
-﻿namespace AIS.Domain.Models;
+﻿﻿namespace AIS.Domain.Models;
 
 public class RefreshToken
 {
     public int ID { get; set; }
 
-    public int UserId { get; set; }
+    public int? UserId { get; set; }
+
+    public int? AdminId { get; set; }
 
     public string Token { get; set; } = string.Empty;
 

@@ -1,9 +1,5 @@
-﻿using System.Text;
-using System.Text.Json;
-
-using AIS.AppAPI.Handlers;
-
-using MediatR;
+﻿using System.Text.Json;
+using System.Threading.Channels;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -15,28 +11,27 @@ namespace AIS.Infrastructure.RabbitMQ;
 
 public class RabbitConsumer
 {
-    private readonly IConfiguration _configuration;
-    private readonly IConnection _connection;
     private readonly IChannel _channel;
-    private readonly IMediator _mediator;
     private readonly ILogger<RabbitConsumer> _logger;
+    private readonly ChannelWriter<MealMessage?> _channelWriter;
 
-    public RabbitConsumer(IConfiguration configuration, IMediator mediator, ILogger<RabbitConsumer> logger)
+    public RabbitConsumer(ChannelWriter<MealMessage?> channelWriter,
+        ILogger<RabbitConsumer> logger,
+        IConfiguration configuration)
     {
-        _configuration = configuration;
-        _mediator = mediator;
         _logger = logger;
+        _channelWriter = channelWriter;
 
         ConnectionFactory connectionFactory = new()
         {
-            HostName = _configuration["Broker:Host"],
-            UserName = _configuration["Broker:User"],
-            Password = _configuration["Broker:Password"],
-            VirtualHost = _configuration["Broker:VirtualHost"],
+            HostName = configuration["Broker:Host"] ?? "localhost",
+            UserName = configuration["Broker:User"] ?? "guest",
+            Password = configuration["Broker:Password"] ?? "guest",
+            VirtualHost = configuration["Broker:VirtualHost"] ?? "/",
         };
 
-        _connection = connectionFactory.CreateConnectionAsync().Result;
-        _channel = _connection.CreateChannelAsync().Result;
+        IConnection connection = connectionFactory.CreateConnectionAsync().Result;
+        _channel = connection.CreateChannelAsync().Result;
 
         _channel.ExchangeDeclareAsync(
             exchange: "meals-exchange",
@@ -61,12 +56,9 @@ public class RabbitConsumer
         {
             try
             {
-                MealMessage meal = JsonSerializer.Deserialize<MealMessage>(ea.Body.ToArray());
+                MealMessage? meal = JsonSerializer.Deserialize<MealMessage>(ea.Body.ToArray());
 
-                _mediator.Send(new MealRequest()
-                {
-                    Message = meal.Message
-                });
+                await _channelWriter.WriteAsync(meal);
 
                 await _channel.BasicAckAsync(ea.DeliveryTag, false);
             }
@@ -84,5 +76,5 @@ public class RabbitConsumer
 
 public class MealMessage
 {
-    public string Message { get; init; }
+    public string Message { get; init; } = string.Empty;
 }

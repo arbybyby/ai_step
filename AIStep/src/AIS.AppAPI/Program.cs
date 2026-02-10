@@ -1,5 +1,6 @@
 ﻿using System.Text;
 
+using AIS.AppAPI.Extensions;
 using AIS.AppAPI.HostedServices;
 using AIS.Infrastructure;
 using AIS.Infrastructure.Repositories;
@@ -46,7 +47,8 @@ builder.Services.AddMediatR(cfg =>
 });
 
 builder.Services.AddSingleton<RabbitConsumer>();
-builder.Services.AddHostedService<RabbitMqConsumerHostedService>();
+builder.Services.AddChannelMessage();
+builder.Services.AddHostedService<MealConsumerWorker>();
 
 // Регистрация репозиториев
 builder.Services.AddScoped<IUserRepository, UserRepository>();

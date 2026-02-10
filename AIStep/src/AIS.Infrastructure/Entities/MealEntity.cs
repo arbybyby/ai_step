@@ -1,6 +1,8 @@
-﻿namespace AIS.Domain.Models;
+﻿using AIS.Domain.Models;
 
-public class Meal
+namespace AIS.Infrastructure.Entities;
+
+public class MealEntity
 {
     public int Id { get; set; }
 
@@ -19,11 +21,4 @@ public class Meal
     public float Carbs { get; set; }
 
     public float Fat { get; set; }
-}
-
-public enum MealType
-{
-    Breakfast,
-    Lunch,
-    Dinner,
 }

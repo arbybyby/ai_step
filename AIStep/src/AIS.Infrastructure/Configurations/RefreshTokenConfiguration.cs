@@ -1,5 +1,4 @@
-﻿using AIS.Infrastructure.Entities;
-
+﻿﻿using AIS.Infrastructure.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,9 +9,17 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshTokenEn
     public void Configure(EntityTypeBuilder<RefreshTokenEntity> builder)
     {
         builder.HasIndex(e => e.Token);
+
         builder.HasOne(e => e.User)
             .WithMany()
             .HasForeignKey(e => e.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
+
+        builder.HasOne(e => e.Admin)
+            .WithMany()
+            .HasForeignKey(e => e.AdminId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
     }
 }

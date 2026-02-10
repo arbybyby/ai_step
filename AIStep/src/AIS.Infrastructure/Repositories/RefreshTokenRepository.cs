@@ -1,4 +1,4 @@
-﻿using AIS.Domain.Models;
+﻿﻿using AIS.Domain.Models;
 using AIS.Domain.Repositories;
 using AIS.Infrastructure.Entities;
 
@@ -20,7 +20,7 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         var entity = await _context.RefreshTokens
             .Include(rt => rt.User)
             .FirstOrDefaultAsync(rt => rt.Token == token);
-        
+
         return entity == null ? null : MapToRefreshToken(entity);
     }
 
@@ -36,6 +36,7 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         if (entity != null)
         {
             entity.UserId = refreshToken.UserId;
+            entity.AdminId = refreshToken.AdminId;
             entity.Token = refreshToken.Token;
             entity.CreatedAt = refreshToken.CreatedAt;
             entity.ExpiresAt = refreshToken.ExpiresAt;
@@ -51,7 +52,7 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         var entities = await _context.RefreshTokens
             .Where(rt => rt.UserId == userId && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow)
             .ToListAsync();
-        
+
         return entities.Select(MapToRefreshToken).ToList();
     }
 
@@ -66,6 +67,7 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         {
             ID = entity.ID,
             UserId = entity.UserId,
+            AdminId = entity.AdminId,
             Token = entity.Token,
             CreatedAt = entity.CreatedAt,
             ExpiresAt = entity.ExpiresAt,
@@ -80,6 +82,7 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         {
             ID = token.ID,
             UserId = token.UserId,
+            AdminId = token.AdminId,
             Token = token.Token,
             CreatedAt = token.CreatedAt,
             ExpiresAt = token.ExpiresAt,
