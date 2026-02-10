@@ -2,9 +2,6 @@
   <Folder Name="/Tests/">
     <Project Path="tests/AIS.DomainTests/AIS.DomainTests.csproj" />
   </Folder>
-  <Project Path="docker-compose.dcproj">
-    <Build />
-  </Project>
   <Project Path="src/AIS.AdminPanel/AIS.AdminPanel.csproj" />
   <Project Path="src/AIS.AppAPI/AIS.AppAPI.csproj" />
   <Project Path="src/AIS.Domain/AIS.Domain.csproj" />

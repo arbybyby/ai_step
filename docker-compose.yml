@@ -1,8 +1,27 @@
 services:
+  ais.mealsapi:
+    build:
+        context: ai_step_backend/
+        dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      RABBITMQ_HOST: ais.rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
+    depends_on:
+        ais.rabbitmq:
+            condition: service_healthy
+    networks:
+      - ais-network
+    restart: unless-stopped
+
   ais.adminpanel:
     image: ${DOCKER_REGISTRY-}aisadminpanel
     build:
-      context: .
+      context: AIStep/
       dockerfile: src/AIS.AdminPanel/Dockerfile
     volumes:
       - dataprotection_keys:/keys
@@ -38,7 +57,7 @@ services:
   ais.appapi:
     image: ${DOCKER_REGISTRY-}aisappapi
     build:
-      context: .
+      context: AIStep/
       dockerfile: src/AIS.AppAPI/Dockerfile
     volumes:
       - dataprotection_keys:/keys

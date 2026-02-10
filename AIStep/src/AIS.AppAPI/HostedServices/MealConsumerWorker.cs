@@ -22,7 +22,7 @@ public class MealConsumerWorker : BackgroundService
         {
             if (meal is not null)
             {
-                Console.WriteLine(meal.Message);
+                Console.WriteLine(meal.MealName);
             }
         }
     }

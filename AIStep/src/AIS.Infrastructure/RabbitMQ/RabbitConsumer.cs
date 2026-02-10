@@ -39,13 +39,21 @@ public class RabbitConsumer
             durable: true);
 
         _channel.QueueDeclareAsync(
-            queue: "meals-queue",
+            queue: "meals.add.queue",
             durable: true,
             exclusive: false,
             autoDelete: false,
             arguments: null);
 
-        _channel.QueueBindAsync("meals-queue", "meals-exchange", "meals");
+        _channel.QueueDeclareAsync(
+            queue: "meals.delete.queue",
+            durable: true,
+            exclusive: false,
+            autoDelete: false,
+            arguments: null);
+
+        _channel.QueueBindAsync("meals.add.queue", "meals-exchange", "meals.add");
+        _channel.QueueBindAsync("meals.delete.queue", "meals-exchange", "meals.delete");
     }
 
     public async Task Start()
@@ -68,7 +76,7 @@ public class RabbitConsumer
             }
         };
 
-        await _channel.BasicConsumeAsync(queue: "meals-queue", autoAck: false, consumer: consumer);
+        await _channel.BasicConsumeAsync(queue: "meals.add.queue", autoAck: false, consumer: consumer);
 
         await Task.CompletedTask;
     }
@@ -76,5 +84,19 @@ public class RabbitConsumer
 
 public class MealMessage
 {
-    public string Message { get; init; } = string.Empty;
+    public int UserID { get; init; }
+
+    public string MealName { get; init; }
+
+    public string MealType { get; init; }
+
+    public float Grammes { get; init; }
+
+    public float Calories { get; init; }
+
+    public float Protein { get; init; }
+
+    public float Carbs { get; init; }
+
+    public float Fats { get; init; }
 }
