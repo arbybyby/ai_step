@@ -1,4 +1,5 @@
 using System.Text;
+using AIS.AdminPanel.Services;
 using AIS.Domain.Repositories;
 using AIS.Domain.Services;
 using AIS.Infrastructure;
@@ -53,10 +54,14 @@ builder.Services.AddScoped<AppDBContext>();
 builder.Services.AddScoped<IAdminRepository, AdminRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IMealRepository, MealRepository>();
 
 // Register Domain services
 builder.Services.AddScoped<IAdminAuthService, AdminAuthService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
+
+// Register AdminPanel services
+builder.Services.AddScoped<IMealService, MealService>();
 
 var app = builder.Build();
 

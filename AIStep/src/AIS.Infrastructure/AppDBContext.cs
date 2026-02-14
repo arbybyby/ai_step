@@ -28,6 +28,8 @@ public class AppDBContext : DbContext
 
     public DbSet<WaterInfoEntity> WaterInfos { get; set; }
 
+    public DbSet<UserMealEntity> UserMeals { get; set; }
+
     public DbSet<MealEntity> Meals { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

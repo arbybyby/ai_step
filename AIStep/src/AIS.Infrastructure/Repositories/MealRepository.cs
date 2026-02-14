@@ -18,34 +18,60 @@ public class MealRepository : IMealRepository
         _logger = logger;
     }
 
-    public async Task<List<Meal?>> GetAll(int userID)
+    public async Task<List<Meal>> GetAll()
     {
-        List<MealEntity> entities = await _context.Meals
-            .Where(m => m.UserID == userID)
-            .ToListAsync();
-
-        List<Meal?> result = entities.Select(MapToDomain).ToList();
+        List<MealEntity> entities = await _context.Meals.ToListAsync();
+        List<Meal> result = entities.Select(MapToDomain).ToList();
 
         return result;
     }
 
-    public async Task<Meal?> Get(int mealID)
+    public async Task<Meal> Get(int mealID)
     {
         MealEntity? entity = await _context.Meals.FindAsync(mealID);
-        return entity == null ? null : MapToDomain(entity);
+        if (entity == null)
+        {
+            throw new KeyNotFoundException($"Meal with ID {mealID} not found.");
+        }
+
+        return MapToDomain(entity);
     }
 
     public async Task Add(Meal meal)
     {
         MealEntity entity = MapToEntity(meal);
+
         await _context.AddAsync(entity);
         await _context.SaveChangesAsync();
     }
 
-    public async Task Remove(int mealId)
+    public async Task Remove(int mealID)
     {
-        await _context.Meals.Where(m => m.Id == mealId).ExecuteDeleteAsync();
+        await _context.Meals.Where(m => m.Id == mealID).ExecuteDeleteAsync();
         await _context.SaveChangesAsync();
+    }
+
+    public async Task Update(int mealID, Meal meal)
+    {
+        MealEntity entity = MapToEntity(meal);
+        entity.Id = mealID;
+
+         _context.Meals.Update(entity);
+        await _context.SaveChangesAsync();
+    }
+
+    private Meal MapToDomain(MealEntity entity)
+    {
+        return new Meal
+        {
+            Id = entity.Id,
+            MealName = entity.MealName,
+            MealType = entity.MealType,
+            Calories = entity.Calories,
+            Protein = entity.Protein,
+            Carbs = entity.Carbs,
+            Fat = entity.Fat
+        };
     }
 
     private MealEntity MapToEntity(Meal meal)
@@ -53,35 +79,12 @@ public class MealRepository : IMealRepository
         return new MealEntity
         {
             Id = meal.Id,
-            UserID =  meal.UserID,
+            MealName = meal.MealName,
+            MealType = meal.MealType,
             Calories = meal.Calories,
             Protein = meal.Protein,
             Carbs = meal.Carbs,
-            Fat = meal.Fat,
-            Grammes = meal.Grammes,
-            MealName = meal.MealName,
-            MealType = meal.MealType
-        };
-    }
-
-    private Meal? MapToDomain(MealEntity? meal)
-    {
-        if (meal == null)
-        {
-            return null;
-        }
-
-        return new Meal
-        {
-            Id = meal.Id,
-            UserID =  meal.UserID,
-            Calories = meal.Calories,
-            Protein = meal.Protein,
-            Carbs = meal.Carbs,
-            Fat = meal.Fat,
-            Grammes = meal.Grammes,
-            MealName = meal.MealName,
-            MealType = meal.MealType
+            Fat = meal.Fat
         };
     }
 }

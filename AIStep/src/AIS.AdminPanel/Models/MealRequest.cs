@@ -1,11 +1,9 @@
 ﻿using AIS.Domain.Models;
 
-namespace AIS.Infrastructure.Entities;
+namespace AIS.AdminPanel.Models;
 
-public class MealEntity
+public class MealRequest
 {
-    public int Id { get; set; }
-
     public string MealName { get; set; } = string.Empty;
 
     public MealType MealType { get; set; }
@@ -18,3 +16,4 @@ public class MealEntity
 
     public float Fat { get; set; }
 }
+

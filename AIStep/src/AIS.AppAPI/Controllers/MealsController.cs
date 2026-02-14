@@ -14,12 +14,22 @@ namespace AIS.AppAPI.Controllers;
 public class MealsController : ControllerBase
 {
     private readonly ILogger<MealsController> _logger;
+    private readonly IUserMealRepository _userMealRepository;
     private readonly IMealRepository _mealRepository;
 
-    public MealsController(ILogger<MealsController> logger, IMealRepository mealRepository)
+    public MealsController(IUserMealRepository userMealRepository, IMealRepository mealRepository,
+        ILogger<MealsController> logger)
     {
-        _logger = logger;
+        _userMealRepository = userMealRepository;
         _mealRepository = mealRepository;
+        _logger = logger;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllMeals()
+    {
+        List<Meal> meals = await _mealRepository.GetAll();
+        return Ok(meals);
     }
 
     [HttpGet]
@@ -32,7 +42,7 @@ public class MealsController : ControllerBase
             return Unauthorized();
         }
 
-        List<Meal?> meals = await _mealRepository.GetAll(userID);
+        List<UserMeal?> meals = await _userMealRepository.GetAll(userID);
 
         return Ok(meals);
     }
@@ -40,7 +50,7 @@ public class MealsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetById(int id)
     {
-        Meal? meal = await _mealRepository.Get(id);
+        UserMeal? meal = await _userMealRepository.Get(id);
         return Ok(meal);
     }
 }

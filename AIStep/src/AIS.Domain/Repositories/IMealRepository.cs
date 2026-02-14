@@ -4,11 +4,13 @@ namespace AIS.Domain.Repositories;
 
 public interface IMealRepository
 {
-    Task<List<Meal?>> GetAll(int userID);
+    Task<List<Meal>> GetAll();
 
-    Task<Meal?> Get(int mealID);
+    Task<Meal> Get(int mealID);
 
     Task Add(Meal meal);
 
-    Task Remove(int mealId);
+    Task Remove(int mealID);
+
+    Task Update(int mealID, Meal meal);
 }

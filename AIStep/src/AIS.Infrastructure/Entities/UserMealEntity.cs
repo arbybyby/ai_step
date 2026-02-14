@@ -2,13 +2,17 @@
 
 namespace AIS.Infrastructure.Entities;
 
-public class MealEntity
+public class UserMealEntity
 {
     public int Id { get; set; }
 
-    public string MealName { get; set; } = string.Empty;
+    public int UserID { get; set; }
+
+    public string MealName { get; set; } = null!;
 
     public MealType MealType { get; set; }
+
+    public float Grammes { get; set; }
 
     public float Calories { get; set; }
 
