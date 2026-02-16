@@ -10,7 +10,7 @@ import 'step_storage_service.dart';
 class AuthService {
   // Read base URL from environment variable `API_BASE_URL` or fallback to default
   static String get baseUrl {
-    const fallback = 'https://192.168.43.31:8081';
+    const fallback = 'https://192.168.1.213:8081';
     try {
       if (dotenv.isInitialized) {
         final v = dotenv.env['API_BASE_URL'];
@@ -163,7 +163,7 @@ class AuthService {
       // Possible locations/keys
       dynamic maybeTokens;
       if (map.containsKey('tokens')) maybeTokens = map['tokens'];
-      if (maybeTokens == null) maybeTokens = map;
+      maybeTokens ??= map;
 
       String? access;
       String? refresh;

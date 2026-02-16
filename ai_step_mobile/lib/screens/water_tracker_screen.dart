@@ -13,7 +13,7 @@ class _WaterTrackerScreenState extends State<WaterTrackerScreen> {
   final WaterService _service = WaterService();
   List<WaterInfo> _entries = [];
   bool _loading = true;
-  int _target = 2000;
+  final int _target = 2000;
 
   @override
   void initState() {
@@ -164,8 +164,8 @@ class _WaterTrackerScreenState extends State<WaterTrackerScreen> {
                           ),
                           ElevatedButton(
                             onPressed: _showCustomAddDialog,
-                            child: const Icon(Icons.edit),
                             style: ElevatedButton.styleFrom(shape: const CircleBorder(), padding: const EdgeInsets.all(12)),
+                            child: const Icon(Icons.edit),
                           )
                         ],
                       )
@@ -187,7 +187,7 @@ class _WaterTrackerScreenState extends State<WaterTrackerScreen> {
                       if (!_loading && _entries.isEmpty) const Padding(padding: EdgeInsets.all(12), child: Text('No entries yet')),
                       if (!_loading && _entries.isNotEmpty)
                         ..._entries.reversed.map((e) => ListTile(
-                          leading: const CircleAvatar(child: Icon(Icons.water_drop, color: Colors.white), backgroundColor: Colors.blueAccent),
+                          leading: const CircleAvatar(backgroundColor: Colors.blueAccent, child: Icon(Icons.water_drop, color: Colors.white)),
                           title: Text('${e.waterDrank} ml', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
                           subtitle: Text('Entry id: ${e.id}'),
                         ))

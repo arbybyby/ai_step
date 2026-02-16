@@ -7,6 +7,7 @@ import 'screens/signup_screen.dart';
 import 'screens/signin_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/water_tracker_screen.dart';
+import 'screens/meals_tracking_screen.dart';
 import 'services/auth_service.dart';
 import 'services/step_storage_service.dart';
 import 'services/background_sync_service.dart';
@@ -49,6 +50,7 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/home_old': (context) => const MyHomePage(title: 'AI Step'),
         '/water': (context) => const WaterTrackerScreen(),
+        '/meals': (context) => const MealsTrackingScreen(),
         '/signup': (context) => const SignUpScreen(),
         '/signin': (context) => const SignInScreen(),
       },

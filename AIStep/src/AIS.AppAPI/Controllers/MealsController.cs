@@ -25,11 +25,20 @@ public class MealsController : ControllerBase
         _logger = logger;
     }
 
-    [HttpGet]
+    [HttpGet("/all-meals")]
     public async Task<IActionResult> GetAllMeals()
     {
-        List<Meal> meals = await _mealRepository.GetAll();
-        return Ok(meals);
+        try
+        {
+            List<Meal> meals = await _mealRepository.GetAll();
+            _logger.LogInformation("Meals: {Meals}", meals);
+            return Ok(meals);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Error: {Message}", ex.Message);
+            return Problem(ex.Message);
+        }
     }
 
     [HttpGet]
@@ -47,7 +56,7 @@ public class MealsController : ControllerBase
         return Ok(meals);
     }
 
-    [HttpGet]
+    [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
         UserMeal? meal = await _userMealRepository.Get(id);

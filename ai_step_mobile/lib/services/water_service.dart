@@ -8,7 +8,7 @@ import '../models/water_info.dart';
 
 class WaterService {
   String get baseUrl {
-    const fallback = 'https://192.168.43.31:8081';
+    const fallback = 'https://192.168.1.213:8081';
     try {
       if (dotenv.isInitialized) {
         final v = dotenv.env['API_BASE_URL'];

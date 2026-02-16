@@ -7,7 +7,7 @@ import '../services/auth_service.dart';
 class VerifyScreen extends StatefulWidget {
   final String? email;
   final String? password;
-  const VerifyScreen({Key? key, this.email, this.password}) : super(key: key);
+  const VerifyScreen({super.key, this.email, this.password});
 
   @override
   State<VerifyScreen> createState() => _VerifyScreenState();
@@ -100,13 +100,13 @@ class _VerifyScreenState extends State<VerifyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final _height = MediaQuery.of(context).size.height;
+    final height = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
         width: double.infinity,
-        constraints: BoxConstraints(minHeight: _height),
+        constraints: BoxConstraints(minHeight: height),
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,

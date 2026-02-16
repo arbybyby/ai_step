@@ -9,7 +9,7 @@ import '../services/background_sync_service.dart';
 import '../providers/steps_provider.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
-  const SignInScreen({Key? key}) : super(key: key);
+  const SignInScreen({super.key});
 
   @override
   ConsumerState<SignInScreen> createState() => _SignInScreenState();
@@ -24,13 +24,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final _height = MediaQuery.of(context).size.height;
+    final height = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
         width: double.infinity,
-        constraints: BoxConstraints(minHeight: _height),
+        constraints: BoxConstraints(minHeight: height),
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,

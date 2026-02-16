@@ -57,6 +57,9 @@ builder.Services.AddScoped<IWaterTrackerRepository, WaterTrackingRepository>();
 builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
+builder.Services.AddScoped<IUserMealRepository, UserMealRepository>();
+builder.Services.AddScoped<IMealRepository, MealRepository>();
+
 builder.Services.AddScoped<AppDBContext>();
 
 // Регистрация сервисов

@@ -209,7 +209,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } else {
       greet = 'Good Evening';
     }
-    final name = (_displayName.isNotEmpty) ? ', ${_displayName}' : '';
+    final name = (_displayName.isNotEmpty) ? ', $_displayName' : '';
     return '$greet$name!';
   }
 
@@ -246,7 +246,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       print('HomeScreen: currentDayStepsProvider changed - previous: ${previous?.value?.stepsCount}, next: ${next.value?.stepsCount}');
       next.whenData((data) {
         if (data != null && mounted) {
-          print('HomeScreen: Updating _currentSteps from ${_currentSteps} to ${data.stepsCount}');
+          print('HomeScreen: Updating _currentSteps from $_currentSteps to ${data.stepsCount}');
           setState(() {
             _currentSteps = data.stepsCount;
             _lastSyncedSteps = data.stepsCount;
@@ -348,7 +348,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     // Tiles: Meals / Water
                     Row(
                       children: [
-                        Expanded(child: _tileCard(icon: Icons.restaurant, title: 'Meals', subtitle: 'Track food')),
+                        Expanded(child: _tileCard(icon: Icons.restaurant, title: 'Meals', subtitle: 'Track food', onTap: () => Navigator.of(context).pushNamed('/meals'))),
                         const SizedBox(width: 12),
                         Expanded(child: _tileCard(icon: Icons.opacity, title: 'Water', subtitle: 'Stay hydrated', onTap: () => Navigator.of(context).pushNamed('/water'))),
                       ],
