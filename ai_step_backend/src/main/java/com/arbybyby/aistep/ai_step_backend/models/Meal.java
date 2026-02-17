@@ -9,8 +9,8 @@ public class Meal {
     @JsonProperty("UserID")
     private int userID;
     
-    @JsonProperty("MealName")
-    private String mealName;
+    @JsonProperty("MealID")
+    private int mealID;
     
     @JsonProperty("MealType")
     private MealType mealType;
@@ -18,32 +18,20 @@ public class Meal {
     @JsonProperty("Grammes")
     private float grammes;
     
-    @JsonProperty("Calories")
-    private float calories;
-    
-    @JsonProperty("Protein")
-    private float protein;
-    
-    @JsonProperty("Carbs")
-    private float carbs;
-    
-    @JsonProperty("Fat")
-    private float fat;
+    @JsonProperty("Timestamp")
+    private String timestamp;
 
     // Constructors
     public Meal() {}
 
-    public Meal(int id, int userID, String mealName, MealType mealType, 
-                float grammes, float calories, float protein, float carbs, float fat) {
+    public Meal(int id, int userID, int mealID, MealType mealType, 
+                float grammes, String timestamp) {
         this.id = id;
         this.userID = userID;
-        this.mealName = mealName;
+        this.mealID = mealID;
         this.mealType = mealType;
         this.grammes = grammes;
-        this.calories = calories;
-        this.protein = protein;
-        this.carbs = carbs;
-        this.fat = fat;
+        this.timestamp = timestamp;
     }
 
     // Getters and setters
@@ -63,12 +51,12 @@ public class Meal {
         this.userID = userID;
     }
 
-    public String getMealName() {
-        return mealName;
+    public int getMealID() {
+        return mealID;
     }
 
-    public void setMealName(String mealName) {
-        this.mealName = mealName;
+    public void setMealID(int mealID) {
+        this.mealID = mealID;
     }
 
     public MealType getMealType() {
@@ -87,35 +75,11 @@ public class Meal {
         this.grammes = grammes;
     }
 
-    public float getCalories() {
-        return calories;
+    public String getTimestamp() {
+        return timestamp;
     }
 
-    public void setCalories(float calories) {
-        this.calories = calories;
-    }
-
-    public float getProtein() {
-        return protein;
-    }
-
-    public void setProtein(float protein) {
-        this.protein = protein;
-    }
-
-    public float getCarbs() {
-        return carbs;
-    }
-
-    public void setCarbs(float carbs) {
-        this.carbs = carbs;
-    }
-
-    public float getFat() {
-        return fat;
-    }
-
-    public void setFat(float fat) {
-        this.fat = fat;
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
     }
 }

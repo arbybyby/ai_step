@@ -39,6 +39,19 @@ public class StepsService
         await _stepsRepository.SaveAsync(dayStepsInfo);
     }
 
+    public async Task<WeekStepsInfo> GetWeekStepsInfo(int userID)
+    {
+        try
+        {
+            WeekStepsInfo weekStepsInfo = await _stepsRepository.GetWeekInfoAsync(userID);
+            return weekStepsInfo;
+        }
+        catch (Exception ex)
+        {
+            return new WeekStepsInfo();
+        }
+    }
+
     public async Task<DayStepsInfo> GetDayStepsInfoAsync(int userID)
     {
         try

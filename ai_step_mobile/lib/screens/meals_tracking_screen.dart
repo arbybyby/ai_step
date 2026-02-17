@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/meal.dart';
+import '../models/user_meal.dart';
 import '../providers/meals_provider.dart';
+import '../services/meals_service.dart';
 
 extension MealTypeExtension on MealType {
   String getMealTypeLabel() {
@@ -27,36 +30,33 @@ class MealsTrackingScreen extends ConsumerStatefulWidget {
 }
 
 class _MealsTrackingScreenState extends ConsumerState<MealsTrackingScreen> {
-  final Map<MealType, List<Meal>> _selectedMeals = {
-    MealType.breakfast: [],
-    MealType.lunch: [],
-    MealType.dinner: [],
-    MealType.snacks: [],
-  };
-
   @override
   void initState() {
     super.initState();
     print('\n=== MealsTrackingScreen.initState START ===');
     Future.microtask(() {
-      print('MealsTrackingScreen.initState: Calling fetchAllMeals()');
+      print('MealsTrackingScreen.initState: Calling fetchAllMeals() and fetchUserMeals()');
       ref.read(allMealsProvider.notifier).fetchAllMeals();
+      ref.read(userMealsProvider.notifier).fetchUserMeals();
     });
     print('=== MealsTrackingScreen.initState END ===\n');
   }
 
   double _getTotalCalories() {
-    double total = 0;
-    _selectedMeals.values.forEach((meals) {
-      total += meals.fold(0, (sum, meal) => sum + meal.calories);
-    });
-    return total;
+    // Get user meals from provider
+    final userMealsAsync = ref.watch(userMealsProvider);
+    return userMealsAsync.when(
+      data: (userMeals) => userMeals.fold(0.0, (sum, meal) => sum + meal.calories),
+      loading: () => 0.0,
+      error: (_, __) => 0.0,
+    );
   }
 
   double _getTotalMacro(String macro) {
-    double total = 0;
-    _selectedMeals.values.forEach((meals) {
-      total += meals.fold(0, (sum, meal) {
+    // Get user meals from provider
+    final userMealsAsync = ref.watch(userMealsProvider);
+    return userMealsAsync.when(
+      data: (userMeals) => userMeals.fold(0, (sum, meal) {
         if (macro == 'protein') {
           return sum + meal.protein;
         } else if (macro == 'carbs') {
@@ -65,9 +65,10 @@ class _MealsTrackingScreenState extends ConsumerState<MealsTrackingScreen> {
           return sum + meal.fat;
         }
         return sum;
-      });
-    });
-    return total;
+      }),
+      loading: () => 0.0,
+      error: (_, __) => 0.0,
+    );
   }
 
   @override
@@ -364,9 +365,17 @@ class _MealsTrackingScreenState extends ConsumerState<MealsTrackingScreen> {
   }
 
   Widget _buildMealSection(MealType mealType) {
-    final meals = _selectedMeals[mealType] ?? [];
-    final totalCalories =
-        meals.fold(0.0, (sum, meal) => sum + meal.calories);
+    // Get user meals from provider
+    final userMealsAsync = ref.watch(userMealsProvider);
+    
+    // Extract meals for this meal type
+    final meals = userMealsAsync.when(
+      data: (userMeals) => userMeals.where((m) => m.mealType == mealType).toList(),
+      loading: () => <UserMeal>[],
+      error: (_, __) => <UserMeal>[],
+    );
+    
+    final totalCalories = meals.fold(0.0, (sum, meal) => sum + meal.calories);
     final mealTypeLabel = mealType.getMealTypeLabel();
     final mealIcon = _getMealIcon(mealType);
 
@@ -472,7 +481,7 @@ class _MealsTrackingScreenState extends ConsumerState<MealsTrackingScreen> {
                                   ),
                                 ),
                                 Text(
-                                  'P${meal.protein.toInt()}g C${meal.carbs.toInt()}g F${meal.fat.toInt()}g',
+                                  '${meal.grammes.toInt()}g • P${meal.protein.toInt()}g C${meal.carbs.toInt()}g F${meal.fat.toInt()}g',
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey,
@@ -491,10 +500,77 @@ class _MealsTrackingScreenState extends ConsumerState<MealsTrackingScreen> {
                           ),
                           const SizedBox(width: 8),
                           GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _selectedMeals[mealType]?.remove(meal);
-                              });
+                            onTap: () async {
+                              print('Delete meal ${meal.id}');
+                              // Show confirmation dialog
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  title: const Text(
+                                    'Delete meal?',
+                                    style: TextStyle(
+                                      color: Color(0xFF1B7A5A),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  content: Text(
+                                    'Are you sure you want to delete ${meal.mealName}?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () async {
+                                        try {
+                                          Navigator.pop(context); // Close dialog
+                                          
+                                          // Get userId
+                                          final prefs = await SharedPreferences.getInstance();
+                                          final userIdStr = prefs.getString('user_id') ?? 
+                                                            prefs.getString('userId') ?? 
+                                                            prefs.getString('id');
+                                          final userId = int.tryParse(userIdStr ?? '') ?? 0;
+                                          
+                                          // Delete the meal
+                                          await ref.read(userMealsProvider.notifier).deleteMeal(meal.id, userId);
+                                          
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('Deleted ${meal.mealName}'),
+                                                backgroundColor: const Color(0xFF1B7A5A),
+                                                duration: const Duration(seconds: 2),
+                                              ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('Failed to delete meal: $e'),
+                                                backgroundColor: Colors.red,
+                                                duration: const Duration(seconds: 3),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                      ),
+                                      child: const Text(
+                                        'Delete',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
                             },
                             child: const Icon(
                               Icons.close,
@@ -574,13 +650,57 @@ class _MealsTrackingScreenState extends ConsumerState<MealsTrackingScreen> {
       builder: (BuildContext context) {
         return _AddFoodDialog(
           mealType: mealType,
-          onFoodSelected: (meal, selectedMealType) {
-            setState(() {
-              if (!_selectedMeals.containsKey(selectedMealType)) {
-                _selectedMeals[selectedMealType] = [];
+          onFoodSelected: (meal, selectedMealType) async {
+            // Save ScaffoldMessenger before any async operations
+            final scaffoldMessenger = ScaffoldMessenger.of(context);
+            
+            try {
+              // Track the meal on the server
+              final mealsService = MealsService();
+              print('MealsTrackingScreen._showAddFoodDialog: Calling trackMeal...');
+              await mealsService.trackMeal(
+                mealId: meal.id,
+                mealType: selectedMealType,
+                grammes: meal.grammes,
+              );
+              print('MealsTrackingScreen._showAddFoodDialog: trackMeal completed');
+              
+              if (mounted) {
+                // Show success message using saved messenger
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Added ${meal.mealName}'),
+                    backgroundColor: const Color(0xFF1B7A5A),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+                
+                // Refresh the user meals list from server
+                print('MealsTrackingScreen._showAddFoodDialog: Calling refreshUserMeals...');
+                await ref.read(userMealsProvider.notifier).refreshUserMeals();
+                print('MealsTrackingScreen._showAddFoodDialog: refreshUserMeals completed');
               }
-              _selectedMeals[selectedMealType]!.add(meal);
-            });
+            } on MealsServiceException catch (e) {
+              if (mounted) {
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text(e.userFriendlyMessage),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
+            } catch (e) {
+              if (mounted) {
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to add meal: $e'),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
+            }
           },
         );
       },
@@ -590,7 +710,7 @@ class _MealsTrackingScreenState extends ConsumerState<MealsTrackingScreen> {
 
 class _AddFoodDialog extends ConsumerStatefulWidget {
   final MealType? mealType;
-  final Function(Meal, MealType) onFoodSelected;
+  final Future<void> Function(Meal, MealType) onFoodSelected;
 
   const _AddFoodDialog({
     required this.mealType,
@@ -831,7 +951,7 @@ class _AddFoodDialogState extends ConsumerState<_AddFoodDialog> {
                                             ),
                                           ),
                                           Text(
-                                            '${meal.calories.toInt()} kcal • ${_getServingSize(meal)}',
+                                            '${meal.calories.toInt()} kcal • ${meal.grammes.toInt()}g',
                                             style: const TextStyle(
                                               fontSize: 12,
                                               color: Colors.grey,
@@ -858,11 +978,7 @@ class _AddFoodDialogState extends ConsumerState<_AddFoodDialog> {
                                     GestureDetector(
                                       onTap: () {
                                         if (_selectedMealType != null) {
-                                          widget.onFoodSelected(
-                                            meal,
-                                            _selectedMealType!,
-                                          );
-                                          Navigator.pop(context);
+                                          _showGrammesDialog(context, meal);
                                         }
                                       },
                                       child: Container(
@@ -899,10 +1015,48 @@ class _AddFoodDialogState extends ConsumerState<_AddFoodDialog> {
                     ),
                   ),
                 ),
-                error: (err, stack) => Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text('Error: $err'),
-                ),
+                error: (err, stack) {
+                  String errorMessage = 'An error occurred';
+                  if (err is MealsServiceException) {
+                    errorMessage = err.userFriendlyMessage;
+                  } else {
+                    errorMessage = err.toString();
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: Colors.red,
+                          size: 48,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          errorMessage,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.red,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            ref.read(allMealsProvider.notifier).fetchAllMeals();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1B7A5A),
+                          ),
+                          child: const Text(
+                            'Retry',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
             const SizedBox(height: 16),
@@ -947,14 +1101,113 @@ class _AddFoodDialogState extends ConsumerState<_AddFoodDialog> {
     );
   }
 
-  String _getServingSize(Meal meal) {
-    // Simple serving size based on meal name
-    if (meal.mealName.contains('Yogurt')) return '100g';
-    if (meal.mealName.contains('Almonds')) return '28g';
-    if (meal.mealName.contains('Toast')) return '2 slices';
-    if (meal.mealName.contains('Eggs')) return '2 large';
-    if (meal.mealName.contains('Broccoli')) return '1 cup';
-    if (meal.mealName.contains('Rice')) return '1 cup';
-    return '100g';
+  void _showGrammesDialog(BuildContext context, Meal meal) {
+    final TextEditingController grammesController = TextEditingController(text: '100');
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            'Enter quantity',
+            style: TextStyle(
+              color: Color(0xFF1B7A5A),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                meal.mealName,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: grammesController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Grammes',
+                  hintText: 'Enter grammes',
+                  suffixText: 'g',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF1B7A5A),
+                      width: 2,
+                    ),
+                  ),
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Nutrition values are calculated per 100g',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final grammes = double.tryParse(grammesController.text);
+                if (grammes != null && grammes > 0) {
+                  final adjustedMeal = meal.copyWithGrammes(grammes);
+                  
+                  // Close dialogs first
+                  Navigator.pop(dialogContext); // Close grammes dialog
+                  Navigator.pop(context); // Close food selection dialog
+                  
+                  // Then track the meal (this will show snackbar with result)
+                  await widget.onFoodSelected(
+                    adjustedMeal,
+                    _selectedMealType!,
+                  );
+                } else {
+                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+                  scaffoldMessenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a valid quantity'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1B7A5A),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Add',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

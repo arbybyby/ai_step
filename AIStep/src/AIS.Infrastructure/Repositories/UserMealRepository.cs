@@ -37,6 +37,7 @@ public class UserMealRepository : IUserMealRepository
 
     public async Task Add(UserMeal userMeal)
     {
+        _logger.LogInformation("Adding meal with ID {MealID} for user {UserID}", userMeal.Id, userMeal.UserID);
         UserMealEntity entity = MapToEntity(userMeal);
         await _context.AddAsync(entity);
         await _context.SaveChangesAsync();

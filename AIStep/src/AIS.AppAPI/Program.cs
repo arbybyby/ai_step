@@ -1,7 +1,8 @@
-﻿using System.Text;
+﻿﻿using System.Text;
 
 using AIS.AppAPI.Extensions;
 using AIS.AppAPI.HostedServices;
+using AIS.Domain.Factories;
 using AIS.Infrastructure;
 using AIS.Infrastructure.Repositories;
 using AIS.Infrastructure.Services;
@@ -48,28 +49,31 @@ builder.Services.AddMediatR(cfg =>
 
 builder.Services.AddSingleton<RabbitConsumer>();
 builder.Services.AddChannelMessage();
-builder.Services.AddHostedService<MealConsumerWorker>();
 
-// Регистрация репозиториев
+// Регистрация DbContext как Scoped (важно для избежания проблем с многопоточностью)
+builder.Services.AddScoped<AppDBContext>();
+
+// Регистрация репозиториев как Scoped (они зависят от DbContext)
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IStepsRepository, StepsRepository>();
 builder.Services.AddScoped<IWaterTrackerRepository, WaterTrackingRepository>();
 builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-
 builder.Services.AddScoped<IUserMealRepository, UserMealRepository>();
 builder.Services.AddScoped<IMealRepository, MealRepository>();
 
-builder.Services.AddScoped<AppDBContext>();
+// Factories - также Scoped, так как зависят от репозиториев
+builder.Services.AddScoped<UserMealFactory>();
+builder.Services.AddHostedService<MealConsumerWorker>();
 
-// Регистрация сервисов
+// Регистрация сервисов как Scoped (они зависят от репозиториев)
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<WaterTrackerService>();
-
-// Register domain service required by StepsController
 builder.Services.AddScoped<StepsService>();
+builder.Services.AddScoped<IJwtService, JwtService>();  // Зависит от IRefreshTokenRepository и IUserRepository
+
+// Эти сервисы могут оставаться Singleton, так как не зависят от DbContext
+builder.Services.AddSingleton<IEmailService, EmailService>();
 
 // Настройка JWT аутентификации
 var jwtSecret = builder.Configuration["Jwt:Secret"];

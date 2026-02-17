@@ -9,9 +9,12 @@ public static class ChannelMessageExtension
     public static IServiceCollection AddChannelMessage(this IServiceCollection services)
     {
         Channel<MealMessage?> channel = Channel.CreateUnbounded<MealMessage?>();
-
         services.AddSingleton(channel.Writer);
         services.AddSingleton(channel.Reader);
+
+        Channel<DeleteMessage?>  channelDelete = Channel.CreateUnbounded<DeleteMessage?>();
+        services.AddSingleton(channelDelete.Reader);
+        services.AddSingleton(channelDelete.Writer);
 
         return services;
     }

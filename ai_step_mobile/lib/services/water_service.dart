@@ -3,22 +3,12 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/water_info.dart';
+import '../config/config.dart';
+import 'auth_service.dart';
 
 class WaterService {
-  String get baseUrl {
-    const fallback = 'https://192.168.1.213:8081';
-    try {
-      if (dotenv.isInitialized) {
-        final v = dotenv.env['API_BASE_URL'];
-        if (v != null && v.isNotEmpty) return v;
-      }
-    } catch (e) {
-      print('WaterService.baseUrl: dotenv access failed: $e');
-    }
-    return fallback;
-  }
+  String get baseUrl => AppConfig.baseUrl;
 
   final http.Client httpClient;
 
@@ -31,8 +21,9 @@ class WaterService {
   }
 
   Future<String> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token') ?? prefs.getString('accessToken') ?? prefs.getString('access_token') ?? prefs.getString('token') ?? prefs.getString('access') ?? '';
+    // Use AuthService to get token with automatic refresh if needed
+    final token = await AuthService.getAccessTokenWithRefresh();
+    return token;
   }
 
   Future<String?> _getUserId() async {

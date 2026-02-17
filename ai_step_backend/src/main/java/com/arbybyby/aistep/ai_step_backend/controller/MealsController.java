@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
-@RequestMapping("/api/meals")
+@RequestMapping("/meals")
 public class MealsController {
     private static final Logger logger = LoggerFactory.getLogger(MealsController.class);
     
@@ -53,20 +53,17 @@ public class MealsController {
                 }
                 userId = request.getUserID();
             }
-            logger.info("Received add meal request: userId={}, mealName={}, mealType={}", 
-                       userId, request.getMealName(), request.getMealType());
+            logger.info("Received add meal request: userId={}, mealID={}, mealType={}", 
+                       userId, request.getMealID(), request.getMealType());
             
             // Create Meal object from request (ID will be assigned by C# backend)
             Meal meal = new Meal(
                 0, // ID will be assigned by C# backend
-                userId, // Use userId from token
-                request.getMealName(),
+                userId, // Use userId from token or request body
+                request.getMealID(),
                 request.getMealType(),
                 request.getGrammes(),
-                request.getCalories(),
-                request.getProtein(),
-                request.getCarbs(),
-                request.getFat()
+                request.getTimestamp()
             );
             
             // Send to RabbitMQ
@@ -116,9 +113,10 @@ public class MealsController {
             Meal meal = new Meal(
                 request.getId(),
                 userId, // Use userId from token
+                0, // Not needed for deletion
                 null, // Not needed for deletion
-                null, // Not needed for deletion
-                0f, 0f, 0f, 0f, 0f // Not needed for deletion
+                0f, // Not needed for deletion
+                null // Not needed for deletion
             );
             
             // Send to RabbitMQ

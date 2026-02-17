@@ -117,3 +117,32 @@ final lastSyncTimeProvider = FutureProvider<DateTime?>((ref) async {
   final storageService = ref.watch(stepStorageProvider);
   return await storageService.getLastSyncTime();
 });
+
+final weeklyStepsProvider =
+    StateNotifierProvider<WeeklyStepsNotifier, AsyncValue<WeekStepsInfo?>>((ref) {
+  final apiService = ref.watch(stepsApiProvider);
+  return WeeklyStepsNotifier(apiService);
+});
+
+class WeeklyStepsNotifier extends StateNotifier<AsyncValue<WeekStepsInfo?>> {
+  final StepsApiService _apiService;
+
+  WeeklyStepsNotifier(this._apiService) : super(const AsyncValue.loading());
+
+  Future<void> fetchWeeklySteps() async {
+    print('\n=== WeeklyStepsNotifier.fetchWeeklySteps START ===');
+    state = const AsyncValue.loading();
+    try {
+      print('fetchWeeklySteps: Calling _apiService.getCurrentWeekSteps()...');
+      final weekData = await _apiService.getCurrentWeekSteps();
+      print('fetchWeeklySteps: API returned: userId=${weekData.userId}, totalSteps=${weekData.totalSteps}, days=${weekData.dayStepsInfo.length}');
+      state = AsyncValue.data(weekData);
+      print('fetchWeeklySteps: State updated with weekly data');
+    } catch (e, st) {
+      print('fetchWeeklySteps: ERROR: $e');
+      print('fetchWeeklySteps: StackTrace: $st');
+      state = AsyncValue.error(e, st);
+    }
+    print('=== WeeklyStepsNotifier.fetchWeeklySteps END ===\n');
+  }
+}

@@ -13,14 +13,16 @@ public class RabbitConsumer
 {
     private readonly IChannel _channel;
     private readonly ILogger<RabbitConsumer> _logger;
-    private readonly ChannelWriter<MealMessage?> _channelWriter;
+    private readonly ChannelWriter<MealMessage?> _channelAddWriter;
+    private readonly ChannelWriter<DeleteMessage?> _channelDeleteWriter;
 
-    public RabbitConsumer(ChannelWriter<MealMessage?> channelWriter,
+    public RabbitConsumer(ChannelWriter<MealMessage?> channelAddWriter,
         ILogger<RabbitConsumer> logger,
-        IConfiguration configuration)
+        IConfiguration configuration, ChannelWriter<DeleteMessage?> channelDeleteWriter)
     {
         _logger = logger;
-        _channelWriter = channelWriter;
+        _channelDeleteWriter = channelDeleteWriter;
+        _channelAddWriter = channelAddWriter;
 
         ConnectionFactory connectionFactory = new()
         {
@@ -58,45 +60,68 @@ public class RabbitConsumer
 
     public async Task Start()
     {
-        AsyncEventingBasicConsumer consumer = new(_channel);
-
-        consumer.ReceivedAsync += async (sender, ea) =>
+        AsyncEventingBasicConsumer addConsumer = new(_channel);
+        addConsumer.ReceivedAsync += async (sender, ea) =>
         {
             try
             {
                 MealMessage? meal = JsonSerializer.Deserialize<MealMessage>(ea.Body.ToArray());
+                _logger.LogInformation("Received add message for MealID: {MealID}, UserID: {UserID}",
+                    meal?.MealID, meal?.UserID);
 
-                await _channelWriter.WriteAsync(meal);
-
+                await _channelAddWriter.WriteAsync(meal);
                 await _channel.BasicAckAsync(ea.DeliveryTag, false);
             }
             catch (Exception ex)
             {
-                _logger.LogError("Error: {Error}", ex.Message);
+                _logger.LogError(ex, "Error processing add message");
+                await _channel.BasicNackAsync(ea.DeliveryTag, false, true);
             }
         };
 
-        await _channel.BasicConsumeAsync(queue: "meals.add.queue", autoAck: false, consumer: consumer);
+        AsyncEventingBasicConsumer deleteConsumer = new(_channel);
+        deleteConsumer.ReceivedAsync += async (sender, ea) =>
+        {
+            try
+            {
+                DeleteMessage? message = JsonSerializer.Deserialize<DeleteMessage>(ea.Body.ToArray());
+                _logger.LogInformation("Received delete message for MealID: {MealID}, UserID: {UserID}",
+                    message?.Id, message?.UserID);
+
+                await _channelDeleteWriter.WriteAsync(message);
+                await _channel.BasicAckAsync(ea.DeliveryTag, false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing delete message");
+                await _channel.BasicNackAsync(ea.DeliveryTag, false, true);
+            }
+        };
+
+        await _channel.BasicConsumeAsync(queue: "meals.add.queue", autoAck: false, consumer: addConsumer);
+        await _channel.BasicConsumeAsync(queue: "meals.delete.queue", autoAck: false, consumer: deleteConsumer);
 
         await Task.CompletedTask;
     }
+
 }
 
 public class MealMessage
 {
     public int UserID { get; init; }
 
-    public string MealName { get; init; }
+    public int MealID { get; init; }
 
     public string MealType { get; init; }
 
     public float Grammes { get; init; }
 
-    public float Calories { get; init; }
+    public DateTime Date { get; init; }
+}
 
-    public float Protein { get; init; }
+public class DeleteMessage
+{
+    public int Id { get; init; }
 
-    public float Carbs { get; init; }
-
-    public float Fats { get; init; }
+    public int UserID { get; init; }
 }

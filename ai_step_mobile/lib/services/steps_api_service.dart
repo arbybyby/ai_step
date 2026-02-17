@@ -3,23 +3,13 @@ import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
 import '../models/step_data.dart';
+import '../config/config.dart';
 
 class StepsApiService {
-  String get baseUrl {
-    const fallback = 'https://192.168.1.213:8081';
-    try {
-      if (dotenv.isInitialized) {
-        final v = dotenv.env['API_BASE_URL'];
-        if (v != null && v.isNotEmpty) return v;
-      }
-    } catch (e) {
-      print('StepsApiService.baseUrl: dotenv access failed: $e');
-    }
-    return fallback;
-  }
+  String get baseUrl => AppConfig.baseUrl;
+
   final http.Client httpClient;
 
   StepsApiService({http.Client? httpClient})
@@ -191,14 +181,73 @@ class StepsApiService {
   }
 
   Future<String> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    // support different token key names (try many common variants)
-    final token = prefs.getString('auth_token') ?? prefs.getString('accessToken') ?? prefs.getString('access_token') ?? prefs.getString('token') ?? prefs.getString('access') ?? '';
+    // Use AuthService to get token with automatic refresh if needed
+    final token = await AuthService.getAccessTokenWithRefresh();
     print('StepsApiService._getToken: Retrieved token (length=${token.length}, isEmpty=${token.isEmpty})');
     if (token.isEmpty) {
-      print('StepsApiService._getToken: WARNING - No token found in SharedPreferences!');
-      print('StepsApiService._getToken: Checked keys: auth_token, accessToken, access_token, token, access');
+      print('StepsApiService._getToken: WARNING - No token found!');
     }
     return token;
+  }
+
+  Future<WeekStepsInfo> getCurrentWeekSteps() async {
+    print('\n=== StepsApiService.getCurrentWeekSteps START ===');
+    final userId = await _getUserId();
+    if (userId == null) {
+      print('StepsApiService.getCurrentWeekSteps: ERROR - User ID not found!');
+      throw Exception('User ID not found');
+    }
+
+    final token = await _getToken();
+    print('StepsApiService.getCurrentWeekSteps: userId=$userId, tokenLength=${token.length}, tokenPresent=${token.isNotEmpty}');
+    
+    if (token.isEmpty) {
+      print('StepsApiService.getCurrentWeekSteps: ERROR - Token is empty!');
+      throw Exception('No authentication token found');
+    }
+
+    print('StepsApiService.getCurrentWeekSteps: Making GET request to $baseUrl/api/steps/current-week');
+    
+    http.Response response;
+    try {
+      response = await httpClient.get(
+        Uri.parse('$baseUrl/api/steps/current-week'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 10));
+    } catch (e) {
+      // If TLS handshake fails, retry once with an explicitly insecure client
+      print('StepsApiService.getCurrentWeekSteps: request failed: $e');
+      try {
+        final insecure = _createInsecureClient();
+        response = await insecure.get(
+          Uri.parse('$baseUrl/api/steps/current-week'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ).timeout(const Duration(seconds: 10));
+      } catch (e2) {
+        print('StepsApiService.getCurrentWeekSteps: retry failed: $e2');
+        rethrow;
+      }
+    }
+
+    if (response.statusCode == 200) {
+      print('StepsApiService.getCurrentWeekSteps: SUCCESS - status=200, body=${response.body}');
+      final data = WeekStepsInfo.fromJson(jsonDecode(response.body));
+      print('=== StepsApiService.getCurrentWeekSteps END ===\n');
+      return data;
+    } else if (response.statusCode == 401) {
+      print('StepsApiService.getCurrentWeekSteps: ERROR 401 Unauthorized - body: ${response.body}');
+      print('=== StepsApiService.getCurrentWeekSteps END ===\n');
+      throw Exception('Unauthorized');
+    } else {
+      print('StepsApiService.getCurrentWeekSteps: ERROR status=${response.statusCode} body=${response.body}');
+      print('=== StepsApiService.getCurrentWeekSteps END ===\n');
+      throw Exception('Failed to fetch weekly steps: ${response.statusCode}');
+    }
   }
 }

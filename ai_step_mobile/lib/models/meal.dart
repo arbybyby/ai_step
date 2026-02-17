@@ -8,6 +8,7 @@ class Meal {
   final double protein;
   final double carbs;
   final double fat;
+  final double grammes; // Quantity in grams
 
   Meal({
     required this.id,
@@ -17,6 +18,7 @@ class Meal {
     required this.protein,
     required this.carbs,
     required this.fat,
+    this.grammes = 100.0, // Default to 100g
   });
 
   factory Meal.fromJson(Map<String, dynamic> json) {
@@ -28,6 +30,7 @@ class Meal {
       protein: (json['protein'] as num).toDouble(),
       carbs: (json['carbs'] as num).toDouble(),
       fat: (json['fat'] as num).toDouble(),
+      grammes: json['grammes'] != null ? (json['grammes'] as num).toDouble() : 100.0,
     );
   }
 
@@ -40,7 +43,24 @@ class Meal {
       'protein': protein,
       'carbs': carbs,
       'fat': fat,
+      'grammes': grammes,
     };
+  }
+
+  /// Creates a copy of this meal with adjusted macros based on new grammes
+  /// The original values are assumed to be per 100g
+  Meal copyWithGrammes(double newGrammes) {
+    final ratio = newGrammes / grammes;
+    return Meal(
+      id: id,
+      mealName: mealName,
+      mealType: mealType,
+      calories: calories * ratio,
+      protein: protein * ratio,
+      carbs: carbs * ratio,
+      fat: fat * ratio,
+      grammes: newGrammes,
+    );
   }
 
   static MealType _parseMealType(dynamic value) {

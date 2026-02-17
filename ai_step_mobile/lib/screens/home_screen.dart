@@ -9,6 +9,8 @@ import '../services/step_storage_service.dart';
 import '../services/background_sync_service.dart';
 import '../services/notification_service.dart';
 import 'dart:async';
+import 'weekly_progress_screen.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -56,6 +58,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         print('HomeScreen._initializeServices: Calling fetchCurrentDaySteps...');
         await ref.read(currentDayStepsProvider.notifier).fetchCurrentDaySteps();
         print('HomeScreen._initializeServices: fetchCurrentDaySteps completed - provider updated');
+        
+        // Also fetch weekly data
+        print('HomeScreen._initializeServices: Calling fetchWeeklySteps...');
+        await ref.read(weeklyStepsProvider.notifier).fetchWeeklySteps();
+        print('HomeScreen._initializeServices: fetchWeeklySteps completed');
         
         // Immediately read the updated value and update local state
         print('HomeScreen._initializeServices: Reading provider value...');
@@ -515,6 +522,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _weeklyProgressCard() {
+    final weeklyStepsAsync = ref.watch(weeklyStepsProvider);
+    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -526,18 +535,158 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Weekly Progress', style: TextStyle(fontWeight: FontWeight.w800)),
-              TextButton(onPressed: () {}, child: const Text('View All')),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const WeeklyProgressScreen(),
+                    ),
+                  );
+                }, 
+                child: const Text('View All'),
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(7, (i) => Container(width: 36, height: 28, decoration: BoxDecoration(color: const Color(0xFFEFFBF6), borderRadius: BorderRadius.circular(12))),),
+          weeklyStepsAsync.when(
+            data: (weekData) {
+              if (weekData == null) {
+                return _buildEmptyWeeklyChart();
+              }
+              return _buildWeeklyChart(weekData);
+            },
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            error: (_, __) => _buildEmptyWeeklyChart(),
           ),
-          const SizedBox(height: 8),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('Mon', style: TextStyle(color: Colors.grey)), Text('Tue', style: TextStyle(color: Colors.grey)), Text('Wed', style: TextStyle(color: Colors.grey)), Text('Thu', style: TextStyle(color: Colors.grey)), Text('Fri', style: TextStyle(color: Colors.grey)), Text('Sat', style: TextStyle(color: Colors.grey)), Text('Sun', style: TextStyle(color: Color(0xFF0F8A58), fontWeight: FontWeight.w800))],),
         ],
       ),
+    );
+  }
+  
+  Widget _buildEmptyWeeklyChart() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(7, (i) => Container(width: 36, height: 28, decoration: BoxDecoration(color: const Color(0xFFEFFBF6), borderRadius: BorderRadius.circular(12)))),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Mon', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            Text('Tue', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            Text('Wed', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            Text('Thu', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            Text('Fri', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            Text('Sat', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            Text('Sun', style: TextStyle(color: Colors.grey, fontSize: 12)),
+          ],
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildWeeklyChart(WeekStepsInfo weekData) {
+    // Create a map of all week days
+    final now = DateTime.now();
+    final weekStart = now.subtract(Duration(days: now.weekday - 1));
+    
+    final weekDays = List.generate(7, (index) {
+      final date = weekStart.add(Duration(days: index));
+      final dateStr = DateFormat('yyyy-MM-dd').format(date);
+      final dayData = weekData.dayStepsInfo.firstWhere(
+        (d) => d.date == dateStr,
+        orElse: () => DayStepsInfo(
+          id: 0,
+          userId: 0,
+          date: dateStr,
+          stepsCount: 0,
+          distanceKm: 0,
+        ),
+      );
+      return dayData;
+    });
+    
+    final maxSteps = weekDays.map((d) => d.stepsCount).reduce((a, b) => a > b ? a : b);
+    final chartHeight = 100.0;
+    
+    return Column(
+      children: [
+        // Chart with bars and step counts
+        SizedBox(
+          height: chartHeight,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: weekDays.map((day) {
+              final date = DateTime.parse(day.date);
+              final isToday = date.day == now.day && date.month == now.month && date.year == now.year;
+              final barHeight = maxSteps > 0
+                  ? ((day.stepsCount / maxSteps) * (chartHeight - 35)).clamp(0.0, chartHeight - 35)
+                  : 0.0;
+              
+              return Container(
+                width: 36,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    // Step count above bar
+                    if (day.stepsCount > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4.0),
+                        child: Text(
+                          day.stepsCount > 999 ? '${(day.stepsCount / 1000).toStringAsFixed(1)}k' : '${day.stepsCount}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: isToday ? const Color(0xFF0F8A58) : Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
+                    // Bar
+                    Container(
+                      height: barHeight > 0 ? barHeight : 4,
+                      decoration: BoxDecoration(
+                        color: isToday ? const Color(0xFF0F8A58) : const Color(0xFFEFFBF6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Day labels
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: weekDays.map((day) {
+            final date = DateTime.parse(day.date);
+            final dayName = DateFormat('EEE').format(date);
+            final isToday = date.day == now.day && date.month == now.month && date.year == now.year;
+            
+            return SizedBox(
+              width: 36,
+              child: Text(
+                dayName,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isToday ? const Color(0xFF0F8A58) : Colors.grey,
+                  fontSize: 12,
+                  fontWeight: isToday ? FontWeight.w800 : FontWeight.normal,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 

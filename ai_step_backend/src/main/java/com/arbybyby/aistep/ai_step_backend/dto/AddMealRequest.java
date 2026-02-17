@@ -1,16 +1,15 @@
 package com.arbybyby.aistep.ai_step_backend.dto;
 
 import com.arbybyby.aistep.ai_step_backend.models.MealType;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 public class AddMealRequest {
-    // UserID is now extracted from JWT token, not from request body
+    // UserID is extracted from JWT token when security is enabled, or from request body otherwise
     private Integer userID;
     
-    @NotBlank(message = "MealName is required")
-    private String mealName;
+    @NotNull(message = "MealID is required")
+    private Integer mealID;
     
     @NotNull(message = "MealType is required")
     private MealType mealType;
@@ -19,32 +18,19 @@ public class AddMealRequest {
     @Positive(message = "Grammes must be positive")
     private Float grammes;
     
-    @NotNull(message = "Calories is required")
-    @Positive(message = "Calories must be positive")
-    private Float calories;
-    
-    @NotNull(message = "Protein is required")
-    private Float protein;
-    
-    @NotNull(message = "Carbs is required")
-    private Float carbs;
-    
-    @NotNull(message = "Fat is required")
-    private Float fat;
+    @NotNull(message = "Timestamp is required")
+    private String timestamp;
 
     // Constructors
     public AddMealRequest() {}
 
-    public AddMealRequest(Integer userID, String mealName, MealType mealType, 
-                         Float grammes, Float calories, Float protein, Float carbs, Float fat) {
+    public AddMealRequest(Integer userID, Integer mealID, MealType mealType, 
+                         Float grammes, String timestamp) {
         this.userID = userID;
-        this.mealName = mealName;
+        this.mealID = mealID;
         this.mealType = mealType;
         this.grammes = grammes;
-        this.calories = calories;
-        this.protein = protein;
-        this.carbs = carbs;
-        this.fat = fat;
+        this.timestamp = timestamp;
     }
 
     // Getters and setters
@@ -56,12 +42,12 @@ public class AddMealRequest {
         this.userID = userID;
     }
 
-    public String getMealName() {
-        return mealName;
+    public Integer getMealID() {
+        return mealID;
     }
 
-    public void setMealName(String mealName) {
-        this.mealName = mealName;
+    public void setMealID(Integer mealID) {
+        this.mealID = mealID;
     }
 
     public MealType getMealType() {
@@ -80,35 +66,11 @@ public class AddMealRequest {
         this.grammes = grammes;
     }
 
-    public Float getCalories() {
-        return calories;
+    public String getTimestamp() {
+        return timestamp;
     }
 
-    public void setCalories(Float calories) {
-        this.calories = calories;
-    }
-
-    public Float getProtein() {
-        return protein;
-    }
-
-    public void setProtein(Float protein) {
-        this.protein = protein;
-    }
-
-    public Float getCarbs() {
-        return carbs;
-    }
-
-    public void setCarbs(Float carbs) {
-        this.carbs = carbs;
-    }
-
-    public Float getFat() {
-        return fat;
-    }
-
-    public void setFat(Float fat) {
-        this.fat = fat;
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
     }
 }

@@ -21,8 +21,8 @@ public class MealQueueService {
      */
     public void sendAddMealMessage(Meal meal) {
         try {
-            logger.info("Sending add meal message to RabbitMQ: userId={}, mealName={}", 
-                       meal.getUserID(), meal.getMealName());
+            logger.info("Sending add meal message to RabbitMQ: userId={}, mealID={}", 
+                       meal.getUserID(), meal.getMealID());
             rabbitTemplate.convertAndSend(
                 RabbitMQConfig.MEALS_EXCHANGE,
                 RabbitMQConfig.ADD_MEAL_ROUTING_KEY,

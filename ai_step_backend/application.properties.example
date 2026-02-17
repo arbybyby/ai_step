@@ -16,7 +16,7 @@ logging.level.org.hibernate.SQL=DEBUG
 logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
 
 # JWT Configuration
-app.jwtSecret=myVerySecureSecretKeyThatIsAtLeast32BytesLongForHMACsha256Algorithm
+app.jwtSecret=YourSuperSecretKeyThatIsAtLeast32CharactersLong!
 app.jwtExpirationMs=86400000
 
 # Security Configuration

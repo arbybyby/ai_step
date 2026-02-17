@@ -73,4 +73,24 @@ public class StepsController : ControllerBase
             return Problem();
         }
     }
+
+    [HttpGet("current-week")]
+    public async Task<IActionResult> GetWeekStepsInfoAsync()
+    {
+        var idValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(idValue) || !int.TryParse(idValue, out int id))
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            var weeklyProggres = await _stepsService.GetWeekStepsInfo(id);
+            return Ok(weeklyProggres);
+        }
+        catch(Exception ex)
+        {
+            return Problem();
+        }
+    }
 }

@@ -4,23 +4,12 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../config/config.dart';
 import 'step_storage_service.dart';
 
 class AuthService {
-  // Read base URL from environment variable `API_BASE_URL` or fallback to default
-  static String get baseUrl {
-    const fallback = 'https://192.168.1.213:8081';
-    try {
-      if (dotenv.isInitialized) {
-        final v = dotenv.env['API_BASE_URL'];
-        if (v != null && v.isNotEmpty) return v;
-      }
-    } catch (e) {
-      print('AuthService.baseUrl: dotenv access failed: $e');
-    }
-    return fallback;
-  }
+  // Get base URL from centralized config
+  static String get baseUrl => AppConfig.baseUrl;
 
   // Create HTTP client that accepts self-signed certificates
   static http.Client _getHttpClient() {
@@ -270,6 +259,120 @@ class AuthService {
       } catch (_) {}
       return false;
     }
+  }
+
+  /// Check if accessToken is expired by comparing with current time.
+  /// Subtracts 5 minutes buffer to refresh before actual expiration.
+  static Future<bool> isTokenExpired() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final expirationStr = sp.getString('accessTokenExpiration');
+      
+      if (expirationStr == null || expirationStr.isEmpty) {
+        print('AuthService.isTokenExpired: No expiration date stored, token considered expired');
+        return true;
+      }
+
+      // Try to parse as ISO 8601 datetime
+      try {
+        final expirationTime = DateTime.parse(expirationStr);
+        final now = DateTime.now();
+        // Add 5-minute buffer: refresh if expires within 5 minutes
+        final bufferTime = now.add(const Duration(minutes: 5));
+        
+        final isExpired = bufferTime.isAfter(expirationTime);
+        print('AuthService.isTokenExpired: now=$now, expiration=$expirationTime, isExpired=$isExpired');
+        return isExpired;
+      } catch (e) {
+        print('AuthService.isTokenExpired: Failed to parse expiration datetime: $e');
+        // If we can't parse it, assume expired to be safe
+        return true;
+      }
+    } catch (e) {
+      print('AuthService.isTokenExpired: Error checking token expiration: $e');
+      return true;
+    }
+  }
+
+  /// Refresh access token using refresh token.
+  /// Calls POST /api/auth/refresh with stored refreshToken.
+  /// Returns true if refresh was successful, false otherwise.
+  static Future<bool> refreshToken() async {
+    print('\n=== AuthService.refreshToken START ===');
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final refreshToken = sp.getString('refreshToken');
+      
+      if (refreshToken == null || refreshToken.isEmpty) {
+        print('AuthService.refreshToken: No refresh token stored, cannot refresh');
+        print('=== AuthService.refreshToken END ===\n');
+        return false;
+      }
+
+      final uri = Uri.parse('$baseUrl/api/auth/refresh');
+      final body = jsonEncode({'RefreshToken': refreshToken});
+      
+      print('AuthService.refreshToken: Sending refresh request to: $uri');
+      
+      try {
+        final client = _getHttpClient();
+        final response = await client.post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: body,
+        ).timeout(const Duration(seconds: 10));
+
+        print('AuthService.refreshToken: Response status=${response.statusCode}');
+        
+        if ((response.statusCode == 200 || response.statusCode == 201) && response.body.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(response.body);
+            print('AuthService.refreshToken: Successfully decoded response');
+            await _saveTokensFromBody(decoded);
+            print('AuthService.refreshToken: New tokens saved successfully');
+            print('=== AuthService.refreshToken END ===\n');
+            return true;
+          } catch (e) {
+            print('AuthService.refreshToken: Failed to parse/save tokens: $e');
+            print('=== AuthService.refreshToken END ===\n');
+            return false;
+          }
+        } else {
+          print('AuthService.refreshToken: Unexpected response status ${response.statusCode}: ${response.body}');
+          print('=== AuthService.refreshToken END ===\n');
+          return false;
+        }
+      } catch (e) {
+        print('AuthService.refreshToken: Request failed: $e');
+        print('=== AuthService.refreshToken END ===\n');
+        return false;
+      }
+    } catch (e) {
+      print('AuthService.refreshToken: Error: $e');
+      print('=== AuthService.refreshToken END ===\n');
+      return false;
+    }
+  }
+
+  /// Get access token, automatically refreshing if expired or expiring soon.
+  /// If refresh fails, returns the existing token anyway.
+  static Future<String> getAccessTokenWithRefresh() async {
+    print('AuthService.getAccessTokenWithRefresh: Checking if token needs refresh...');
+    
+    final isExpired = await isTokenExpired();
+    if (isExpired) {
+      print('AuthService.getAccessTokenWithRefresh: Token expired or expiring soon, attempting refresh...');
+      final refreshed = await refreshToken();
+      if (!refreshed) {
+        print('AuthService.getAccessTokenWithRefresh: Token refresh failed, using existing token');
+      }
+    } else {
+      print('AuthService.getAccessTokenWithRefresh: Token is still valid');
+    }
+    
+    final sp = await SharedPreferences.getInstance();
+    final token = sp.getString('auth_token') ?? sp.getString('accessToken') ?? sp.getString('access_token') ?? '';
+    return token;
   }
 }
 
