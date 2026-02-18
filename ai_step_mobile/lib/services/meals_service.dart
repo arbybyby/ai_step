@@ -316,7 +316,7 @@ class MealsService {
         );
       }
 
-      final url = Uri.parse('http://192.168.43.16:8082/api/meals/add');
+      final url = Uri.parse('http://192.168.43.16:8082/meals/add');
       print('\n=== MealsService.addMeal START ===');
       print('MealsService.addMeal: BaseURL: $baseUrl');
       print('MealsService.addMeal: Full URL: $url');
@@ -422,7 +422,7 @@ class MealsService {
         );
       }
 
-      final url = Uri.parse('http://192.168.43.16:8082/api/meals/add');
+      final url = Uri.parse('http://192.168.43.16:8082/meals/add');
       print('\n=== MealsService.trackMeal START ===');
       print('MealsService.trackMeal: BaseURL: $baseUrl');
       print('MealsService.trackMeal: Full URL: $url');

@@ -1,4 +1,5 @@
-﻿using AIS.Domain.Models;
+﻿using AIS.Domain.Exceptions;
+using AIS.Domain.Models;
 using AIS.Domain.Repositories;
 using AIS.Infrastructure.Entities;
 
@@ -41,20 +42,27 @@ public class UserRepository : IUserRepository
     public async Task UpdateAsync(User user)
     {
         var entity = await _context.Users.FindAsync(user.ID);
-        if (entity != null)
-        {
-            entity.Email = user.Email;
-            entity.FirstName = user.FirstName;
-            entity.LastName = user.LastName;
-            entity.IsVerified = user.IsVerified;
-            entity.WeightKg = user.WeightKg;
-            entity.HeightCm = user.HeightCm;
-            entity.CreatedAt = user.CreatedAt;
 
-            _context.Users.Update(entity);
+        if (entity == null)
+        {
+            throw new UserNotFoundException($"User not found with id {user.ID}");
         }
-        await Task.CompletedTask;
+
+        entity.Email = user.Email;
+        entity.FirstName = user.FirstName;
+        entity.LastName = user.LastName;
+        entity.IsVerified = user.IsVerified;
+        entity.WeightKg = user.WeightKg;
+        entity.HeightCm = user.HeightCm;
+        entity.Age = user.Age;
+        entity.ActivityLevel = user.ActivityLevel;
+        entity.FitnessGoal = user.FitnessGoal;
+        entity.Gender = user.Gender;
+
+        _context.Users.Update(entity);
+        await _context.SaveChangesAsync();
     }
+
 
     public async Task SaveChangesAsync()
     {
@@ -82,7 +90,11 @@ public class UserRepository : IUserRepository
             WeightKg = entity.WeightKg,
             HeightCm = entity.HeightCm,
             IsVerified = entity.IsVerified,
-            CreatedAt = entity.CreatedAt
+            CreatedAt = entity.CreatedAt,
+            Age = entity.Age,
+            ActivityLevel = entity.ActivityLevel,
+            FitnessGoal = entity.FitnessGoal,
+            Gender = entity.Gender,
         };
     }
 
@@ -98,7 +110,11 @@ public class UserRepository : IUserRepository
             HeightCm = user.HeightCm,
             IsVerified = user.IsVerified,
             CreatedAt = user.CreatedAt,
-            PasswordHash = string.Empty
+            PasswordHash = string.Empty,
+            ActivityLevel = user.ActivityLevel,
+            Age = user.Age,
+            FitnessGoal = user.FitnessGoal,
+            Gender = user.Gender,
         };
     }
 }

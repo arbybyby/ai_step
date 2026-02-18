@@ -16,6 +16,10 @@ public static class ChannelMessageExtension
         services.AddSingleton(channelDelete.Reader);
         services.AddSingleton(channelDelete.Writer);
 
+        Channel<UserMessage?> userChannel = Channel.CreateUnbounded<UserMessage?>();
+        services.AddSingleton(userChannel.Reader);
+        services.AddSingleton(userChannel.Writer);
+
         return services;
     }
 }

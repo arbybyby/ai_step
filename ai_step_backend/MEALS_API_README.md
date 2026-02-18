@@ -2,7 +2,9 @@
 
 ## Обзор
 
-Этот модуль предоставляет REST API endpoints для управления приемами пищи (meals). Все данные отправляются через RabbitMQ на backend на C# для обработки.
+Этот модуль предоставляет REST API endpoints для управления приемами пищи (meals) и данными пользователей (users). Все данные отправляются через RabbitMQ на backend на C# для обработки.
+
+> **Note:** Endpoint URLs НЕ содержат `/api` префикс, т.к. в приложении не установлен `server.servlet.context-path=/api`. Используйте `/users/submit`, `/meals/add`, `/meals/delete` вместо `/api/users/submit` и т.д.
 
 ## Аутентификация
 
@@ -72,9 +74,43 @@ public enum MealType {
 
 ## API Endpoints
 
-### 1. Добавить прием пищи
+### 1. Отправить данные пользователя
 
-**POST** `/api/meals/add`
+**POST** `/users/submit`
+
+#### Request Body:
+```json
+{
+  "id": 123,
+  "email": "user@example.com",
+  "firstName": "Alex",
+  "lastName": "Ivanov",
+  "age": 28,
+  "height": 180.0,
+  "weight": 75.5,
+  "gender": "male",
+  "activityLevel": "moderate",
+  "goal": "maintain",
+  "isVerified": true,
+  "createdAt": "2026-02-17T10:15:30.000Z",
+  "calorieGoal": 2200.0,
+  "proteinGoal": 150.0,
+  "waterGoal": 2.5,
+  "stepsGoal": 10000
+}
+```
+
+**Response:**
+```json
+{
+  "message": "User request queued successfully",
+  "success": true
+}
+```
+
+### 2. Добавить прием пищи
+
+**POST** `/meals/add`
 
 #### С JWT аутентификацией (app.security.enabled=true)
 
@@ -130,9 +166,9 @@ Content-Type: application/json
 }
 ```
 
-### 2. Удалить прием пищи
+### 3. Удалить прием пищи
 
-**DELETE** `/api/meals/delete`
+**DELETE** `/meals/delete`
 
 #### С JWT аутентификацией (app.security.enabled=true)
 
@@ -178,11 +214,13 @@ Content-Type: application/json
 
 ## RabbitMQ Конфигурация
 
-### Exchange
-- **Name:** `meals.exchange`
-- **Type:** Direct
+### Exchanges
+- **Name:** `meals.exchange` - Type: Direct (для meals)
+- **Name:** `users.exchange` - Type: Topic (для users)
 
 ### Queues
+
+#### Для Meals:
 
 1. **meals.add.queue**
    - **Routing Key:** `meals.add`
@@ -192,11 +230,40 @@ Content-Type: application/json
    - **Routing Key:** `meals.delete`
    - **Назначение:** Удаление приемов пищи
 
+#### Для Users:
+
+3. **users.queue**
+   - **Routing Key:** `users.submit`
+   - **Exchange:** `users.exchange`
+   - **Назначение:** Отправка и обновление данных пользователя
+
 ### Формат сообщений
 
 Сообщения отправляются в JSON формате с использованием Jackson:
 
-**Добавление:**
+**User:**
+```json
+{
+  "id": 123,
+  "email": "user@example.com",
+  "firstName": "Alex",
+  "lastName": "Ivanov",
+  "age": 28,
+  "height": 180.0,
+  "weight": 75.5,
+  "gender": "male",
+  "activityLevel": "moderate",
+  "goal": "maintain",
+  "isVerified": true,
+  "createdAt": "2026-02-17T10:15:30.000Z",
+  "calorieGoal": 2200.0,
+  "proteinGoal": 150.0,
+  "waterGoal": 2.5,
+  "stepsGoal": 10000
+}
+```
+
+**Добавление Meal:**
 ```json
 {
   "Id": 0,
@@ -211,7 +278,7 @@ Content-Type: application/json
 }
 ```
 
-**Удаление:**
+**Удаление Meal:**
 ```json
 {
   "Id": 456,
@@ -261,6 +328,28 @@ rabbitmq:
 ```
 
 ## Запуск
+
+### Важно: RabbitMQ Setup
+
+**Exchange, Queues и Bindings создаются вручную в RabbitMQ**, а не автоматически приложением.
+
+Создайте следующую инфраструктуру через RabbitMQ Management UI или rabbitmqadmin:
+
+**Meals:**
+```bash
+rabbitmqadmin declare exchange name=meals.exchange type=direct durable=true
+rabbitmqadmin declare queue name=meals.add.queue durable=true
+rabbitmqadmin declare queue name=meals.delete.queue durable=true
+rabbitmqadmin declare binding source=meals.exchange destination=meals.add.queue routing_key=meals.add
+rabbitmqadmin declare binding source=meals.exchange destination=meals.delete.queue routing_key=meals.delete
+```
+
+**Users:**
+```bash
+rabbitmqadmin declare exchange name=users.exchange type=topic durable=true
+rabbitmqadmin declare queue name=users.queue durable=true
+rabbitmqadmin declare binding source=users.exchange destination=users.queue routing_key=users.submit
+```
 
 ### Локально
 
@@ -370,13 +459,111 @@ public class MealConsumer
 }
 ```
 
+### Пример Consumer для Users на C#
+
+```csharp
+public class UserConsumer
+{
+    private readonly IConnection _connection;
+    private readonly IModel _channel;
+
+    public UserConsumer()
+    {
+        var factory = new ConnectionFactory() 
+        { 
+            HostName = "localhost",
+            UserName = "guest",
+            Password = "guest"
+        };
+        
+        _connection = factory.CreateConnection();
+        _channel = _connection.CreateModel();
+    }
+
+    public void StartConsuming()
+    {
+        // Consume user messages
+        var userConsumer = new EventingBasicConsumer(_channel);
+        userConsumer.Received += async (model, ea) =>
+        {
+            var body = ea.Body.ToArray();
+            var message = Encoding.UTF8.GetString(body);
+            var user = JsonSerializer.Deserialize<User>(message);
+            
+            // Process user data
+            await AddOrUpdateUserInDatabase(user);
+            
+            _channel.BasicAck(ea.DeliveryTag, false);
+        };
+        _channel.BasicConsume(queue: "users.queue", 
+                            autoAck: false, 
+                            consumer: userConsumer);
+    }
+
+    private async Task AddOrUpdateUserInDatabase(User user)
+    {
+        // Ваша логика добавления или обновления пользователя в БД
+    }
+}
+```
+
+### C# User Class
+
+```csharp
+using System;
+
+public class User
+{
+    public int Id { get; set; }
+    public string Email { get; set; }
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public int Age { get; set; }
+    public double Height { get; set; }
+    public double Weight { get; set; }
+    public string Gender { get; set; }
+    public string ActivityLevel { get; set; }
+    public string Goal { get; set; }
+    public bool IsVerified { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public double CalorieGoal { get; set; }
+    public double ProteinGoal { get; set; }
+    public double WaterGoal { get; set; }
+    public int StepsGoal { get; set; }
+}
+```
+
 ## Тестирование
 
 ### cURL примеры
 
+**Отправить данные пользователя:**
+```bash
+curl -X POST http://localhost:8082/users/submit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": 123,
+    "email": "user@example.com",
+    "firstName": "Alex",
+    "lastName": "Ivanov",
+    "age": 28,
+    "height": 180.0,
+    "weight": 75.5,
+    "gender": "male",
+    "activityLevel": "moderate",
+    "goal": "maintain",
+    "isVerified": true,
+    "createdAt": "2026-02-17T10:15:30.000Z",
+    "calorieGoal": 2200.0,
+    "proteinGoal": 150.0,
+    "waterGoal": 2.5,
+    "stepsGoal": 10000
+  }'
+```
+
 **Добавить прием пищи:**
 ```bash
-curl -X POST http://localhost:8082/api/meals/add \
+curl -X POST http://localhost:8082/meals/add \
   -H "Content-Type: application/json" \
   -d '{
     "userID": 1,
@@ -392,7 +579,7 @@ curl -X POST http://localhost:8082/api/meals/add \
 
 **Удалить прием пищи:**
 ```bash
-curl -X DELETE http://localhost:8082/api/meals/delete \
+curl -X DELETE http://localhost:8082/meals/delete \
   -H "Content-Type: application/json" \
   -d '{
     "id": 1,
@@ -424,18 +611,23 @@ docker-compose logs -f app
 ```
 src/main/java/com/arbybyby/aistep/ai_step_backend/
 ├── config/
-│   └── RabbitMQConfig.java          # Конфигурация RabbitMQ
+│   └── RabbitMQConfig.java          # Конфигурация RabbitMQ (Exchange, Queue, Binding создаются вручную)
 ├── controller/
-│   └── MealsController.java         # REST endpoints
+│   ├── MealsController.java         # REST endpoints для meals
+│   └── UserController.java          # REST endpoints для users
 ├── dto/
-│   ├── AddMealRequest.java          # DTO для добавления
-│   ├── DeleteMealRequest.java       # DTO для удаления
-│   └── MealResponse.java            # DTO ответа
+│   ├── AddMealRequest.java          # DTO для добавления meal
+│   ├── DeleteMealRequest.java       # DTO для удаления meal
+│   ├── MealResponse.java            # DTO ответа для meal
+│   ├── UserRequest.java             # DTO для отправки user
+│   └── UserResponse.java            # DTO ответа для user
 ├── models/
-│   ├── Meal.java                    # Модель данных
-│   └── MealType.java                # Enum типов еды
+│   ├── Meal.java                    # Модель данных Meal
+│   ├── MealType.java                # Enum типов еды
+│   └── User.java                    # Модель данных User
 └── service/
-    └── MealQueueService.java        # Сервис отправки в RabbitMQ
+    ├── MealQueueService.java        # Сервис отправки Meal в RabbitMQ
+    └── UserQueueService.java        # Сервис отправки User в RabbitMQ
 ```
 
 ## Troubleshooting

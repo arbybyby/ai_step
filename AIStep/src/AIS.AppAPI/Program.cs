@@ -1,7 +1,7 @@
-﻿﻿using System.Text;
+﻿using System.Text;
 
 using AIS.AppAPI.Extensions;
-using AIS.AppAPI.HostedServices;
+using AIS.AppAPI.Workers;
 using AIS.Domain.Factories;
 using AIS.Infrastructure;
 using AIS.Infrastructure.Repositories;
@@ -11,7 +11,6 @@ using AIS.Domain.Services;
 using AIS.Infrastructure.RabbitMQ;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);

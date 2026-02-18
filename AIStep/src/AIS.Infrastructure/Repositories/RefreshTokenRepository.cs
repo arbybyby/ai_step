@@ -1,4 +1,4 @@
-﻿﻿using AIS.Domain.Models;
+﻿using AIS.Domain.Models;
 using AIS.Domain.Repositories;
 using AIS.Infrastructure.Entities;
 
