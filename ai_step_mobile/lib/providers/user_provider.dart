@@ -44,17 +44,24 @@ class UserProfileNotifier extends StateNotifier<AsyncValue<User?>> {
 
   Future<void> _refreshFromRemote() async {
     try {
-      final remoteMap = await AuthService.getMe();
+      final results = await Future.wait([
+        AuthService.getMe(),
+        AuthService.getAvatarUrl(),
+      ]);
+      final remoteMap = results[0] as Map<String, dynamic>;
+      final avatarUrl = results[1] as String?;
       if (remoteMap.isEmpty) return;
       final remoteUser = User.fromJson(remoteMap);
       final currentUser = state.whenData((user) => user).value;
       if (currentUser == null) {
-        await _saveLocalProfile(remoteUser);
+        await _saveLocalProfile(remoteUser.copyWith(
+          avatarPath: avatarUrl ?? remoteUser.avatarPath,
+        ));
         return;
       }
-      // Use remote data but preserve local avatar
+      // Use remote data; prefer fresh avatar URL from /api/auth/avatar
       final mergedUser = remoteUser.copyWith(
-        avatarPath: currentUser?.avatarPath ?? remoteUser.avatarPath,
+        avatarPath: avatarUrl ?? currentUser.avatarPath ?? remoteUser.avatarPath,
       );
       await _saveLocalProfile(mergedUser);
     } catch (_) {
@@ -76,6 +83,16 @@ class UserProfileNotifier extends StateNotifier<AsyncValue<User?>> {
     if (currentUser != null) {
       await _saveLocalProfile(currentUser.copyWith(avatarPath: avatarPath));
     }
+  }
+
+  /// Fetches the avatar URL from `/api/auth/avatar` and updates the profile.
+  Future<void> refreshAvatarUrl() async {
+    try {
+      final url = await AuthService.getAvatarUrl();
+      if (url != null && url.isNotEmpty) {
+        await saveAvatarLocally(url);
+      }
+    } catch (_) {}
   }
 
   Future<void> _saveLocalProfile(User user) async {

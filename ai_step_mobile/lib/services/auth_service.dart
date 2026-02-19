@@ -130,6 +130,35 @@ class AuthService {
     }
   }
 
+  /// Fetch avatar info from `/api/auth/avatar`.
+  /// Returns the avatar URL string, or null if not available.
+  static Future<String?> getAvatarUrl() async {
+    final uri = Uri.parse('$baseUrl/api/auth/avatar');
+    print('getAvatarUrl: Sending request to: $uri');
+    try {
+      final client = _getHttpClient();
+      final token = await _getAccessToken();
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      if (token != null && token.isNotEmpty) headers['Authorization'] = 'Bearer $token';
+      final response = await client.get(uri, headers: headers);
+      print('getAvatarUrl Response - Status: ${response.statusCode}, Body: ${response.body}');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.body.isNotEmpty && response.body.startsWith('{')) {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map<String, dynamic>) {
+            final url = decoded['URL']?.toString() ?? decoded['url']?.toString();
+            return url;
+          }
+        }
+        return null;
+      }
+      return null;
+    } catch (e) {
+      print('getAvatarUrl failed: $e');
+      return null;
+    }
+  }
+
   // Helper: read stored access token
   static Future<String?> _getAccessToken() async {
     try {

@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../models/user.dart';
 import '../providers/user_provider.dart';
+import '../services/auth_service.dart';
 import '../services/user_service.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -61,8 +62,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 radius: 50,
                                 backgroundColor: Colors.white,
                                 backgroundImage: user.avatarPath != null
-                                    ? NetworkImage(
-                                        'http://192.168.43.16:9000/avatars/${user.avatarPath}')
+                                    ? NetworkImage(user.avatarPath!.startsWith('http')
+                                        ? user.avatarPath!
+                                        : 'http://192.168.43.16:9000/avatars/${user.avatarPath}')
                                     : null,
                                 child: user.avatarPath == null
                                     ? Text(
@@ -438,14 +440,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
 
       final userService = UserService();
-      final avatarPath =
-          await userService.uploadAvatar(user.id, File(pickedFile.path));
+      await userService.uploadAvatar(user.id, File(pickedFile.path));
 
       if (!context.mounted) return;
 
       await ref
           .read(userProfileProvider.notifier)
-          .saveAvatarLocally(avatarPath);
+          .refreshAvatarUrl();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -557,9 +558,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // TODO: Implement logout functionality
+              await AuthService.logout();
+              if (!context.mounted) return;
+              Navigator.of(context).pushNamedAndRemoveUntil('/signin', (_) => false);
             },
             child: const Text('Logout', style: TextStyle(color: Colors.red)),
           ),

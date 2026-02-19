@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using System.Security.Claims;
 
+using AIS.Domain.Models;
 using AIS.Domain.Repositories;
 
 namespace AIS.AppAPI.Controllers;
@@ -17,14 +18,17 @@ public class AuthController : ControllerBase
     private readonly IAuthService _authService;
     private readonly IJwtService _jwtService;
     private readonly IUserRepository _userRepository;
+    private readonly IAvatarRepository _avatarRepository;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService, IJwtService jwtService, ILogger<AuthController> logger, IUserRepository userRepository)
+    public AuthController(IAuthService authService, IJwtService jwtService, IUserRepository userRepository,
+        IAvatarRepository avatarRepository, ILogger<AuthController> logger)
     {
         _authService = authService;
         _jwtService = jwtService;
-        _logger = logger;
         _userRepository = userRepository;
+        _avatarRepository = avatarRepository;
+        _logger = logger;
     }
 
     [HttpPost("register")]
@@ -178,5 +182,21 @@ public class AuthController : ControllerBase
         _logger.LogInformation("Current user ID: {UserId}, Email: {Email}", userId, user.Email);
 
         return Ok(user);
+    }
+
+    [HttpGet("avatar")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetAvatar()
+    {
+        string? userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(userIdString) || !int.TryParse(userIdString, out int userId))
+        {
+            return Unauthorized(new { message = "User not found" });
+        }
+
+        AvatarURL avatarUrl = await _avatarRepository.Get(userId);
+        return Ok(avatarUrl);
     }
 }

@@ -9,27 +9,29 @@ namespace AIS.AppAPI.Workers;
 
 public class MealConsumerWorker : BackgroundService
 {
-    private readonly ChannelReader<MealMessage?> _mealReader;
+    private readonly ChannelReader<MealMessage> _mealReader;
     private readonly ChannelReader<DeleteMessage> _deleteReader;
-    private readonly ChannelReader<UserMessage?> _userReader;
+    private readonly ChannelReader<UserMessage> _userReader;
+    private readonly ChannelReader<AvatarURlMessage> _avatarReader;
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly RabbitConsumer _consumer;
     private readonly ILogger<MealConsumerWorker> _logger;
 
-    public MealConsumerWorker(
-        RabbitConsumer consumer,
-        ChannelReader<MealMessage?> mealReader,
-        IServiceScopeFactory serviceScopeFactory,
+    public MealConsumerWorker(RabbitConsumer consumer,
+        ChannelReader<MealMessage> mealReader,
         ChannelReader<DeleteMessage> deleteReader,
-        ILogger<MealConsumerWorker> logger,
-        ChannelReader<UserMessage?> userReader)
+        ChannelReader<UserMessage> userReader,
+        ChannelReader<AvatarURlMessage> avatarReader,
+        IServiceScopeFactory serviceScopeFactory,
+        ILogger<MealConsumerWorker> logger)
     {
         _consumer = consumer;
         _mealReader = mealReader;
-        _serviceScopeFactory = serviceScopeFactory;
         _deleteReader = deleteReader;
-        _logger = logger;
         _userReader = userReader;
+        _avatarReader = avatarReader;
+        _serviceScopeFactory = serviceScopeFactory;
+        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -51,8 +53,9 @@ public class MealConsumerWorker : BackgroundService
         var mealTask = ProcessMealMessages(stoppingToken);
         var deleteTask = ProcessDeleteMessages(stoppingToken);
         var userTask = ProcessUserMessage(stoppingToken);
+        var avatarTask = ProcessAvatarMessage(stoppingToken);
 
-        await Task.WhenAll(mealTask, deleteTask, userTask);
+        await Task.WhenAll(mealTask, deleteTask, userTask, avatarTask);
     }
 
     private async Task ProcessMealMessages(CancellationToken stoppingToken)
@@ -83,23 +86,17 @@ public class MealConsumerWorker : BackgroundService
         }
     }
 
-    // `src/AIS.AppAPI/Workers/MealConsumerWorker.cs`
     private async Task ProcessUserMessage(CancellationToken stoppingToken)
     {
-        await foreach (UserMessage? message in _userReader.ReadAllAsync(stoppingToken))
+        await foreach (UserMessage message in _userReader.ReadAllAsync(stoppingToken))
         {
-            if (message is null)
-            {
-                _logger.LogWarning("Received null UserMessage");
-                continue;
-            }
-
             if (message.Id <= 0)
             {
                 _logger.LogWarning("Invalid UserMessage.Id={Id}. Skipping update.", message.Id);
                 continue;
             }
-            _logger.LogInformation("ID: {UserID}",message.Id);
+
+            _logger.LogInformation("ID: {UserID}", message.Id);
 
             try
             {
@@ -142,4 +139,14 @@ public class MealConsumerWorker : BackgroundService
         }
     }
 
+    private async Task ProcessAvatarMessage(CancellationToken stoppingToken)
+    {
+        await foreach (AvatarURlMessage message in _avatarReader.ReadAllAsync(stoppingToken))
+        {
+            using var scope = _serviceScopeFactory.CreateScope();
+            var avatarRepository = scope.ServiceProvider.GetRequiredService<IAvatarRepository>();
+            AvatarURL avatarUrl = new() { UserID = message.UserID, URL = message.AvatarPath };
+            await avatarRepository.Save(avatarUrl);
+        }
+    }
 }
