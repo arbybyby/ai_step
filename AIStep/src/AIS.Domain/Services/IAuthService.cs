@@ -11,4 +11,8 @@ public interface IAuthService
     Task SendVerificationCodeAsync(string email);
 
     Task<bool> VerifyCodeAsync(string email, string code);
+
+    Task SendPasswordResetCodeAsync(string email);
+
+    Task ResetPasswordAsync(string email, string code, string newPassword);
 }

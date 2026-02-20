@@ -60,6 +60,7 @@ builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeReposito
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IUserMealRepository, UserMealRepository>();
 builder.Services.AddScoped<IMealRepository, MealRepository>();
+builder.Services.AddScoped<IAvatarRepository, AvatarRepository>();
 
 // Factories - также Scoped, так как зависят от репозиториев
 builder.Services.AddScoped<UserMealFactory>();

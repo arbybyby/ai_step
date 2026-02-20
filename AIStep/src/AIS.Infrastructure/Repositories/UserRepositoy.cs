@@ -63,6 +63,11 @@ public class UserRepository : IUserRepository
         await _context.SaveChangesAsync();
     }
 
+    public async Task UpdatePasswordAsync(UserEntity userEntity)
+    {
+        _context.Update(userEntity);
+        await _context.SaveChangesAsync();
+    }
 
     public async Task SaveChangesAsync()
     {

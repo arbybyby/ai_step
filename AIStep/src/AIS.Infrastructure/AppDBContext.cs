@@ -32,6 +32,8 @@ public class AppDBContext : DbContext
 
     public DbSet<MealEntity> Meals { get; set; }
 
+    public DbSet<AvatarURLEntity> AvatarURLs { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new UserConfiguration());

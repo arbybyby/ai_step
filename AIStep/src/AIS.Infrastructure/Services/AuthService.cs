@@ -19,7 +19,7 @@ public class AuthService : IAuthService
     private readonly UserRepository _userRepositoryImpl;
 
     public AuthService(
-        IUserRepository userRepository, 
+        IUserRepository userRepository,
         IVerificationCodeRepository verificationCodeRepository,
         IEmailService emailService,
         IJwtService jwtService)
@@ -72,29 +72,37 @@ public class AuthService : IAuthService
             return null;
 
         var userEntity = await _userRepositoryImpl.GetEntityByEmailAsync(email);
-        
+
         if (userEntity == null)
+        {
             return null;
+        }
 
         var passwordHash = HashPassword(password);
-        
+
         if (userEntity.PasswordHash != passwordHash)
+        {
             return null;
+        }
 
         if (!userEntity.IsVerified)
+        {
             throw new InvalidOperationException("Email not verified. Please check your email.");
+        }
 
         var tokens = await _jwtService.GenerateTokensAsync(userEntity.ID, userEntity.Email);
-        
+
         return tokens;
     }
 
     public async Task SendVerificationCodeAsync(string email)
     {
         var user = await _userRepository.GetByEmailAsync(email);
-        
+
         if (user == null)
+        {
             throw new InvalidOperationException("User not found");
+        }
 
         var code = GenerateVerificationCode();
 
@@ -125,7 +133,7 @@ public class AuthService : IAuthService
         await _verificationCodeRepository.SaveChangesAsync();
 
         var user = await _userRepository.GetByEmailAsync(email);
-        
+
         if (user != null)
         {
             user.IsVerified = true;
@@ -135,6 +143,51 @@ public class AuthService : IAuthService
 
         return true;
     }
+
+    public async Task SendPasswordResetCodeAsync(string email)
+    {
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user == null)
+            throw new InvalidOperationException("User not found");
+
+        var code = GenerateVerificationCode();
+
+        var verificationCode = new VerificationCode
+        {
+            Email = email,
+            Code = code,
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(10),
+            IsUsed = false
+        };
+
+        await _verificationCodeRepository.AddAsync(verificationCode);
+        await _verificationCodeRepository.SaveChangesAsync();
+
+        await _emailService.SendVerificationCodeAsync(email, code);
+    }
+
+    public async Task ResetPasswordAsync(string email, string code, string newPassword)
+    {
+        var verificationCode = await _verificationCodeRepository.GetValidCodeAsync(email, code);
+        if (verificationCode == null || verificationCode.IsUsed || verificationCode.ExpiresAt < DateTime.UtcNow)
+            throw new InvalidOperationException("Invalid or expired code");
+
+        var user = await _userRepositoryImpl.GetEntityByEmailAsync(email);
+        if (user == null)
+        {
+            throw new InvalidOperationException("User not found");
+        }
+
+        user.PasswordHash = HashPassword(newPassword);
+        await _userRepositoryImpl.UpdatePasswordAsync(user);
+        await _userRepository.SaveChangesAsync();
+
+        verificationCode.IsUsed = true;
+        await _verificationCodeRepository.UpdateAsync(verificationCode);
+        await _verificationCodeRepository.SaveChangesAsync();
+    }
+
 
     private string HashPassword(string password)
     {

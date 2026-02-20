@@ -6,5 +6,5 @@ public interface IAvatarRepository
 {
     public Task Save(AvatarURL avatarUrl);
 
-    public Task<AvatarURL> Get(int userID);
+    public Task<AvatarURL?> Get(int userID);
 }

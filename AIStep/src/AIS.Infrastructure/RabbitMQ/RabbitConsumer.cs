@@ -238,6 +238,15 @@ public class RabbitConsumer
         await _channel.ExchangeDeclareAsync("avatars.exchange", ExchangeType.Topic, durable: true,
             cancellationToken: cancellationToken);
 
+        await _channel.QueueDeclareAsync(
+            "avatars.queue",
+            durable: true,
+            exclusive: false,
+            autoDelete: false,
+            arguments: null,
+            cancellationToken: cancellationToken
+        );
+
         await _channel.QueueBindAsync("avatars.queue", "avatars.exchange", "users.avatar",
             cancellationToken: cancellationToken);
     }

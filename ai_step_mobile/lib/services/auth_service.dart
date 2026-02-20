@@ -403,5 +403,47 @@ class AuthService {
     final token = sp.getString('auth_token') ?? sp.getString('accessToken') ?? sp.getString('access_token') ?? '';
     return token;
   }
+
+  /// Send forgot password request to /api/auth/forgot-password
+  static Future<http.Response> forgotPassword({required String email}) async {
+    final uri = Uri.parse('$baseUrl/api/auth/forgot-password');
+    final body = jsonEncode({'email': email});
+    print('Sending forgot password request to: $uri');
+    print('Request body: $body');
+    try {
+      final client = _getHttpClient();
+      final response = await client.post(uri, headers: {'Content-Type': 'application/json'}, body: body);
+      print('Response received - Status: ${response.statusCode}');
+      return response;
+    } catch (e) {
+      print('Request failed: $e');
+      rethrow;
+    }
+  }
+
+  /// Send reset password request to /api/auth/reset-password
+  static Future<http.Response> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/auth/reset-password');
+    final body = jsonEncode({
+      'email': email,
+      'code': code,
+      'newPassword': newPassword,
+    });
+    print('Sending reset password request to: $uri');
+    print('Request body: $body');
+    try {
+      final client = _getHttpClient();
+      final response = await client.post(uri, headers: {'Content-Type': 'application/json'}, body: body);
+      print('Response received - Status: ${response.statusCode}');
+      return response;
+    } catch (e) {
+      print('Request failed: $e');
+      rethrow;
+    }
+  }
 }
 
