@@ -145,7 +145,8 @@ public class MealConsumerWorker : BackgroundService
         {
             using var scope = _serviceScopeFactory.CreateScope();
             var avatarRepository = scope.ServiceProvider.GetRequiredService<IAvatarRepository>();
-            AvatarURL avatarUrl = new() { UserID = message.UserID, URL = message.AvatarPath };
+            AvatarURL avatarUrl = new() { UserID = message.UserId, URL = message.AvatarPath };
+            _logger.LogInformation("UserID: {UserID}. AvatarURL: {AvatarURL}", message.UserId, message.AvatarPath);
             await avatarRepository.Save(avatarUrl);
         }
     }

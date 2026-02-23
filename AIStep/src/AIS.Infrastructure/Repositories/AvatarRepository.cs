@@ -17,15 +17,16 @@ public class AvatarRepository : IAvatarRepository
 
     public async Task Save(AvatarURL avatarUrl)
     {
-        AvatarURLEntity? entity = await _context.AvatarURLs.FindAsync(avatarUrl.UserID);
+        AvatarURLEntity? entity = await _context.AvatarURLs.FirstOrDefaultAsync(x => x.UserID == avatarUrl.UserID);
         if (entity == null)
         {
-            await _context.AddAsync(MapToEntity(avatarUrl));
+            await _context.AvatarURLs.AddAsync(MapToEntity(avatarUrl));
         }
         else
         {
-            _context.Update(MapToEntity(avatarUrl));
+            entity.URL = avatarUrl.URL;
         }
+
         await _context.SaveChangesAsync();
     }
 
@@ -40,8 +41,13 @@ public class AvatarRepository : IAvatarRepository
         return new AvatarURLEntity() { UserID = avatarUrl.UserID, URL = avatarUrl.URL, };
     }
 
-    private AvatarURL MapToDomain(AvatarURLEntity? avatarUrlEntity)
+    private AvatarURL? MapToDomain(AvatarURLEntity? avatarUrlEntity)
     {
+        if (avatarUrlEntity is null)
+        {
+            return null;
+        }
+
         return new AvatarURL() { UserID = avatarUrlEntity.UserID, URL = avatarUrlEntity.URL, };
     }
 }

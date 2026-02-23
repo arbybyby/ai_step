@@ -1,5 +1,6 @@
 package com.arbybyby.aistep.ai_step_backend.service;
 
+import com.arbybyby.aistep.ai_step_backend.exception.ValidationException;
 import io.minio.*;
 import io.minio.errors.MinioException;
 import org.slf4j.Logger;
@@ -78,6 +79,13 @@ public class MinioService {
     public String uploadAvatar(Integer userId, MultipartFile file)
             throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException {
 
+        if (userId == null || userId <= 0) {
+            throw new ValidationException("userId must be a positive number, got: " + userId);
+        }
+        if (file == null || file.isEmpty()) {
+            throw new ValidationException("Avatar file must not be empty");
+        }
+
         byte[] bytes = file.getBytes();
 
         // Detect real content type from magic bytes; fall back to declared type
@@ -117,6 +125,9 @@ public class MinioService {
      */
     public void deleteObject(String objectName)
             throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException {
+        if (objectName == null || objectName.isBlank()) {
+            throw new ValidationException("objectName must not be blank");
+        }
         minioClient.removeObject(
                 RemoveObjectArgs.builder()
                         .bucket(bucketName)

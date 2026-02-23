@@ -62,9 +62,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 radius: 50,
                                 backgroundColor: Colors.white,
                                 backgroundImage: user.avatarPath != null
-                                    ? NetworkImage(user.avatarPath!.startsWith('http')
-                                        ? user.avatarPath!
-                                        : 'http://192.168.43.16:9000/avatars/${user.avatarPath}')
+                                    ? NetworkImage(
+                                        user.avatarPath!.startsWith('http')
+                                            ? '${user.avatarPath!}?t=${DateTime.now().millisecondsSinceEpoch}'
+                                            : 'http://192.168.43.16:9000/avatars/${user.avatarPath}?t=${DateTime.now().millisecondsSinceEpoch}',
+                                      )
                                     : null,
                                 child: user.avatarPath == null
                                     ? Text(
@@ -440,13 +442,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
 
       final userService = UserService();
-      await userService.uploadAvatar(user.id, File(pickedFile.path));
+      final avatarPath = await userService.uploadAvatar(user.id, File(pickedFile.path));
 
       if (!context.mounted) return;
 
-      await ref
-          .read(userProfileProvider.notifier)
-          .refreshAvatarUrl();
+      // Immediately update the avatar in the profile with cache busting
+      final userNotifier = ref.read(userProfileProvider.notifier);
+      await userNotifier.updateAvatarPath(avatarPath);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

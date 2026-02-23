@@ -18,7 +18,7 @@ public class WaterTrackingRepository : IWaterTrackerRepository
 
     public async Task<WaterInfo?> Get(int userId)
     {
-        WaterInfoEntity entity = await _appDBContext.WaterInfos
+        WaterInfoEntity? entity = await _appDBContext.WaterInfos
             .FirstOrDefaultAsync(w => w.UserID == userId);
 
         if (entity is null)

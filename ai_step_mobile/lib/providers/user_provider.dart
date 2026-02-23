@@ -95,6 +95,16 @@ class UserProfileNotifier extends StateNotifier<AsyncValue<User?>> {
     } catch (_) {}
   }
 
+  /// Immediately updates the avatar path in the profile
+  Future<void> updateAvatarPath(String newAvatarPath) async {
+    final currentUser = state.whenData((user) => user).value;
+    if (currentUser != null) {
+      final updatedUser = currentUser.copyWith(avatarPath: newAvatarPath);
+      await _saveLocalProfile(updatedUser);
+      state = AsyncValue.data(updatedUser);
+    }
+  }
+
   Future<void> _saveLocalProfile(User user) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userStorageKey, jsonEncode(user.toJson()));

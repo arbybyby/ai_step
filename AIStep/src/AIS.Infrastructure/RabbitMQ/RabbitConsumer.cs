@@ -135,7 +135,7 @@ public class RabbitConsumer
         {
             try
             {
-                AvatarURlMessage? avatarURl = JsonSerializer.Deserialize<AvatarURlMessage?>(ea.Body.ToArray());
+                AvatarURlMessage? avatarURl = JsonSerializer.Deserialize<AvatarURlMessage>(ea.Body.ToArray(), JsonOptions);
                 if (avatarURl is null)
                 {
                     _logger.LogWarning("Avatar message deserialized to null");
@@ -158,6 +158,8 @@ public class RabbitConsumer
         await _channel.BasicConsumeAsync("meals.delete.queue", autoAck: false, consumer: deleteConsumer,
             cancellationToken: cancellationToken);
         await _channel.BasicConsumeAsync("users.queue", autoAck: false, consumer: userConsumer,
+            cancellationToken: cancellationToken);
+        await _channel.BasicConsumeAsync("avatars.queue", autoAck: false, consumer: avatarConsumer,
             cancellationToken: cancellationToken);
     }
 
@@ -216,18 +218,25 @@ public class RabbitConsumer
             throw new InvalidOperationException("RabbitMQ channel wasn't initialized");
         }
 
+        // Declare all exchanges first
         await _channel.ExchangeDeclareAsync("meals-exchange", ExchangeType.Topic, durable: true,
             cancellationToken: cancellationToken);
+        await _channel.ExchangeDeclareAsync("users.exchange", ExchangeType.Topic, durable: true,
+            cancellationToken: cancellationToken);
+        await _channel.ExchangeDeclareAsync("avatars.exchange", ExchangeType.Topic, durable: true,
+            cancellationToken: cancellationToken);
+
+        // Declare all queues
         await _channel.QueueDeclareAsync("meals.add.queue", durable: true, exclusive: false, autoDelete: false,
             arguments: null, cancellationToken: cancellationToken);
         await _channel.QueueDeclareAsync("meals.delete.queue", durable: true, exclusive: false, autoDelete: false,
             arguments: null, cancellationToken: cancellationToken);
-
-        await _channel.ExchangeDeclareAsync("users.exchange", ExchangeType.Topic, durable: true,
-            cancellationToken: cancellationToken);
         await _channel.QueueDeclareAsync("users.queue", durable: true, exclusive: false, autoDelete: false,
             arguments: null, cancellationToken: cancellationToken);
+        await _channel.QueueDeclareAsync("avatars.queue", durable: true, exclusive: false, autoDelete: false,
+            arguments: null, cancellationToken: cancellationToken);
 
+        // Bind all queues
         await _channel.QueueBindAsync("meals.add.queue", "meals-exchange", "meals.add",
             cancellationToken: cancellationToken);
         await _channel.QueueBindAsync("meals.delete.queue", "meals-exchange", "meals.delete",
@@ -235,17 +244,6 @@ public class RabbitConsumer
         await _channel.QueueBindAsync("users.queue", "users.exchange", "users.submit",
             cancellationToken: cancellationToken);
 
-        await _channel.ExchangeDeclareAsync("avatars.exchange", ExchangeType.Topic, durable: true,
-            cancellationToken: cancellationToken);
-
-        await _channel.QueueDeclareAsync(
-            "avatars.queue",
-            durable: true,
-            exclusive: false,
-            autoDelete: false,
-            arguments: null,
-            cancellationToken: cancellationToken
-        );
 
         await _channel.QueueBindAsync("avatars.queue", "avatars.exchange", "users.avatar",
             cancellationToken: cancellationToken);
@@ -307,7 +305,7 @@ public class UserMessage
 
 public class AvatarURlMessage
 {
-    public int UserID { get; init; }
+    public int UserId { get; init; }
 
     public string AvatarPath { get; init; }
 }
