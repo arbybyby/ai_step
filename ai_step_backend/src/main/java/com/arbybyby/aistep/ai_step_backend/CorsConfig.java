@@ -20,7 +20,7 @@ public class CorsConfig {
                         .allowedOriginPatterns("*") // Allow all origins for mobile apps
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                         .allowedHeaders("*")
-                        .allowCredentials(true)
+                        .allowCredentials(false)
                         .maxAge(3600);
             }
         };

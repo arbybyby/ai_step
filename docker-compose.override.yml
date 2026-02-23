@@ -1,0 +1,16 @@
+services:
+  ais.appapi:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/https:ro
+
+  ais.adminpanel:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/https:ro

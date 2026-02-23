@@ -1,132 +1,201 @@
-package com.arbybyby.aistep.ai_step_backend.models;
+ package com.arbybyby.aistep.ai_step_backend.models;
 
-import jakarta.persistence.*;
-import java.time.Instant;
+import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "users")
+
 public class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Column(nullable = false, unique = true)
+    private Integer id;
     private String email;
-    
-    @Column(nullable = false)
-    private String password;
-    
-    @Column(name = "first_name")
     private String firstName;
-    
-    @Column(name = "last_name")
     private String lastName;
-    
-    @Column(name = "email_verified")
-    private Boolean emailVerified = false;
-    
-    private String locale;
-    private String timezone;
-    
-    @Column(name = "units_preference")
-    private String unitsPreference = "metric";
-    
-    @Column(name = "google_id", unique = true)
-    private String googleId;
-    
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt = Instant.now();
-    
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt = Instant.now();
-    
-    @Column(name = "last_login_at")
-    private Instant lastLoginAt;
-    
-    // Profile-specific fields
-    @Column(name = "height_cm")
-    private Double heightCm;
-    
-    @Column(name = "weight_kg")
-    private Double weightKg;
-    
-    private String gender;
-    
-    @Column(name = "activity_level")
-    private String activityLevel;
-    
-    private String goal;
-    
-    @Column(name = "birth_date")
-    private String birthDate;
-    
     private Integer age;
+    private Double height;
+    private Double weight;
+    private Gender gender;
+    private ActivityLevel activityLevel;
+    private FitnessGoal goal;
+    private Boolean isVerified;
+    private LocalDateTime createdAt;
+    private Double calorieGoal;
+    private Double proteinGoal;
+    private Double waterGoal;
+    private Integer stepsGoal;
 
-    public User() {}
-
-    @PreUpdate
-    public void preUpdate() {
-        updatedAt = Instant.now();
+    // Default constructor
+    public User() {
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    // Constructor with all fields
+    public User(Integer id, String email, String firstName, String lastName, Integer age, 
+                Double height, Double weight, Gender gender, ActivityLevel activityLevel, FitnessGoal goal,
+                Boolean isVerified, LocalDateTime createdAt, Double calorieGoal, Double proteinGoal,
+                Double waterGoal, Integer stepsGoal) {
+        this.id = id;
+        this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.age = age;
+        this.height = height;
+        this.weight = weight;
+        this.gender = gender;
+        this.activityLevel = activityLevel;
+        this.goal = goal;
+        this.isVerified = isVerified;
+        this.createdAt = createdAt;
+        this.calorieGoal = calorieGoal;
+        this.proteinGoal = proteinGoal;
+        this.waterGoal = waterGoal;
+        this.stepsGoal = stepsGoal;
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    // Getters and Setters
+    public Integer getId() {
+        return id;
+    }
 
-    public String getPassword() { return password; }
-    public void setPassword(String passwordHash) { this.password = passwordHash; }
+    public void setId(Integer id) {
+        this.id = id;
+    }
 
-    public String getFirstName() { return firstName; }
-    public void setFirstName(String name) { this.firstName = name; }
+    public String getEmail() {
+        return email;
+    }
 
-    public String getLastName() { return lastName; }
-    public void setLastName(String name) { this.lastName = name; }
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-    public Boolean getEmailVerified() { return emailVerified; }
-    public void setEmailVerified(Boolean emailVerified) { this.emailVerified = emailVerified; }
+    public String getFirstName() {
+        return firstName;
+    }
 
-    public String getLocale() { return locale; }
-    public void setLocale(String locale) { this.locale = locale; }
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
 
-    public String getTimezone() { return timezone; }
-    public void setTimezone(String timezone) { this.timezone = timezone; }
+    public String getLastName() {
+        return lastName;
+    }
 
-    public String getUnitsPreference() { return unitsPreference; }
-    public void setUnitsPreference(String unitsPreference) { this.unitsPreference = unitsPreference; }
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
 
-    public String getGoogleId() { return googleId; }
-    public void setGoogleId(String googleId) { this.googleId = googleId; }
+    public Integer getAge() {
+        return age;
+    }
 
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public void setAge(Integer age) {
+        this.age = age;
+    }
 
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+    public Double getHeight() {
+        return height;
+    }
 
-    public Instant getLastLoginAt() { return lastLoginAt; }
-    public void setLastLoginAt(Instant lastLoginAt) { this.lastLoginAt = lastLoginAt; }
+    public void setHeight(Double height) {
+        this.height = height;
+    }
 
-    // Profile-specific getters and setters
-    public Double getHeightCm() { return heightCm; }
-    public void setHeightCm(Double heightCm) { this.heightCm = heightCm; }
+    public Double getWeight() {
+        return weight;
+    }
 
-    public Double getWeightKg() { return weightKg; }
-    public void setWeightKg(Double weightKg) { this.weightKg = weightKg; }
+    public void setWeight(Double weight) {
+        this.weight = weight;
+    }
 
-    public String getGender() { return gender; }
-    public void setGender(String gender) { this.gender = gender; }
+    public Gender getGender() {
+        return gender;
+    }
 
-    public String getActivityLevel() { return activityLevel; }
-    public void setActivityLevel(String activityLevel) { this.activityLevel = activityLevel; }
+    public void setGender(Gender gender) {
+        this.gender = gender;
+    }
 
-    public String getGoal() { return goal; }
-    public void setGoal(String goal) { this.goal = goal; }
+    public ActivityLevel getActivityLevel() {
+        return activityLevel;
+    }
 
-    public String getBirthDate() { return birthDate; }
-    public void setBirthDate(String birthDate) { this.birthDate = birthDate; }
+    public void setActivityLevel(ActivityLevel activityLevel) {
+        this.activityLevel = activityLevel;
+    }
 
-    public Integer getAge() { return age; }
-    public void setAge(Integer age) { this.age = age; }
+    public FitnessGoal getGoal() {
+        return goal;
+    }
+
+    public void setGoal(FitnessGoal goal) {
+        this.goal = goal;
+    }
+
+    public Boolean getIsVerified() {
+        return isVerified;
+    }
+
+    public void setIsVerified(Boolean isVerified) {
+        this.isVerified = isVerified;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Double getCalorieGoal() {
+        return calorieGoal;
+    }
+
+    public void setCalorieGoal(Double calorieGoal) {
+        this.calorieGoal = calorieGoal;
+    }
+
+    public Double getProteinGoal() {
+        return proteinGoal;
+    }
+
+    public void setProteinGoal(Double proteinGoal) {
+        this.proteinGoal = proteinGoal;
+    }
+
+    public Double getWaterGoal() {
+        return waterGoal;
+    }
+
+    public void setWaterGoal(Double waterGoal) {
+        this.waterGoal = waterGoal;
+    }
+
+    public Integer getStepsGoal() {
+        return stepsGoal;
+    }
+
+    public void setStepsGoal(Integer stepsGoal) {
+        this.stepsGoal = stepsGoal;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", email='" + email + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", age=" + age +
+                ", height=" + height +
+                ", weight=" + weight +
+                ", gender=" + gender +
+                ", activityLevel='" + activityLevel + '\'' +
+                ", goal='" + goal + '\'' +
+                ", isVerified=" + isVerified +
+                ", createdAt=" + createdAt +
+                ", calorieGoal=" + calorieGoal +
+                ", proteinGoal=" + proteinGoal +
+                ", waterGoal=" + waterGoal +
+                ", stepsGoal=" + stepsGoal +
+                '}';
+    }
 }

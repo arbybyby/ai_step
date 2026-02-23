@@ -1,0 +1,59 @@
+@page
+@model AIS.AdminPanel.Pages.LoginModel
+@{
+    ViewData["Title"] = "Вход";
+}
+
+<div class="container d-flex justify-content-center align-items-center min-vh-100">
+    <div class="card shadow-lg" style="width: 100%; max-width: 400px;">
+        <div class="card-body p-5">
+            <h2 class="text-center mb-4">Админ Панель</h2>
+            <h5 class="text-center mb-4 text-muted">Вход</h5>
+
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @Model.ErrorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <form method="post" class="needs-validation">
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email"
+                           class="form-control @(ViewData.ModelState.ContainsKey("LoginRequest.Email") && !ViewData.ModelState["LoginRequest.Email"]!.Errors.Any() ? "" : "")"
+                           id="email"
+                           asp-for="LoginRequest.Email"
+                           placeholder="Введите ваш email"
+                           required>
+                    <span asp-validation-for="LoginRequest.Email" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label">Пароль</label>
+                    <input type="password"
+                           class="form-control"
+                           id="password"
+                           asp-for="LoginRequest.Password"
+                           placeholder="Введите пароль"
+                           required>
+                    <span asp-validation-for="LoginRequest.Password" class="text-danger small"></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Вход</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+
+<style>
+    .min-vh-100 {
+        min-height: 100vh;
+    }
+</style>
+
