@@ -1,4 +1,4 @@
-﻿using AIS.Domain.Exceptions;
+﻿﻿using AIS.Domain.Exceptions;
 using AIS.Domain.Models;
 using AIS.Domain.Repositories;
 using AIS.Infrastructure.Entities;
@@ -55,20 +55,21 @@ public class StepsRepository : IStepsRepository
     public async Task SaveAsync(DayStepsInfo dayStepsInfo)
     {
         var entity = MapToEntity(dayStepsInfo);
-        
+
         var existingEntity = await _dbContext.DayStepsInfos
             .FirstOrDefaultAsync(d => d.UserID == dayStepsInfo.UserID && d.Date == dayStepsInfo.Date);
-        
+
         if (existingEntity != null)
         {
             existingEntity.StepsCount = entity.StepsCount;
+            existingEntity.DistanceKM = entity.DistanceKM;
             _dbContext.DayStepsInfos.Update(existingEntity);
         }
         else
         {
             await _dbContext.DayStepsInfos.AddAsync(entity);
         }
-        
+
         await _dbContext.SaveChangesAsync();
     }
 

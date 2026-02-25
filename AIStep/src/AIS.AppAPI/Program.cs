@@ -1,4 +1,4 @@
-﻿using System.Text;
+﻿﻿using System.Text;
 
 using AIS.AppAPI.Extensions;
 using AIS.AppAPI.Workers;
@@ -70,6 +70,7 @@ builder.Services.AddHostedService<MealConsumerWorker>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<WaterTrackerService>();
 builder.Services.AddScoped<StepsService>();
+builder.Services.AddScoped<CaloriesService>();
 builder.Services.AddScoped<IJwtService, JwtService>();  // Зависит от IRefreshTokenRepository и IUserRepository
 
 // Эти сервисы могут оставаться Singleton, так как не зависят от DbContext

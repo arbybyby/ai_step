@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+﻿﻿using System.Security.Claims;
 
 using AIS.Domain.Exceptions;
 using AIS.Domain.Models;
@@ -91,6 +91,57 @@ public class StepsController : ControllerBase
         catch(Exception ex)
         {
             return Problem();
+        }
+    }
+
+    [HttpGet("distance/today")]
+    public async Task<IActionResult> GetTodayDistanceAsync()
+    {
+        var idValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(idValue) || !int.TryParse(idValue, out int userID))
+        {
+            _logger.LogWarning("User id claim missing or invalid. Claim value: {ClaimValue}", idValue);
+            return Unauthorized();
+        }
+
+        try
+        {
+            DayStepsInfo result = await _stepsService.GetDayStepsInfoAsync(userID);
+            return Ok(new { distanceKM = result.DistanceKM });
+        }
+        catch (DayStepsNotFoundException)
+        {
+            return Ok(new { distanceKM = 0.0 });
+        }
+        catch (Exception)
+        {
+            return Problem(
+                detail: "An unexpected error occurred while retrieving today's distance.",
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    [HttpGet("distance/week")]
+    public async Task<IActionResult> GetWeekDistanceAsync()
+    {
+        var idValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(idValue) || !int.TryParse(idValue, out int userID))
+        {
+            _logger.LogWarning("User id claim missing or invalid. Claim value: {ClaimValue}", idValue);
+            return Unauthorized();
+        }
+
+        try
+        {
+            WeekStepsInfo weekInfo = await _stepsService.GetWeekStepsInfo(userID);
+            double totalDistanceKM = weekInfo.DayStepsInfo?.Sum(d => d.DistanceKM) ?? 0.0;
+            return Ok(new { totalDistanceKM, days = weekInfo.DayStepsInfo?.Select(d => new { d.Date, d.DistanceKM }) });
+        }
+        catch (Exception)
+        {
+            return Problem(
+                detail: "An unexpected error occurred while retrieving week distance.",
+                statusCode: StatusCodes.Status500InternalServerError);
         }
     }
 }

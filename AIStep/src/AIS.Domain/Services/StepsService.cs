@@ -33,7 +33,7 @@ public class StepsService
             UserID = userID,
             Date = DateOnly.FromDateTime(DateTime.Now),
             StepsCount = stepsCount,
-            DistanceKM = CalculateDistance(stepsCount, height: 170.0, heightIsCm: true, strideFactor: 0.415, inKilometers: true)
+            DistanceKM = CalculateDistance(stepsCount, height: user.HeightCm, heightIsCm: true, strideFactor: 0.415, inKilometers: true)
         };
 
         await _stepsRepository.SaveAsync(dayStepsInfo);
@@ -73,11 +73,13 @@ public class StepsService
 
     private double EstimateStrideMeters(double height, bool heightIsCm = true, double strideFactor = 0.415)
     {
-        if (height <= 0.0)
+        if (height < 0.0)
         {
             _logger.LogError("Invalid height value: {Height}. Height must be greater than 0.", height);
             throw new ArgumentOutOfRangeException(nameof(height), "Height must be > 0.");
         }
+
+        height = height == 0 ? 170.0 : height;
 
         double heightCm = heightIsCm ? height : height * 2.54;
         double heightMeters = heightCm / 100.0;

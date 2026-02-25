@@ -8,6 +8,7 @@ import '../services/step_counter_service.dart';
 import '../services/step_storage_service.dart';
 import '../services/background_sync_service.dart';
 import '../services/notification_service.dart';
+import '../services/calories_service.dart';
 import 'dart:async';
 import 'weekly_progress_screen.dart';
 import 'package:intl/intl.dart';
@@ -25,10 +26,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _lastSyncedSteps = 0;
   bool _goalAchieved = false;
   Timer? _syncTimer;
+  Timer? _caloriesTimer;
   bool _isSyncing = false;
   bool _isLoggingOut = false;
   DateTime _lastManualSyncAttempt = DateTime.fromMillisecondsSinceEpoch(0);
   String _displayName = '';
+  double? _caloriesBurned;
+  double? _distanceKm;
+  Timer? _distanceTimer;
+  final CaloriesService _caloriesService = CaloriesService();
 
   @override
   void initState() {
@@ -94,6 +100,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         print('HomeScreen._initializeServices: stackTrace: $stackTrace');
       }
     }
+
+    // Start long-polling for calories burned today (every 10 seconds)
+    _fetchCaloriesBurned();
+    _caloriesTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _fetchCaloriesBurned();
+    });
+
+    // Start long-polling for distance today (every 10 seconds)
+    _fetchDistanceToday();
+    _distanceTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _fetchDistanceToday();
+    });
 
     // Set up frequent periodic sync timer (every 10 seconds) to keep data fresh
     _syncTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
@@ -240,9 +258,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
 
+  Future<void> _fetchCaloriesBurned() async {
+    final value = await _caloriesService.getCaloriesBurnedToday();
+    if (value != null && mounted) {
+      setState(() {
+        _caloriesBurned = value;
+      });
+    }
+  }
+
+  Future<void> _fetchDistanceToday() async {
+    final value = await _caloriesService.getDistanceToday();
+    if (value != null && mounted) {
+      setState(() {
+        _distanceKm = value;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _syncTimer?.cancel();
+    _caloriesTimer?.cancel();
+    _distanceTimer?.cancel();
     _stepCounterService.dispose();
     super.dispose();
   }
@@ -337,17 +375,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                     const SizedBox(height: 18),
 
-                    // Small stats row (Calories, Distance)
+                    // Calories + Distance row
                     Row(
                       children: [
-                        Expanded(child: _statCard(icon: Icons.local_fire_department, title: '0 kcal', subtitle: 'Calories')),
+                        Expanded(
+                          child: _statCard(
+                            icon: Icons.local_fire_department,
+                            title: _caloriesBurned != null
+                                ? '${_caloriesBurned!.toStringAsFixed(1)} kcal'
+                                : '— kcal',
+                            subtitle: 'Calories',
+                          ),
+                        ),
                         const SizedBox(width: 12),
-                        Expanded(child: _statCard(icon: Icons.straighten, title: '0.0 km', subtitle: 'Distance')),
+                        Expanded(
+                          child: _statCard(
+                            icon: Icons.straighten,
+                            title: _distanceKm != null
+                                ? '${_distanceKm!.toStringAsFixed(2)} km'
+                                : '— km',
+                            subtitle: 'Distance',
+                          ),
+                        ),
                       ],
                     ),
-
-                    const SizedBox(height: 12),
-                    _statCard(icon: Icons.timer, title: '0 min', subtitle: 'Active Minutes', fullWidth: true),
 
                     const SizedBox(height: 16),
 
