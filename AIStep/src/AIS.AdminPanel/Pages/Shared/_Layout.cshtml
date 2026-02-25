@@ -30,6 +30,9 @@
                 <a class="ais-nav-link @(Context.Request.Path.StartsWithSegments("/Meals") || Context.Request.Path.StartsWithSegments("/MealEdit") ? "active" : "")" asp-page="/Meals">
                     <i class="bi bi-egg-fried"></i> Блюда
                 </a>
+                <a class="ais-nav-link @(Context.Request.Path.StartsWithSegments("/Admins") || Context.Request.Path.StartsWithSegments("/AdminCreate") ? "active" : "")" asp-page="/Admins">
+                    <i class="bi bi-shield-lock-fill"></i> Администраторы
+                </a>
             </nav>
             <div class="ais-sidebar-footer">
                 <div class="ais-user-info">

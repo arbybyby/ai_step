@@ -1,4 +1,4 @@
-﻿using AIS.Domain.Models;
+﻿﻿using AIS.Domain.Models;
 using AIS.Domain.Repositories;
 using AIS.Infrastructure.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -59,6 +59,16 @@ public class AdminRepository : IAdminRepository
     {
         var entities = await _context.Admins.ToListAsync();
         return entities.Select(MapToAdmin).ToList();
+    }
+
+    public async Task DeleteAsync(int id)
+    {
+        var entity = await _context.Admins.FindAsync(id);
+        if (entity != null)
+        {
+            _context.Admins.Remove(entity);
+            await _context.SaveChangesAsync();
+        }
     }
 
     private Admin MapToAdmin(AdminEntity entity)

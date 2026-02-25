@@ -1,4 +1,4 @@
-﻿using AIS.Domain.Models;
+﻿﻿using AIS.Domain.Models;
 
 namespace AIS.Domain.Repositories;
 
@@ -9,5 +9,6 @@ public interface IAdminRepository
     Task<Admin> CreateAsync(Admin admin, string passwordHash);
     Task<bool> ValidatePasswordAsync(string email, string password);
     Task<List<Admin>> GetAllAsync();
+    Task DeleteAsync(int id);
 }
 
