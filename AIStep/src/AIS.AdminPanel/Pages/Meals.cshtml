@@ -4,98 +4,100 @@
     ViewData["Title"] = "Управление блюдами";
 }
 
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1>Управление блюдами</h1>
-                <a href="@Url.Page("/MealEdit")" class="btn btn-success">
-                    <i class="bi bi-plus-circle"></i> Добавить блюдо
-                </a>
-            </div>
-
-            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-            {
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    @Model.ErrorMessage
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            }
-
-            @if (!string.IsNullOrEmpty(Model.SuccessMessage))
-            {
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    @Model.SuccessMessage
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            }
-
-            @if (Model.Meals.Count == 0)
-            {
-                <div class="alert alert-info">
-                    Нет добавленных блюд. <a href="@Url.Page("/MealEdit")">Добавьте первое блюдо</a>
-                </div>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>ID</th>
-                                <th>Название</th>
-                                <th>Тип</th>
-                                <th>Калории</th>
-                                <th>Белки</th>
-                                <th>Углеводы</th>
-                                <th>Жиры</th>
-                                <th>Действия</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var meal in Model.Meals)
-                            {
-                                <tr>
-                                    <td>@meal.Id</td>
-                                    <td>@meal.MealName</td>
-                                    <td>
-                                        <span class="badge bg-info">@meal.MealType</span>
-                                    </td>
-                                    <td>@meal.Calories</td>
-                                    <td>@meal.Protein</td>
-                                    <td>@meal.Carbs</td>
-                                    <td>@meal.Fat</td>
-                                    <td>
-                                        <a href="@Url.Page("/MealEdit", new { id = meal.Id })" class="btn btn-sm btn-primary">
-                                            <i class="bi bi-pencil"></i> Редактировать
-                                        </a>
-                                        <form method="post" asp-page-handler="Delete" style="display:inline;">
-                                            <input type="hidden" name="id" value="@meal.Id" />
-                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены?')">
-                                                <i class="bi bi-trash"></i> Удалить
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-
-            <div class="mt-4">
-                <a href="@Url.Page("/Index")" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left"></i> Назад на главную
-                </a>
-            </div>
-        </div>
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="ais-title"><i class="bi bi-egg-fried me-2"></i>Блюда</h1>
+    <a href="@Url.Page("/MealEdit")" class="btn btn-ais">
+        <i class="bi bi-plus-circle me-1"></i> Добавить блюдо
+    </a>
 </div>
 
-<style>
-    .table-responsive {
-        border-radius: 0.5rem;
-        overflow: hidden;
-    }
-</style>
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
 
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="alert ais-alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>@Model.SuccessMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (Model.Meals.Count == 0)
+{
+    <div class="ais-empty-state">
+        <i class="bi bi-egg display-4 mb-3"></i>
+        <p>Нет блюд. <a href="@Url.Page("/MealEdit")" class="text-success">Добавьте первое блюдо</a></p>
+    </div>
+}
+else
+{
+    <div class="ais-card">
+        <div class="ais-card-header">
+            <i class="bi bi-list-ul me-2"></i>Всего блюд: <strong>@Model.Meals.Count</strong>
+        </div>
+        <div class="table-responsive">
+            <table class="table ais-table mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Название</th>
+                        <th>Тип</th>
+                        <th>Калории</th>
+                        <th>Белки</th>
+                        <th>Углеводы</th>
+                        <th>Жиры</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var meal in Model.Meals)
+                    {
+                        <tr>
+                            <td><span class="ais-id-badge">#@meal.Id</span></td>
+                            <td><strong>@meal.MealName</strong></td>
+                            <td>
+                                @switch ((int)meal.MealType)
+                                {
+                                    case 0:
+                                        <span class="ais-badge ais-badge-teal">Завтрак</span>
+                                        break;
+                                    case 1:
+                                        <span class="ais-badge ais-badge-green">Обед</span>
+                                        break;
+                                    case 2:
+                                        <span class="ais-badge ais-badge-blue">Ужин</span>
+                                        break;
+                                    default:
+                                        <span class="ais-badge ais-badge-gray">@meal.MealType</span>
+                                        break;
+                                }
+                            </td>
+                            <td>@meal.Calories ккал</td>
+                            <td>@meal.Protein г</td>
+                            <td>@meal.Carbs г</td>
+                            <td>@meal.Fat г</td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <a href="@Url.Page("/MealEdit", new { id = meal.Id })" class="btn btn-ais-sm">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form method="post" asp-page-handler="Delete" style="display:inline;">
+                                        <input type="hidden" name="id" value="@meal.Id" />
+                                        <button type="submit" class="btn btn-ais-sm btn-ais-danger" onclick="return confirm('Удалить блюдо «@meal.MealName»?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

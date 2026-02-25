@@ -1,0 +1,125 @@
+@page "{id:int}"
+@model UserEditModel
+@using AIS.Domain.Models
+@{
+    ViewData["Title"] = "Редактирование пользователя";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+
+            <div class="d-flex align-items-center mb-4 gap-3">
+                <a href="@Url.Page("/Users")" class="btn btn-ais-outline">
+                    <i class="bi bi-arrow-left me-1"></i> Назад
+                </a>
+                <h1 class="ais-title mb-0"><i class="bi bi-person-gear me-2"></i>Редактирование пользователя <span class="ais-id-badge">#@Model.UserId</span></h1>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>@Model.ErrorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <div class="ais-card shadow-lg">
+                <div class="ais-card-header">
+                    <i class="bi bi-person-fill me-2"></i>Данные пользователя
+                </div>
+                <div class="ais-card-body">
+                    <form method="post">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="UserRequest.FirstName" class="ais-label">Имя <span class="text-danger">*</span></label>
+                                <input asp-for="UserRequest.FirstName" class="ais-input" placeholder="Имя" />
+                                <span asp-validation-for="UserRequest.FirstName" class="ais-validation"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="UserRequest.LastName" class="ais-label">Фамилия <span class="text-danger">*</span></label>
+                                <input asp-for="UserRequest.LastName" class="ais-input" placeholder="Фамилия" />
+                                <span asp-validation-for="UserRequest.LastName" class="ais-validation"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="UserRequest.Email" class="ais-label">Email <span class="text-danger">*</span></label>
+                            <input asp-for="UserRequest.Email" class="ais-input" placeholder="example@mail.com" />
+                            <span asp-validation-for="UserRequest.Email" class="ais-validation"></span>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label asp-for="UserRequest.Age" class="ais-label">Возраст</label>
+                                <input asp-for="UserRequest.Age" type="number" class="ais-input" min="1" max="150" />
+                                <span asp-validation-for="UserRequest.Age" class="ais-validation"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="UserRequest.HeightCm" class="ais-label">Рост (см)</label>
+                                <input asp-for="UserRequest.HeightCm" type="number" class="ais-input" min="0" max="300" step="0.1" />
+                                <span asp-validation-for="UserRequest.HeightCm" class="ais-validation"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="UserRequest.WeightKg" class="ais-label">Вес (кг)</label>
+                                <input asp-for="UserRequest.WeightKg" type="number" class="ais-input" min="0" max="500" step="0.1" />
+                                <span asp-validation-for="UserRequest.WeightKg" class="ais-validation"></span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label asp-for="UserRequest.Gender" class="ais-label">Пол</label>
+                                <select asp-for="UserRequest.Gender" class="ais-select">
+                                    <option value="@((int)Gender.None)">Не указан</option>
+                                    <option value="@((int)Gender.Male)">Мужской</option>
+                                    <option value="@((int)Gender.Female)">Женский</option>
+                                    <option value="@((int)Gender.Other)">Другой</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="UserRequest.ActivityLevel" class="ais-label">Активность</label>
+                                <select asp-for="UserRequest.ActivityLevel" class="ais-select">
+                                    <option value="@((int)ActivityLevel.Sedentary)">Сидячий</option>
+                                    <option value="@((int)ActivityLevel.Light)">Лёгкий</option>
+                                    <option value="@((int)ActivityLevel.Moderate)">Умеренный</option>
+                                    <option value="@((int)ActivityLevel.Active)">Активный</option>
+                                    <option value="@((int)ActivityLevel.VeryActive)">Очень активный</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="UserRequest.FitnessGoal" class="ais-label">Цель</label>
+                                <select asp-for="UserRequest.FitnessGoal" class="ais-select">
+                                    <option value="@((int)FitnessGoal.LoseWeight)">Похудеть</option>
+                                    <option value="@((int)FitnessGoal.MaintainWeight)">Поддержать вес</option>
+                                    <option value="@((int)FitnessGoal.GainMuscle)">Набрать мышцы</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check ais-checkbox">
+                                <input asp-for="UserRequest.IsVerified" class="form-check-input" type="checkbox" />
+                                <label asp-for="UserRequest.IsVerified" class="form-check-label ais-label mb-0">
+                                    Email верифицирован
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="@Url.Page("/Users")" class="btn btn-ais-outline">Отмена</a>
+                            <button type="submit" class="btn btn-ais">
+                                <i class="bi bi-check-circle me-1"></i> Сохранить изменения
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+

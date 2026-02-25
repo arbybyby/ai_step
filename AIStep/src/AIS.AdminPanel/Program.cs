@@ -62,6 +62,7 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 
 // Register AdminPanel services
 builder.Services.AddScoped<IMealService, MealService>();
+builder.Services.AddScoped<IUserAdminService, UserAdminService>();
 
 var app = builder.Build();
 

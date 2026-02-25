@@ -1,4 +1,4 @@
-﻿using AIS.Domain.Exceptions;
+﻿﻿using AIS.Domain.Exceptions;
 using AIS.Domain.Models;
 using AIS.Domain.Repositories;
 using AIS.Infrastructure.Entities;
@@ -14,6 +14,12 @@ public class UserRepository : IUserRepository
     public UserRepository(AppDBContext context)
     {
         _context = context;
+    }
+
+    public async Task<List<User>> GetAllAsync()
+    {
+        var entities = await _context.Users.OrderByDescending(u => u.CreatedAt).ToListAsync();
+        return entities.Select(MapToUser).ToList();
     }
 
     public async Task<User?> GetByEmailAsync(string email)
@@ -60,6 +66,15 @@ public class UserRepository : IUserRepository
         entity.Gender = user.Gender;
 
         _context.Users.Update(entity);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteAsync(int id)
+    {
+        var entity = await _context.Users.FindAsync(id);
+        if (entity == null)
+            throw new UserNotFoundException($"User not found with id {id}");
+        _context.Users.Remove(entity);
         await _context.SaveChangesAsync();
     }
 

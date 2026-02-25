@@ -1,85 +1,84 @@
 @page
 @model MealEditModel
 @{
-    ViewData["Title"] = Model.IsEdit ? "Редактирование блюда" : "Добавление нового блюда";
+    ViewData["Title"] = Model.IsEdit ? "Редактирование блюда" : "Новое блюдо";
 }
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-lg">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">@ViewData["Title"]</h5>
-                </div>
+<div class="d-flex align-items-center mb-4 gap-3">
+    <a href="@Url.Page("/Meals")" class="btn btn-ais-outline">
+        <i class="bi bi-arrow-left me-1"></i> Назад
+    </a>
+    <h1 class="ais-title mb-0">
+        <i class="bi bi-@(Model.IsEdit ? "pencil-square" : "plus-circle") me-2"></i>@ViewData["Title"]
+    </h1>
+</div>
 
-                <div class="card-body">
-                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-                    {
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            @Model.ErrorMessage
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="ais-card shadow-lg">
+            <div class="ais-card-header">
+                <i class="bi bi-egg-fried me-2"></i>Данные блюда
+            </div>
+            <div class="ais-card-body">
+                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>@Model.ErrorMessage
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="MealRequest_MealName" class="ais-label">Название <span class="text-danger">*</span></label>
+                        <input type="text" class="ais-input" id="MealRequest_MealName" asp-for="MealRequest.MealName" placeholder="Введите название блюда" required />
+                        <span class="ais-validation" asp-validation-for="MealRequest.MealName"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="MealRequest_MealType" class="ais-label">Тип приёма пищи <span class="text-danger">*</span></label>
+                        <select class="ais-select" id="MealRequest_MealType" asp-for="MealRequest.MealType" required>
+                            <option value="">— Выберите тип —</option>
+                            <option value="0">Завтрак</option>
+                            <option value="1">Обед</option>
+                            <option value="2">Ужин</option>
+                        </select>
+                        <span class="ais-validation" asp-validation-for="MealRequest.MealType"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="MealRequest_Calories" class="ais-label">Калории <span class="text-danger">*</span></label>
+                            <input type="number" class="ais-input" id="MealRequest_Calories" asp-for="MealRequest.Calories" placeholder="0" min="0" step="0.01" required />
+                            <span class="ais-validation" asp-validation-for="MealRequest.Calories"></span>
                         </div>
-                    }
-
-                    <form method="post">
-                        <div class="mb-3">
-                            <label for="MealRequest_MealName" class="form-label">Название блюда <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control @(ModelState.IsValid && ModelState["MealRequest.MealName"]?.Errors.Count > 0 ? "is-invalid" : "")"
-                                   id="MealRequest_MealName" asp-for="MealRequest.MealName" placeholder="Введите название блюда" required>
-                            <span class="invalid-feedback" asp-validation-for="MealRequest.MealName"></span>
+                        <div class="col-md-6 mb-3">
+                            <label for="MealRequest_Protein" class="ais-label">Белки (г) <span class="text-danger">*</span></label>
+                            <input type="number" class="ais-input" id="MealRequest_Protein" asp-for="MealRequest.Protein" placeholder="0" min="0" step="0.01" required />
+                            <span class="ais-validation" asp-validation-for="MealRequest.Protein"></span>
                         </div>
+                    </div>
 
-                        <div class="mb-3">
-                            <label for="MealRequest_MealType" class="form-label">Тип приема пищи <span class="text-danger">*</span></label>
-                            <select class="form-select" id="MealRequest_MealType" asp-for="MealRequest.MealType" required>
-                                <option value="">-- Выберите тип --</option>
-                                <option value="0">Завтрак</option>
-                                <option value="1">Обед</option>
-                                <option value="2">Ужин</option>
-                            </select>
-                            <span class="invalid-feedback" asp-validation-for="MealRequest.MealType"></span>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="MealRequest_Carbs" class="ais-label">Углеводы (г) <span class="text-danger">*</span></label>
+                            <input type="number" class="ais-input" id="MealRequest_Carbs" asp-for="MealRequest.Carbs" placeholder="0" min="0" step="0.01" required />
+                            <span class="ais-validation" asp-validation-for="MealRequest.Carbs"></span>
                         </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="MealRequest_Calories" class="form-label">Калории <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control" id="MealRequest_Calories"
-                                       asp-for="MealRequest.Calories" placeholder="0" min="0" step="0.01" required>
-                                <span class="invalid-feedback" asp-validation-for="MealRequest.Calories"></span>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label for="MealRequest_Protein" class="form-label">Белки (г) <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control" id="MealRequest_Protein"
-                                       asp-for="MealRequest.Protein" placeholder="0" min="0" step="0.01" required>
-                                <span class="invalid-feedback" asp-validation-for="MealRequest.Protein"></span>
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="MealRequest_Fat" class="ais-label">Жиры (г) <span class="text-danger">*</span></label>
+                            <input type="number" class="ais-input" id="MealRequest_Fat" asp-for="MealRequest.Fat" placeholder="0" min="0" step="0.01" required />
+                            <span class="ais-validation" asp-validation-for="MealRequest.Fat"></span>
                         </div>
+                    </div>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="MealRequest_Carbs" class="form-label">Углеводы (г) <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control" id="MealRequest_Carbs"
-                                       asp-for="MealRequest.Carbs" placeholder="0" min="0" step="0.01" required>
-                                <span class="invalid-feedback" asp-validation-for="MealRequest.Carbs"></span>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label for="MealRequest_Fat" class="form-label">Жиры (г) <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control" id="MealRequest_Fat"
-                                       asp-for="MealRequest.Fat" placeholder="0" min="0" step="0.01" required>
-                                <span class="invalid-feedback" asp-validation-for="MealRequest.Fat"></span>
-                            </div>
-                        </div>
-
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                            <a href="@Url.Page("/Meals")" class="btn btn-secondary">Отмена</a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle"></i> @(Model.IsEdit ? "Обновить" : "Добавить")
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="@Url.Page("/Meals")" class="btn btn-ais-outline">Отмена</a>
+                        <button type="submit" class="btn btn-ais">
+                            <i class="bi bi-check-circle me-1"></i> @(Model.IsEdit ? "Сохранить" : "Добавить")
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -88,4 +87,3 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 }
-

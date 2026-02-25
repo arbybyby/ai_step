@@ -1,31 +1,453 @@
-html {
-  font-size: 14px;
+/* ===== AIStep Admin Panel — Green Theme ===== */
+
+:root {
+    --ais-green: #1db954;
+    --ais-green-dark: #17a349;
+    --ais-green-darker: #128c3b;
+    --ais-green-light: #d4f5e2;
+    --ais-green-pale: #f0faf4;
+    --ais-sidebar-bg: #0d2818;
+    --ais-sidebar-width: 240px;
+    --ais-text: #1a2e1f;
+    --ais-text-muted: #6b7c6e;
+    --ais-border: #c8e6d0;
+    --ais-card-bg: #ffffff;
+    --ais-danger: #dc3545;
 }
 
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
+/* Layout */
+html, body {
+    height: 100%;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 15px;
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+.ais-body {
+    background: var(--ais-green-pale);
+    color: var(--ais-text);
+    min-height: 100vh;
 }
 
-html {
-  position: relative;
-  min-height: 100%;
+.ais-layout {
+    display: flex;
+    min-height: 100vh;
 }
 
-body {
-  margin-bottom: 60px;
+/* Sidebar */
+.ais-sidebar {
+    width: var(--ais-sidebar-width);
+    min-height: 100vh;
+    background: var(--ais-sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    box-shadow: 3px 0 15px rgba(0,0,0,0.2);
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+.ais-sidebar-brand {
+    padding: 24px 20px 20px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--ais-green);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    letter-spacing: 0.5px;
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+.ais-nav {
+    flex: 1;
+    padding: 16px 0;
+}
+
+.ais-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: background 0.2s, color 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.ais-nav-link:hover {
+    background: rgba(29, 185, 84, 0.12);
+    color: var(--ais-green);
+    border-left-color: var(--ais-green);
+}
+
+.ais-nav-link.active {
+    background: rgba(29, 185, 84, 0.18);
+    color: var(--ais-green);
+    border-left-color: var(--ais-green);
+    font-weight: 600;
+}
+
+.ais-sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.ais-user-info {
+    color: rgba(255,255,255,0.6);
+    font-size: 0.82rem;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ais-user-email {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ais-logout-btn {
+    display: block;
+    width: 100%;
+    padding: 8px 14px;
+    background: rgba(220, 53, 69, 0.15);
+    color: #ff6b6b;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.88rem;
+    text-align: center;
+    transition: background 0.2s;
+}
+
+.ais-logout-btn:hover {
+    background: rgba(220, 53, 69, 0.3);
+    color: #ff6b6b;
+}
+
+/* Main content area */
+.ais-main {
+    margin-left: var(--ais-sidebar-width);
+    flex: 1;
+    padding: 28px 32px;
+    min-height: 100vh;
+}
+
+/* Typography */
+.ais-title {
+    color: var(--ais-text);
+    font-weight: 700;
+    font-size: 1.6rem;
+}
+
+/* Cards */
+.ais-card {
+    background: var(--ais-card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--ais-border);
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(29, 185, 84, 0.07);
+}
+
+.ais-card-header {
+    background: linear-gradient(135deg, var(--ais-green) 0%, var(--ais-green-dark) 100%);
+    color: #fff;
+    padding: 14px 20px;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.ais-card-body {
+    padding: 24px;
+}
+
+/* Dashboard stat cards */
+.ais-stat-card {
+    background: var(--ais-card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--ais-border);
+    padding: 22px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    text-decoration: none;
+    color: var(--ais-text);
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(29, 185, 84, 0.07);
+}
+
+.ais-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(29, 185, 84, 0.15);
+    color: var(--ais-text);
+    text-decoration: none;
+}
+
+.ais-stat-icon {
+    width: 52px;
+    height: 52px;
+    background: var(--ais-green-light);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--ais-green-dark);
+    flex-shrink: 0;
+}
+
+.ais-stat-label {
+    font-size: 0.82rem;
+    color: var(--ais-text-muted);
+    margin-bottom: 2px;
+}
+
+.ais-stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--ais-text);
+}
+
+/* Tables */
+.ais-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ais-table thead tr {
+    background: var(--ais-green-light);
+}
+
+.ais-table thead th {
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ais-green-darker);
+    border-bottom: 2px solid var(--ais-border);
+}
+
+.ais-table tbody tr {
+    border-bottom: 1px solid #f0f4f1;
+    transition: background 0.15s;
+}
+
+.ais-table tbody tr:hover {
+    background: var(--ais-green-pale);
+}
+
+.ais-table td {
+    padding: 12px 16px;
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+/* Badges */
+.ais-id-badge {
+    background: var(--ais-green-light);
+    color: var(--ais-green-darker);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.ais-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+}
+
+.ais-badge-green { background: #d4f5e2; color: #128c3b; }
+.ais-badge-red { background: #fde8e8; color: #c0392b; }
+.ais-badge-blue { background: #dbeafe; color: #1e40af; }
+.ais-badge-pink { background: #fce7f3; color: #9d174d; }
+.ais-badge-gray { background: #f3f4f6; color: #6b7280; }
+.ais-badge-teal { background: #d1faf4; color: #0d7a63; }
+
+.ais-user-name {
+    color: var(--ais-text);
+    font-weight: 500;
+}
+
+/* Empty state */
+.ais-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ais-text-muted);
+}
+
+/* Buttons */
+.btn-ais {
+    background: var(--ais-green);
+    color: #fff;
+    border: none;
+    padding: 9px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.btn-ais:hover {
+    background: var(--ais-green-dark);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.btn-ais-outline {
+    background: transparent;
+    color: var(--ais-green-dark);
+    border: 1.5px solid var(--ais-green);
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    transition: background 0.2s, color 0.2s;
+}
+
+.btn-ais-outline:hover {
+    background: var(--ais-green-light);
+    color: var(--ais-green-darker);
+    text-decoration: none;
+}
+
+.btn-ais-sm {
+    background: var(--ais-green);
+    color: #fff;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 7px;
+    font-size: 0.82rem;
+    transition: background 0.2s;
+}
+
+.btn-ais-sm:hover {
+    background: var(--ais-green-dark);
+    color: #fff;
+}
+
+.btn-ais-danger {
+    background: var(--ais-danger) !important;
+}
+
+.btn-ais-danger:hover {
+    background: #b02a37 !important;
+}
+
+/* Form inputs */
+.ais-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ais-text-muted);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.ais-input, .ais-select {
+    display: block;
+    width: 100%;
+    padding: 9px 13px;
+    border: 1.5px solid var(--ais-border);
+    border-radius: 8px;
+    font-size: 0.93rem;
+    color: var(--ais-text);
+    background: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+
+.ais-input:focus, .ais-select:focus {
+    border-color: var(--ais-green);
+    box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.15);
+}
+
+.ais-validation {
+    color: var(--ais-danger);
+    font-size: 0.8rem;
+    margin-top: 3px;
+    display: block;
+}
+
+.ais-checkbox .form-check-input:checked {
+    background-color: var(--ais-green);
+    border-color: var(--ais-green);
+}
+
+.ais-checkbox .form-check-input:focus {
+    box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
+}
+
+/* Alert */
+.ais-alert-success {
+    background: var(--ais-green-light);
+    border-color: var(--ais-green);
+    color: var(--ais-green-darker);
+}
+
+/* Login page */
+.ais-login-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--ais-sidebar-bg) 0%, #1a3d27 100%);
+}
+
+.ais-login-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.ais-login-logo {
+    text-align: center;
+    font-size: 2.2rem;
+    color: var(--ais-green);
+    margin-bottom: 8px;
+}
+
+.ais-login-title {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--ais-text);
+    margin-bottom: 6px;
+}
+
+.ais-login-subtitle {
+    text-align: center;
+    font-size: 0.88rem;
+    color: var(--ais-text-muted);
+    margin-bottom: 28px;
+}
+
+/* Focus ring override */
+.btn:focus, .btn:active:focus {
+    box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.3);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: var(--ais-green-pale);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--ais-border);
+    border-radius: 3px;
 }

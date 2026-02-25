@@ -6,6 +6,7 @@ import 'steps_api_service.dart';
 import '../models/step_data.dart';
 
 const String syncTaskName = 'steps_sync_task';
+const String clearStepsTaskName = 'clear_steps_task';
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -13,6 +14,11 @@ void callbackDispatcher() {
     try {
       if (task == syncTaskName) {
         await _performSync();
+      } else if (task == clearStepsTaskName) {
+        final storageService = StepStorageService();
+        await storageService.init();
+        await storageService.clear();
+        print('StepStorageService: steps cleared by daily task');
       }
       return true;
     } catch (e) {
@@ -196,6 +202,17 @@ class BackgroundSyncService {
       frequency: const Duration(minutes: 15),
       constraints: Constraints(
         networkType: NetworkType.connected,
+        requiresDeviceIdle: false,
+        requiresStorageNotLow: false,
+      ),
+    );
+    // Schedule daily clear task
+    await Workmanager().registerPeriodicTask(
+      clearStepsTaskName,
+      clearStepsTaskName,
+      frequency: const Duration(hours: 24),
+      constraints: Constraints(
+        networkType: NetworkType.notRequired,
         requiresDeviceIdle: false,
         requiresStorageNotLow: false,
       ),

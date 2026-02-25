@@ -2,67 +2,55 @@
 @using System.Security.Claims
 @model IndexModel
 @{
-    ViewData["Title"] = "Админ Панель";
+    ViewData["Title"] = "Дашборд";
 }
 
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1>Админ Панель</h1>
-                <div>
-                    <span class="me-3">
-                        <i class="bi bi-person-circle"></i>
-                        @User.Identity?.Name
-                    </span>
-                    <a href="@Url.Page("/Logout")" class="btn btn-outline-danger btn-sm">
-                        <i class="bi bi-box-arrow-right"></i> Выход
-                    </a>
-                </div>
-            </div>
+<h1 class="ais-title mb-4"><i class="bi bi-grid-fill me-2"></i>Дашборд</h1>
 
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Добро пожаловать в админ панель!</h5>
-                    <p class="card-text">Вы успешно вошли в систему.</p>
-                    <p class="card-text">
-                        <small class="text-muted">
-                            Ваш email: <strong>@User.FindFirstValue(ClaimTypes.Email)</strong>
-                        </small>
-                    </p>
-                </div>
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <a href="@Url.Page("/Users")" class="ais-stat-card">
+            <div class="ais-stat-icon">
+                <i class="bi bi-people-fill"></i>
             </div>
-
-            <div class="row mt-4">
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Блюда</h5>
-                            <p class="card-text">Управление меню и питанием</p>
-                            <a href="@Url.Page("/Meals")" class="btn btn-primary btn-sm">Перейти</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Пользователи</h5>
-                            <p class="card-text">Управление пользователями системы</p>
-                            <a href="#" class="btn btn-primary btn-sm">Перейти</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Статистика</h5>
-                            <p class="card-text">Просмотр статистики</p>
-                            <a href="#" class="btn btn-primary btn-sm">Перейти</a>
-                        </div>
-                    </div>
-                </div>
+            <div>
+                <div class="ais-stat-label">Раздел</div>
+                <div class="ais-stat-value">Пользователи</div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="@Url.Page("/Meals")" class="ais-stat-card">
+            <div class="ais-stat-icon">
+                <i class="bi bi-egg-fried"></i>
+            </div>
+            <div>
+                <div class="ais-stat-label">Раздел</div>
+                <div class="ais-stat-value">Блюда</div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <div class="ais-stat-card">
+            <div class="ais-stat-icon">
+                <i class="bi bi-bar-chart-fill"></i>
+            </div>
+            <div>
+                <div class="ais-stat-label">Раздел</div>
+                <div class="ais-stat-value">Статистика</div>
             </div>
         </div>
     </div>
 </div>
 
+<div class="ais-card">
+    <div class="ais-card-header">
+        <i class="bi bi-info-circle me-2"></i>Информация о сессии
+    </div>
+    <div class="ais-card-body">
+        <p class="mb-1"><strong>Администратор:</strong> @User.Identity?.Name</p>
+        <p class="mb-0 text-muted" style="font-size:0.85rem;">
+            Email: @User.FindFirstValue(ClaimTypes.Email)
+        </p>
+    </div>
+</div>

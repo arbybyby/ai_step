@@ -1,0 +1,117 @@
+@page
+@model UsersModel
+@{
+    ViewData["Title"] = "Управление пользователями";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="ais-title"><i class="bi bi-people-fill me-2"></i>Пользователи</h1>
+        <a href="@Url.Page("/Index")" class="btn btn-ais-outline">
+            <i class="bi bi-arrow-left me-1"></i> На главную
+        </a>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert ais-alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model.Users.Count == 0)
+    {
+        <div class="ais-empty-state">
+            <i class="bi bi-person-x display-4 mb-3"></i>
+            <p>Пользователи не найдены</p>
+        </div>
+    }
+    else
+    {
+        <div class="ais-card">
+            <div class="ais-card-header">
+                <span><i class="bi bi-list-ul me-2"></i>Всего пользователей: <strong>@Model.Users.Count</strong></span>
+            </div>
+            <div class="table-responsive">
+                <table class="table ais-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя</th>
+                            <th>Email</th>
+                            <th>Возраст</th>
+                            <th>Пол</th>
+                            <th>Верифицирован</th>
+                            <th>Дата регистрации</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model.Users)
+                        {
+                            <tr>
+                                <td><span class="ais-id-badge">#@user.ID</span></td>
+                                <td>
+                                    <div class="ais-user-name">
+                                        <i class="bi bi-person-circle me-1"></i>
+                                        @user.FirstName @user.LastName
+                                    </div>
+                                </td>
+                                <td>@user.Email</td>
+                                <td>@user.Age лет</td>
+                                <td>
+                                    @switch (user.Gender)
+                                    {
+                                        case AIS.Domain.Models.Gender.Male:
+                                            <span class="ais-badge ais-badge-blue"><i class="bi bi-gender-male me-1"></i>Мужской</span>
+                                            break;
+                                        case AIS.Domain.Models.Gender.Female:
+                                            <span class="ais-badge ais-badge-pink"><i class="bi bi-gender-female me-1"></i>Женский</span>
+                                            break;
+                                        default:
+                                            <span class="ais-badge ais-badge-gray">Не указан</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>
+                                    @if (user.IsVerified)
+                                    {
+                                        <span class="ais-badge ais-badge-green"><i class="bi bi-check-circle me-1"></i>Да</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="ais-badge ais-badge-red"><i class="bi bi-x-circle me-1"></i>Нет</span>
+                                    }
+                                </td>
+                                <td>@user.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <a href="@Url.Page("/UserEdit", new { id = user.ID })" class="btn btn-ais-sm">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form method="post" asp-page-handler="Delete" style="display:inline;">
+                                            <input type="hidden" name="id" value="@user.ID" />
+                                            <button type="submit" class="btn btn-ais-sm btn-ais-danger" onclick="return confirm('Удалить пользователя @user.FirstName @user.LastName?')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
