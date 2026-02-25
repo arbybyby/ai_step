@@ -2,58 +2,45 @@
 @model AIS.AdminPanel.Pages.LoginModel
 @{
     ViewData["Title"] = "Вход";
+    Layout = "_Layout";
 }
 
-<div class="container d-flex justify-content-center align-items-center min-vh-100">
-    <div class="card shadow-lg" style="width: 100%; max-width: 400px;">
-        <div class="card-body p-5">
-            <h2 class="text-center mb-4">Админ Панель</h2>
-            <h5 class="text-center mb-4 text-muted">Вход</h5>
-
-            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-            {
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    @Model.ErrorMessage
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            }
-
-            <form method="post" class="needs-validation">
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email"
-                           class="form-control @(ViewData.ModelState.ContainsKey("LoginRequest.Email") && !ViewData.ModelState["LoginRequest.Email"]!.Errors.Any() ? "" : "")"
-                           id="email"
-                           asp-for="LoginRequest.Email"
-                           placeholder="Введите ваш email"
-                           required>
-                    <span asp-validation-for="LoginRequest.Email" class="text-danger small"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label for="password" class="form-label">Пароль</label>
-                    <input type="password"
-                           class="form-control"
-                           id="password"
-                           asp-for="LoginRequest.Password"
-                           placeholder="Введите пароль"
-                           required>
-                    <span asp-validation-for="LoginRequest.Password" class="text-danger small"></span>
-                </div>
-
-                <button type="submit" class="btn btn-primary w-100">Вход</button>
-            </form>
+<div class="ais-login-wrapper">
+    <div class="ais-login-card">
+        <div class="ais-login-logo">
+            <i class="bi bi-activity"></i>
         </div>
+        <h2 class="ais-login-title">AIStep Admin</h2>
+        <p class="ais-login-subtitle">Войдите в панель управления</p>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>@Model.ErrorMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <form method="post">
+            <div class="mb-3">
+                <label for="email" class="ais-label">Email</label>
+                <input type="email" class="ais-input" id="email" asp-for="LoginRequest.Email" placeholder="admin@example.com" required />
+                <span asp-validation-for="LoginRequest.Email" class="ais-validation"></span>
+            </div>
+
+            <div class="mb-4">
+                <label for="password" class="ais-label">Пароль</label>
+                <input type="password" class="ais-input" id="password" asp-for="LoginRequest.Password" placeholder="••••••••" required />
+                <span asp-validation-for="LoginRequest.Password" class="ais-validation"></span>
+            </div>
+
+            <button type="submit" class="btn btn-ais w-100" style="padding: 11px;">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Войти
+            </button>
+        </form>
     </div>
 </div>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }
-
-<style>
-    .min-vh-100 {
-        min-height: 100vh;
-    }
-</style>
-
