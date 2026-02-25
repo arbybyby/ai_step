@@ -1,4 +1,4 @@
-﻿@page
+@page
 @using System.Security.Claims
 @model IndexModel
 @{
@@ -31,15 +31,15 @@
         </a>
     </div>
     <div class="col-md-4">
-        <div class="ais-stat-card">
+        <a href="@Url.Page("/Admins")" class="ais-stat-card">
             <div class="ais-stat-icon">
-                <i class="bi bi-bar-chart-fill"></i>
+                <i class="bi bi-shield-lock-fill"></i>
             </div>
             <div>
                 <div class="ais-stat-label">Раздел</div>
-                <div class="ais-stat-value">Статистика</div>
+                <div class="ais-stat-value">Администраторы</div>
             </div>
-        </div>
+        </a>
     </div>
 </div>
 
