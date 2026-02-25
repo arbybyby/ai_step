@@ -145,4 +145,42 @@ class WeeklyStepsNotifier extends StateNotifier<AsyncValue<WeekStepsInfo?>> {
     }
     print('=== WeeklyStepsNotifier.fetchWeeklySteps END ===\n');
   }
+
+  /// Updates today's step count in the local weekly state without hitting the API.
+  void updateTodaySteps(int steps) {
+    final current = state;
+    if (current is! AsyncData || current.value == null) return;
+    final weekData = current.value!;
+
+    final todayStr = DateTime.now().toIso8601String().substring(0, 10);
+    final updatedDays = weekData.dayStepsInfo.map((day) {
+      final dayStr = day.date.length >= 10 ? day.date.substring(0, 10) : day.date;
+      if (dayStr == todayStr) {
+        return day.copyWith(stepsCount: steps);
+      }
+      return day;
+    }).toList();
+
+    // If today wasn't in the list yet, don't add it — wait for the next full fetch.
+    if (!updatedDays.any((d) {
+      final dayStr = d.date.length >= 10 ? d.date.substring(0, 10) : d.date;
+      return dayStr == todayStr;
+    })) return;
+
+    final newTotal = updatedDays.fold<int>(0, (sum, d) => sum + d.stepsCount);
+
+    // Recalculate best day
+    DayStepsInfo? newBestDay = weekData.bestDay;
+    if (updatedDays.isNotEmpty) {
+      newBestDay = updatedDays.reduce(
+        (a, b) => a.stepsCount >= b.stepsCount ? a : b,
+      );
+    }
+
+    state = AsyncValue.data(weekData.copyWith(
+      dayStepsInfo: updatedDays,
+      totalSteps: newTotal,
+      bestDay: newBestDay,
+    ));
+  }
 }

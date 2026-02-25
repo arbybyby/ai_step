@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
+import '../services/step_storage_service.dart';
 import 'verify_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -118,6 +120,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                             print('SignUp Response - Status: $status, Body: ${res.body}');
                                             final Map<String, dynamic> body = res.body.isNotEmpty ? (res.body.startsWith('{') ? Map<String, dynamic>.from(jsonDecode(res.body)) : {}) : {};
                                             if (status == 201) {
+                                              // Clear all local device data before registering a new account
+                                              try {
+                                                await StepStorageService().clear();
+                                                print('SignUp: StepStorageService cleared');
+                                              } catch (e) {
+                                                print('SignUp: Failed to clear StepStorageService: $e');
+                                              }
+                                              try {
+                                                final sp = await SharedPreferences.getInstance();
+                                                await sp.clear();
+                                                print('SignUp: SharedPreferences cleared');
+                                              } catch (e) {
+                                                print('SignUp: Failed to clear SharedPreferences: $e');
+                                              }
                                               Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => VerifyScreen(email: _email, password: _password)));
                                             } else if (status == 400) {
                                               final message = body['message'] ?? 'Invalid request';

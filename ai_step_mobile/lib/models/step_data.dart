@@ -76,6 +76,22 @@ class DayStepsInfo {
       'distanceKM': distanceKm,
     };
   }
+
+  DayStepsInfo copyWith({
+    int? id,
+    int? userId,
+    String? date,
+    int? stepsCount,
+    double? distanceKm,
+  }) {
+    return DayStepsInfo(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      date: date ?? this.date,
+      stepsCount: stepsCount ?? this.stepsCount,
+      distanceKm: distanceKm ?? this.distanceKm,
+    );
+  }
 }
 
 class WeekStepsInfo {
@@ -127,5 +143,19 @@ class WeekStepsInfo {
       'dayStepsInfo': dayStepsInfo.map((e) => e.toJson()).toList(),
       'totalSteps': totalSteps,
     };
+  }
+
+  WeekStepsInfo copyWith({
+    int? userId,
+    DayStepsInfo? bestDay,
+    List<DayStepsInfo>? dayStepsInfo,
+    int? totalSteps,
+  }) {
+    return WeekStepsInfo(
+      userId: userId ?? this.userId,
+      bestDay: bestDay ?? this.bestDay,
+      dayStepsInfo: dayStepsInfo ?? this.dayStepsInfo,
+      totalSteps: totalSteps ?? this.totalSteps,
+    );
   }
 }

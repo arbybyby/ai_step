@@ -138,6 +138,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 _lastSyncedSteps = data.stepsCount;
               });
               print('HomeScreen: Periodic sync updated _currentSteps to ${data.stepsCount}');
+              // Keep weekly progress in sync with the latest synced count
+              ref.read(weeklyStepsProvider.notifier).updateTodaySteps(data.stepsCount);
             }
           });
         } catch (e, stackTrace) {
@@ -194,6 +196,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     // Update steps in provider
     ref.read(currentDayStepsProvider.notifier).updateSteps(steps);
+    // Keep weekly progress in sync with live step count
+    ref.read(weeklyStepsProvider.notifier).updateTodaySteps(steps);
 
     // Attempt an immediate sync if we have a significant increase,
     // but throttle to avoid spamming sync calls.
