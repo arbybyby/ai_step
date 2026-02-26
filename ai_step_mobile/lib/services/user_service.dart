@@ -11,7 +11,7 @@ class UserService {
   final http.Client httpClient;
 
   UserService({http.Client? httpClient})
-      : httpClient = httpClient ?? _createInsecureClient();
+    : httpClient = httpClient ?? _createInsecureClient();
 
   static http.Client _createInsecureClient() {
     final ioClient = HttpClient()
@@ -67,7 +67,7 @@ class UserService {
   }
 
   Future<void> submitUser(User user) async {
-    final uri = Uri.parse('http://192.168.43.16:8082/users/submit');
+    final uri = Uri.parse('http://10.197.22.175:8082/users/submit');
     final token = await _getToken();
     final headers = <String, String>{'Content-Type': 'application/json'};
     if (token.isNotEmpty) {
@@ -78,11 +78,13 @@ class UserService {
 
     http.Response response;
     try {
-      response = await httpClient.post(uri, headers: headers, body: body)
+      response = await httpClient
+          .post(uri, headers: headers, body: body)
           .timeout(const Duration(seconds: 10));
     } catch (e) {
       final insecure = _createInsecureClient();
-      response = await insecure.post(uri, headers: headers, body: body)
+      response = await insecure
+          .post(uri, headers: headers, body: body)
           .timeout(const Duration(seconds: 10));
     }
 
@@ -91,13 +93,13 @@ class UserService {
     }
 
     throw Exception(
-        'Failed to submit user: ${response.statusCode} ${response.body}');
+      'Failed to submit user: ${response.statusCode} ${response.body}',
+    );
   }
 
   Future<String> uploadAvatar(int userId, File imageFile) async {
-      print("-----------------------------------",);
-    final uri =
-        Uri.parse('http://192.168.43.16:8082/users/$userId/avatar');
+    print("-----------------------------------");
+    final uri = Uri.parse('http://10.197.22.175:8082/users/$userId/avatar');
     final token = await _getToken();
 
     final request = http.MultipartRequest('POST', uri);
@@ -117,10 +119,12 @@ class UserService {
 
     http.StreamedResponse response;
     try {
-      response = await httpClient.send(request).timeout(const Duration(seconds: 30));
-      print("-----------------------------------",);
+      response = await httpClient
+          .send(request)
+          .timeout(const Duration(seconds: 30));
+      print("-----------------------------------");
     } catch (e) {
-      print("----------------------------------- $e",);
+      print("----------------------------------- $e");
       throw Exception('Failed to upload avatar: $e');
     }
 
@@ -137,7 +141,8 @@ class UserService {
     }
 
     throw Exception(
-        'Failed to upload avatar: ${response.statusCode} $responseBody');
+      'Failed to upload avatar: ${response.statusCode} $responseBody',
+    );
   }
 }
 

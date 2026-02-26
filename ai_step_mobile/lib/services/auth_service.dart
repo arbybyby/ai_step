@@ -14,11 +14,17 @@ class AuthService {
   // Create HTTP client that accepts self-signed certificates
   static http.Client _getHttpClient() {
     final ioClient = HttpClient()
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
     return IOClient(ioClient);
   }
 
-  static Future<http.Response> register({required String email, required String password, required String firstName, required String lastName}) async {
+  static Future<http.Response> register({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+  }) async {
     final uri = Uri.parse('$baseUrl/api/auth/register');
     final body = jsonEncode({
       'email': email,
@@ -30,7 +36,11 @@ class AuthService {
     print('Request body: $body');
     try {
       final client = _getHttpClient();
-      final response = await client.post(uri, headers: {'Content-Type': 'application/json'}, body: body);
+      final response = await client.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      );
       print('Response received - Status: ${response.statusCode}');
       return response;
     } catch (e) {
@@ -39,14 +49,21 @@ class AuthService {
     }
   }
 
-  static Future<http.Response> verify({required String email, required String code}) async {
+  static Future<http.Response> verify({
+    required String email,
+    required String code,
+  }) async {
     final uri = Uri.parse('$baseUrl/api/auth/verify');
     final body = jsonEncode({'email': email, 'code': code});
     print('Sending request to: $uri');
     print('Request body: $body');
     try {
       final client = _getHttpClient();
-      final response = await client.post(uri, headers: {'Content-Type': 'application/json'}, body: body);
+      final response = await client.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      );
       print('Response received - Status: ${response.statusCode}');
       return response;
     } catch (e) {
@@ -62,7 +79,11 @@ class AuthService {
     print('Request body: $body');
     try {
       final client = _getHttpClient();
-      final response = await client.post(uri, headers: {'Content-Type': 'application/json'}, body: body);
+      final response = await client.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      );
       print('Response received - Status: ${response.statusCode}');
       return response;
     } catch (e) {
@@ -71,22 +92,36 @@ class AuthService {
     }
   }
 
-  static Future<http.Response> login({required String email, required String password}) async {
+  static Future<http.Response> login({
+    required String email,
+    required String password,
+  }) async {
     final uri = Uri.parse('$baseUrl/api/auth/login');
     final body = jsonEncode({'email': email, 'password': password});
     print('\n=== AuthService.login START ===');
     print('AuthService.login: Sending request to: $uri');
     try {
       final client = _getHttpClient();
-      final response = await client.post(uri, headers: {'Content-Type': 'application/json'}, body: body);
-      print('AuthService.login: Response received - Status: ${response.statusCode}');
+      final response = await client.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      );
+      print(
+        'AuthService.login: Response received - Status: ${response.statusCode}',
+      );
       print('AuthService.login: Response body: ${response.body}');
       // If login succeeded, try to extract and persist tokens from response body
-      if ((response.statusCode == 200 || response.statusCode == 201) && response.body.isNotEmpty) {
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          response.body.isNotEmpty) {
         try {
-          final decoded = response.body.startsWith('{') ? jsonDecode(response.body) : null;
+          final decoded = response.body.startsWith('{')
+              ? jsonDecode(response.body)
+              : null;
           if (decoded != null) {
-            print('AuthService.login: Decoded response keys: ${decoded.keys.toList()}');
+            print(
+              'AuthService.login: Decoded response keys: ${decoded.keys.toList()}',
+            );
             await _saveTokensFromBody(decoded);
           }
         } catch (e) {
@@ -111,9 +146,12 @@ class AuthService {
       final client = _getHttpClient();
       final token = await _getAccessToken();
       final headers = <String, String>{'Content-Type': 'application/json'};
-      if (token != null && token.isNotEmpty) headers['Authorization'] = 'Bearer $token';
+      if (token != null && token.isNotEmpty)
+        headers['Authorization'] = 'Bearer $token';
       final response = await client.get(uri, headers: headers);
-      print('getMe Response - Status: ${response.statusCode}, Body: ${response.body}');
+      print(
+        'getMe Response - Status: ${response.statusCode}, Body: ${response.body}',
+      );
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (response.body.isNotEmpty && response.body.startsWith('{')) {
           final decoded = jsonDecode(response.body);
@@ -139,14 +177,18 @@ class AuthService {
       final client = _getHttpClient();
       final token = await _getAccessToken();
       final headers = <String, String>{'Content-Type': 'application/json'};
-      if (token != null && token.isNotEmpty) headers['Authorization'] = 'Bearer $token';
+      if (token != null && token.isNotEmpty)
+        headers['Authorization'] = 'Bearer $token';
       final response = await client.get(uri, headers: headers);
-      print('getAvatarUrl Response - Status: ${response.statusCode}, Body: ${response.body}');
+      print(
+        'getAvatarUrl Response - Status: ${response.statusCode}, Body: ${response.body}',
+      );
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (response.body.isNotEmpty && response.body.startsWith('{')) {
           final decoded = jsonDecode(response.body);
           if (decoded is Map<String, dynamic>) {
-            final url = decoded['URL']?.toString() ?? decoded['url']?.toString();
+            final url =
+                decoded['URL']?.toString() ?? decoded['url']?.toString();
             return url;
           }
         }
@@ -189,28 +231,58 @@ class AuthService {
       String? refreshExp;
 
       // Try different key name variants, and include common short keys like 'token' or 'access_token'
-      access = maybeTokens['accessToken']?.toString() ?? maybeTokens['AccessToken']?.toString() ?? maybeTokens['token']?.toString() ?? maybeTokens['access_token']?.toString() ?? map['accessToken']?.toString() ?? map['AccessToken']?.toString() ?? map['token']?.toString() ?? map['access_token']?.toString();
-      refresh = maybeTokens['refreshToken']?.toString() ?? maybeTokens['RefreshToken']?.toString() ?? map['refreshToken']?.toString() ?? map['RefreshToken']?.toString();
-      accessExp = maybeTokens['accessTokenExpiration']?.toString() ?? maybeTokens['AccessTokenExpiration']?.toString() ?? map['accessTokenExpiration']?.toString() ?? map['AccessTokenExpiration']?.toString();
-      refreshExp = maybeTokens['refreshTokenExpiration']?.toString() ?? maybeTokens['RefreshTokenExpiration']?.toString() ?? map['refreshTokenExpiration']?.toString() ?? map['RefreshTokenExpiration']?.toString();
+      access =
+          maybeTokens['accessToken']?.toString() ??
+          maybeTokens['AccessToken']?.toString() ??
+          maybeTokens['token']?.toString() ??
+          maybeTokens['access_token']?.toString() ??
+          map['accessToken']?.toString() ??
+          map['AccessToken']?.toString() ??
+          map['token']?.toString() ??
+          map['access_token']?.toString();
+      refresh =
+          maybeTokens['refreshToken']?.toString() ??
+          maybeTokens['RefreshToken']?.toString() ??
+          map['refreshToken']?.toString() ??
+          map['RefreshToken']?.toString();
+      accessExp =
+          maybeTokens['accessTokenExpiration']?.toString() ??
+          maybeTokens['AccessTokenExpiration']?.toString() ??
+          map['accessTokenExpiration']?.toString() ??
+          map['AccessTokenExpiration']?.toString();
+      refreshExp =
+          maybeTokens['refreshTokenExpiration']?.toString() ??
+          maybeTokens['RefreshTokenExpiration']?.toString() ??
+          map['refreshTokenExpiration']?.toString() ??
+          map['RefreshTokenExpiration']?.toString();
 
       final sp = await SharedPreferences.getInstance();
       var saved = false;
       if (access != null) {
-        print('AuthService._saveTokensFromBody: Saving accessToken (length=${access.length})');
+        print(
+          'AuthService._saveTokensFromBody: Saving accessToken (length=${access.length})',
+        );
         await sp.setString('accessToken', access);
         // also save under common alternate key for compatibility
         await sp.setString('auth_token', access);
         saved = true;
-        print('AuthService._saveTokensFromBody: accessToken saved successfully (also saved as auth_token)');
+        print(
+          'AuthService._saveTokensFromBody: accessToken saved successfully (also saved as auth_token)',
+        );
       } else {
-        print('AuthService._saveTokensFromBody: WARNING - No access token found in response');
+        print(
+          'AuthService._saveTokensFromBody: WARNING - No access token found in response',
+        );
       }
       if (refresh != null) {
-        print('AuthService._saveTokensFromBody: Saving refreshToken (length=${refresh.length})');
+        print(
+          'AuthService._saveTokensFromBody: Saving refreshToken (length=${refresh.length})',
+        );
         await sp.setString('refreshToken', refresh);
         saved = true;
-        print('AuthService._saveTokensFromBody: refreshToken saved successfully');
+        print(
+          'AuthService._saveTokensFromBody: refreshToken saved successfully',
+        );
       }
       if (accessExp != null) {
         await sp.setString('accessTokenExpiration', accessExp);
@@ -233,16 +305,22 @@ class AuthService {
           final uid = map['id']?.toString();
           if (uid != null && uid.isNotEmpty) {
             await sp.setString('user_id', uid);
-            print('AuthService._saveTokensFromBody: saved user_id (from id)=$uid');
+            print(
+              'AuthService._saveTokensFromBody: saved user_id (from id)=$uid',
+            );
           }
         }
       } catch (e) {
         print('AuthService._saveTokensFromBody: failed to save user id: $e');
       }
       if (saved) {
-        print('AuthService._saveTokensFromBody: Tokens saved to SharedPreferences');
+        print(
+          'AuthService._saveTokensFromBody: Tokens saved to SharedPreferences',
+        );
       } else {
-        print('AuthService._saveTokensFromBody: WARNING - No tokens were saved!');
+        print(
+          'AuthService._saveTokensFromBody: WARNING - No tokens were saved!',
+        );
       }
     } catch (e) {
       print('Error saving tokens: $e');
@@ -258,8 +336,14 @@ class AuthService {
     final body = jsonEncode({'RefreshToken': refresh});
     try {
       final client = _getHttpClient();
-      final response = await client.post(uri, headers: {'Content-Type': 'application/json'}, body: body);
-      print('logout Response - Status: ${response.statusCode}, Body: ${response.body}');
+      final response = await client.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      );
+      print(
+        'logout Response - Status: ${response.statusCode}, Body: ${response.body}',
+      );
       // Clear all SharedPreferences to remove any user-specific state
       try {
         await sp.clear();
@@ -296,9 +380,11 @@ class AuthService {
     try {
       final sp = await SharedPreferences.getInstance();
       final expirationStr = sp.getString('accessTokenExpiration');
-      
+
       if (expirationStr == null || expirationStr.isEmpty) {
-        print('AuthService.isTokenExpired: No expiration date stored, token considered expired');
+        print(
+          'AuthService.isTokenExpired: No expiration date stored, token considered expired',
+        );
         return true;
       }
 
@@ -308,12 +394,16 @@ class AuthService {
         final now = DateTime.now();
         // Add 5-minute buffer: refresh if expires within 5 minutes
         final bufferTime = now.add(const Duration(minutes: 5));
-        
+
         final isExpired = bufferTime.isAfter(expirationTime);
-        print('AuthService.isTokenExpired: now=$now, expiration=$expirationTime, isExpired=$isExpired');
+        print(
+          'AuthService.isTokenExpired: now=$now, expiration=$expirationTime, isExpired=$isExpired',
+        );
         return isExpired;
       } catch (e) {
-        print('AuthService.isTokenExpired: Failed to parse expiration datetime: $e');
+        print(
+          'AuthService.isTokenExpired: Failed to parse expiration datetime: $e',
+        );
         // If we can't parse it, assume expired to be safe
         return true;
       }
@@ -331,29 +421,36 @@ class AuthService {
     try {
       final sp = await SharedPreferences.getInstance();
       final refreshToken = sp.getString('refreshToken');
-      
+
       if (refreshToken == null || refreshToken.isEmpty) {
-        print('AuthService.refreshToken: No refresh token stored, cannot refresh');
+        print(
+          'AuthService.refreshToken: No refresh token stored, cannot refresh',
+        );
         print('=== AuthService.refreshToken END ===\n');
         return false;
       }
 
       final uri = Uri.parse('$baseUrl/api/auth/refresh');
       final body = jsonEncode({'RefreshToken': refreshToken});
-      
+
       print('AuthService.refreshToken: Sending refresh request to: $uri');
-      
+
       try {
         final client = _getHttpClient();
-        final response = await client.post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: body,
-        ).timeout(const Duration(seconds: 10));
+        final response = await client
+            .post(
+              uri,
+              headers: {'Content-Type': 'application/json'},
+              body: body,
+            )
+            .timeout(const Duration(seconds: 10));
 
-        print('AuthService.refreshToken: Response status=${response.statusCode}');
-        
-        if ((response.statusCode == 200 || response.statusCode == 201) && response.body.isNotEmpty) {
+        print(
+          'AuthService.refreshToken: Response status=${response.statusCode}',
+        );
+
+        if ((response.statusCode == 200 || response.statusCode == 201) &&
+            response.body.isNotEmpty) {
           try {
             final decoded = jsonDecode(response.body);
             print('AuthService.refreshToken: Successfully decoded response');
@@ -367,7 +464,9 @@ class AuthService {
             return false;
           }
         } else {
-          print('AuthService.refreshToken: Unexpected response status ${response.statusCode}: ${response.body}');
+          print(
+            'AuthService.refreshToken: Unexpected response status ${response.statusCode}: ${response.body}',
+          );
           print('=== AuthService.refreshToken END ===\n');
           return false;
         }
@@ -386,21 +485,31 @@ class AuthService {
   /// Get access token, automatically refreshing if expired or expiring soon.
   /// If refresh fails, returns the existing token anyway.
   static Future<String> getAccessTokenWithRefresh() async {
-    print('AuthService.getAccessTokenWithRefresh: Checking if token needs refresh...');
-    
+    print(
+      'AuthService.getAccessTokenWithRefresh: Checking if token needs refresh...',
+    );
+
     final isExpired = await isTokenExpired();
     if (isExpired) {
-      print('AuthService.getAccessTokenWithRefresh: Token expired or expiring soon, attempting refresh...');
+      print(
+        'AuthService.getAccessTokenWithRefresh: Token expired or expiring soon, attempting refresh...',
+      );
       final refreshed = await refreshToken();
       if (!refreshed) {
-        print('AuthService.getAccessTokenWithRefresh: Token refresh failed, using existing token');
+        print(
+          'AuthService.getAccessTokenWithRefresh: Token refresh failed, using existing token',
+        );
       }
     } else {
       print('AuthService.getAccessTokenWithRefresh: Token is still valid');
     }
-    
+
     final sp = await SharedPreferences.getInstance();
-    final token = sp.getString('auth_token') ?? sp.getString('accessToken') ?? sp.getString('access_token') ?? '';
+    final token =
+        sp.getString('auth_token') ??
+        sp.getString('accessToken') ??
+        sp.getString('access_token') ??
+        '';
     return token;
   }
 
@@ -412,7 +521,11 @@ class AuthService {
     print('Request body: $body');
     try {
       final client = _getHttpClient();
-      final response = await client.post(uri, headers: {'Content-Type': 'application/json'}, body: body);
+      final response = await client.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      );
       print('Response received - Status: ${response.statusCode}');
       return response;
     } catch (e) {
@@ -437,7 +550,11 @@ class AuthService {
     print('Request body: $body');
     try {
       final client = _getHttpClient();
-      final response = await client.post(uri, headers: {'Content-Type': 'application/json'}, body: body);
+      final response = await client.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      );
       print('Response received - Status: ${response.statusCode}');
       return response;
     } catch (e) {
@@ -446,4 +563,3 @@ class AuthService {
     }
   }
 }
-
