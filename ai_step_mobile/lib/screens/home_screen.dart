@@ -35,6 +35,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _goalAchieved = false;
   Timer? _syncTimer;
   Timer? _caloriesTimer;
+  Timer? _weeklyPollingTimer;
   bool _isSyncing = false;
   bool _isLoggingOut = false;
   DateTime _lastManualSyncAttempt = DateTime.fromMillisecondsSinceEpoch(0);
@@ -95,6 +96,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _fetchDistanceToday();
     _distanceTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       _fetchDistanceToday();
+    });
+
+    // Start long-polling for weekly progress (every 30 seconds)
+    _weeklyPollingTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted) return;
+      ref.read(weeklyStepsProvider.notifier).silentRefreshWeeklySteps();
     });
 
     _syncTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
@@ -206,6 +213,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _syncTimer?.cancel();
     _caloriesTimer?.cancel();
     _distanceTimer?.cancel();
+    _weeklyPollingTimer?.cancel();
     _stepCounterService.dispose();
     super.dispose();
   }
@@ -439,8 +447,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 _distanceKm != null ? _distanceKm!.toStringAsFixed(1) : '—',
                 'km',
               ),
-              _vDivider(),
-              _metricItem('0', 'min'),
             ],
           ),
         ],

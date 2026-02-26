@@ -136,7 +136,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ? NetworkImage(
                           user.avatarPath!.startsWith('http')
                               ? '${user.avatarPath!}?t=${DateTime.now().millisecondsSinceEpoch}'
-                              : 'http://10.197.22.175:9000/avatars/${user.avatarPath}?t=${DateTime.now().millisecondsSinceEpoch}',
+                              : 'http://192.168.43.16:9000/avatars/${user.avatarPath}?t=${DateTime.now().millisecondsSinceEpoch}',
                         )
                       : null,
                   child: user.avatarPath == null

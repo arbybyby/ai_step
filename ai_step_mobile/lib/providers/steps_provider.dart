@@ -146,6 +146,19 @@ class WeeklyStepsNotifier extends StateNotifier<AsyncValue<WeekStepsInfo?>> {
     print('=== WeeklyStepsNotifier.fetchWeeklySteps END ===\n');
   }
 
+  /// Silently refreshes weekly data from the API without triggering a loading
+  /// state, so the UI doesn't flash a spinner on each poll.
+  Future<void> silentRefreshWeeklySteps() async {
+    print('WeeklyStepsNotifier.silentRefreshWeeklySteps: polling...');
+    try {
+      final weekData = await _apiService.getCurrentWeekSteps();
+      state = AsyncValue.data(weekData);
+      print('WeeklyStepsNotifier.silentRefreshWeeklySteps: updated, totalSteps=${weekData.totalSteps}');
+    } catch (e) {
+      print('WeeklyStepsNotifier.silentRefreshWeeklySteps: ERROR (keeping old state): $e');
+    }
+  }
+
   /// Updates today's step count in the local weekly state without hitting the API.
   void updateTodaySteps(int steps) {
     final current = state;

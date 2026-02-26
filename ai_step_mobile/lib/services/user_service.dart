@@ -67,7 +67,7 @@ class UserService {
   }
 
   Future<void> submitUser(User user) async {
-    final uri = Uri.parse('http://10.197.22.175:8082/users/submit');
+    final uri = Uri.parse('http://192.168.43.16:8082/users/submit');
     final token = await _getToken();
     final headers = <String, String>{'Content-Type': 'application/json'};
     if (token.isNotEmpty) {
@@ -99,7 +99,7 @@ class UserService {
 
   Future<String> uploadAvatar(int userId, File imageFile) async {
     print("-----------------------------------");
-    final uri = Uri.parse('http://10.197.22.175:8082/users/$userId/avatar');
+    final uri = Uri.parse('http://192.168.43.16:8082/users/$userId/avatar');
     final token = await _getToken();
 
     final request = http.MultipartRequest('POST', uri);
