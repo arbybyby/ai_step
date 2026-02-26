@@ -428,9 +428,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _metricItem('0', 'kcal'),
+              _metricItem(
+                _caloriesBurned != null
+                    ? _caloriesBurned!.toStringAsFixed(0)
+                    : '—',
+                'kcal',
+              ),
               _vDivider(),
-              _metricItem('0.0', 'km'),
+              _metricItem(
+                _distanceKm != null
+                    ? _distanceKm!.toStringAsFixed(1)
+                    : '—',
+                'km',
+              ),
               _vDivider(),
               _metricItem('0', 'min'),
             ],
