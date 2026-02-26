@@ -13,6 +13,14 @@ import 'dart:async';
 import 'weekly_progress_screen.dart';
 import 'package:intl/intl.dart';
 
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const _bg = Color(0xFF0A0D0B);
+const _card = Color(0xFF141714);
+const _green = Color(0xFF28C76F);
+const _greenDim = Color(0xFF1A3D2B);
+const _white = Colors.white;
+const _grey = Color(0xFF8A8A8A);
+
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -35,6 +43,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   double? _distanceKm;
   Timer? _distanceTimer;
   final CaloriesService _caloriesService = CaloriesService();
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -43,61 +52,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _initializeServices() async {
-    // Initialize notification service
     await NotificationService().init();
-
-    // Initialize background sync
     await BackgroundSyncService.init();
     await BackgroundSyncService.startPeriodicSync();
 
-    // Load initial data
     await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) {
-      print('HomeScreen._initializeServices: Starting initial sync and fetch...');
       try {
-        // First sync local data to backend
-        print('HomeScreen._initializeServices: Calling BackgroundSyncService.syncNow...');
         await BackgroundSyncService.syncNow();
-        print('HomeScreen._initializeServices: BackgroundSyncService.syncNow completed');
-        
-        // Then fetch from backend to update provider state
-        print('HomeScreen._initializeServices: Calling fetchCurrentDaySteps...');
         await ref.read(currentDayStepsProvider.notifier).fetchCurrentDaySteps();
-        print('HomeScreen._initializeServices: fetchCurrentDaySteps completed - provider updated');
-        
-        // Also fetch weekly data
-        print('HomeScreen._initializeServices: Calling fetchWeeklySteps...');
         await ref.read(weeklyStepsProvider.notifier).fetchWeeklySteps();
-        print('HomeScreen._initializeServices: fetchWeeklySteps completed');
-        
-        // Immediately read the updated value and update local state
-        print('HomeScreen._initializeServices: Reading provider value...');
+
         final providerState = ref.read(currentDayStepsProvider);
-        print('HomeScreen._initializeServices: Provider state type: ${providerState.runtimeType}');
         providerState.whenData((data) async {
           if (data != null && mounted) {
-            print('HomeScreen._initializeServices: Got data from provider: ${data.stepsCount} steps');
             setState(() {
               _currentSteps = data.stepsCount;
               _lastSyncedSteps = data.stepsCount;
             });
-            print('HomeScreen._initializeServices: Updated _currentSteps to ${data.stepsCount}');
-
-            // Initialize step counter after we have last-known steps
             _stepCounterService = StepCounterService();
-            await _stepCounterService.init(_onStepCountChanged, initialSteps: _currentSteps);
-            print('HomeScreen._initializeServices: StepCounterService initialized with initialSteps=$_currentSteps');
+            await _stepCounterService.init(
+              _onStepCountChanged,
+              initialSteps: _currentSteps,
+            );
           } else {
-            print('HomeScreen._initializeServices: Provider data is null');
-            // Initialize step counter with default 0 if no provider data
             _stepCounterService = StepCounterService();
             await _stepCounterService.init(_onStepCountChanged);
-            print('HomeScreen._initializeServices: StepCounterService initialized with default initialSteps=0');
           }
         });
-      } catch (e, stackTrace) {
-        print('HomeScreen._initializeServices: initial sync/fetch failed: $e');
-        print('HomeScreen._initializeServices: stackTrace: $stackTrace');
+      } catch (e) {
+        print('HomeScreen._initializeServices: $e');
       }
     }
 
@@ -113,116 +97,67 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _fetchDistanceToday();
     });
 
-    // Set up frequent periodic sync timer (every 10 seconds) to keep data fresh
     _syncTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
-      if (!mounted) {
-        print('HomeScreen: Periodic sync tick skipped - widget not mounted');
-        return;
-      }
-      print('\n=== HomeScreen: Periodic sync tick START (10s interval) ===');
-      print('HomeScreen: Current steps: $_currentSteps, LastSynced: $_lastSyncedSteps');
-      
-      if (_isSyncing) {
-        print('HomeScreen: Sync already in progress, skipping this tick');
-        return;
-      }
-      
+      if (!mounted || _isSyncing) return;
       _isSyncing = true;
-      print('HomeScreen: Starting periodic sync cycle...');
-      
       try {
-        // First, try to flush any queued local steps to backend
-        print('HomeScreen: Step 1 - Syncing to backend...');
-        try {
-          await BackgroundSyncService.syncNow();
-          print('HomeScreen: BackgroundSyncService.syncNow SUCCESS');
-        } catch (e, stackTrace) {
-          print('HomeScreen: periodic syncNow FAILED: $e');
-          print('HomeScreen: syncNow stackTrace: $stackTrace');
-        }
-
-        // Then, fetch latest from backend and update provider state
-        print('HomeScreen: Step 2 - Fetching from backend via provider...');
-        try {
-          await ref.read(currentDayStepsProvider.notifier).fetchCurrentDaySteps();
-          print('HomeScreen: fetchCurrentDaySteps SUCCESS - provider state updated');
-          
-          // Read updated value and update local state
-          final providerState = ref.read(currentDayStepsProvider);
-          providerState.whenData((data) {
-            if (data != null && mounted) {
-              setState(() {
-                _currentSteps = data.stepsCount;
-                _lastSyncedSteps = data.stepsCount;
-              });
-              print('HomeScreen: Periodic sync updated _currentSteps to ${data.stepsCount}');
-              // Keep weekly progress in sync with the latest synced count
-              ref.read(weeklyStepsProvider.notifier).updateTodaySteps(data.stepsCount);
-            }
-          });
-        } catch (e, stackTrace) {
-          print('HomeScreen: periodic fetch FAILED: $e');
-          print('HomeScreen: fetch stackTrace: $stackTrace');
-        }
+        await BackgroundSyncService.syncNow();
+        await ref.read(currentDayStepsProvider.notifier).fetchCurrentDaySteps();
+        final providerState = ref.read(currentDayStepsProvider);
+        providerState.whenData((data) {
+          if (data != null && mounted) {
+            setState(() {
+              _currentSteps = data.stepsCount;
+              _lastSyncedSteps = data.stepsCount;
+            });
+            ref
+                .read(weeklyStepsProvider.notifier)
+                .updateTodaySteps(data.stepsCount);
+          }
+        });
       } finally {
         _isSyncing = false;
-        print('=== HomeScreen: Periodic sync tick END ===\n');
       }
     });
 
-      // Try to fetch user profile to display name for greeting
-      try {
-        final me = await AuthService.getMe();
-        if (mounted && me.isNotEmpty) {
-          String name = '';
-          // Prefer PascalCase properties (backend C# style)
-          final firstPascal = me['FirstName']?.toString() ?? '';
-          final lastPascal = me['LastName']?.toString() ?? '';
-          if (firstPascal.isNotEmpty || lastPascal.isNotEmpty) {
-            name = (firstPascal + (lastPascal.isNotEmpty ? ' $lastPascal' : '')).trim();
-          } else if (me['firstName'] != null && me['firstName'].toString().isNotEmpty) {
-            name = me['firstName'].toString();
-          } else if (me['name'] != null && me['name'].toString().isNotEmpty) {
-            name = me['name'].toString();
-          } else if (me['email'] != null && me['email'].toString().isNotEmpty) {
-            // fallback to email local-part
-            final email = me['email'].toString();
-            name = email.split('@').first;
-          }
-          if (name.isNotEmpty) {
-            setState(() => _displayName = name);
-          }
+    try {
+      final me = await AuthService.getMe();
+      if (mounted && me.isNotEmpty) {
+        String name = '';
+        final firstPascal = me['FirstName']?.toString() ?? '';
+        final lastPascal = me['LastName']?.toString() ?? '';
+        if (firstPascal.isNotEmpty || lastPascal.isNotEmpty) {
+          name = (firstPascal + (lastPascal.isNotEmpty ? ' $lastPascal' : ''))
+              .trim();
+        } else if (me['firstName'] != null &&
+            me['firstName'].toString().isNotEmpty) {
+          name = me['firstName'].toString();
+        } else if (me['name'] != null && me['name'].toString().isNotEmpty) {
+          name = me['name'].toString();
+        } else if (me['email'] != null && me['email'].toString().isNotEmpty) {
+          name = me['email'].toString().split('@').first;
         }
-      } catch (e) {
-        // ignore profile fetch errors - greeting will use generic text
-        print('HomeScreen: could not fetch profile for greeting: $e');
+        if (name.isNotEmpty) setState(() => _displayName = name);
       }
+    } catch (e) {
+      print('HomeScreen: could not fetch profile: $e');
+    }
   }
 
   void _onStepCountChanged(int steps) {
-    print('HomeScreen._onStepCountChanged: Steps changed to $steps (previous: $_currentSteps)');
-    setState(() {
-      _currentSteps = steps;
-    });
-
-    // Check if goal is achieved
-    final goal = 400;
+    setState(() => _currentSteps = steps);
+    const goal = 10000;
     if (!_goalAchieved && steps >= goal) {
       _goalAchieved = true;
       NotificationService().showGoalAchievedNotification(goal);
     }
-
-    // Update steps in provider
     ref.read(currentDayStepsProvider.notifier).updateSteps(steps);
-    // Keep weekly progress in sync with live step count
     ref.read(weeklyStepsProvider.notifier).updateTodaySteps(steps);
 
-    // Attempt an immediate sync if we have a significant increase,
-    // but throttle to avoid spamming sync calls.
     final now = DateTime.now();
-    final stepsDiff = steps - _lastSyncedSteps;
-    if (stepsDiff >= 10 && now.difference(_lastManualSyncAttempt) > const Duration(seconds: 30)) {
-      print('HomeScreen._onStepCountChanged: Triggering immediate sync (diff: $stepsDiff)');
+    final diff = steps - _lastSyncedSteps;
+    if (diff >= 10 &&
+        now.difference(_lastManualSyncAttempt) > const Duration(seconds: 30)) {
       _lastManualSyncAttempt = now;
       _syncSteps();
     }
@@ -230,33 +165,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   String _greeting() {
     final hour = DateTime.now().hour;
-    final String greet;
-    if (hour >= 5 && hour < 12) {
-      greet = 'Good Morning';
-    } else if (hour >= 12 && hour < 18) {
-      greet = 'Good Afternoon';
-    } else {
-      greet = 'Good Evening';
-    }
-    final name = (_displayName.isNotEmpty) ? ', $_displayName' : '';
+    final greet = hour >= 5 && hour < 12
+        ? 'Good Morning'
+        : hour < 18
+        ? 'Good Afternoon'
+        : 'Good Evening';
+    final name = _displayName.isNotEmpty ? ', $_displayName' : '';
     return '$greet$name!';
   }
 
   Future<void> _syncSteps() async {
-    print('HomeScreen._syncSteps: Syncing $_currentSteps steps');
     try {
       await ref.read(currentDayStepsProvider.notifier).syncSteps(_currentSteps);
-      setState(() {
-        _lastSyncedSteps = _currentSteps;
-      });
-      print('HomeScreen._syncSteps: Sync successful, lastSyncedSteps updated to $_lastSyncedSteps');
-    } catch (e) {
-      print('HomeScreen._syncSteps: Sync failed: $e');
+      setState(() => _lastSyncedSteps = _currentSteps);
+    } catch (_) {
       NotificationService().showSyncErrorNotification();
-      // Don't update _lastSyncedSteps on failure, will retry on next timer tick
     }
   }
-
 
   Future<void> _fetchCaloriesBurned() async {
     final value = await _caloriesService.getCaloriesBurnedToday();
@@ -285,17 +210,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
+  // ─── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final goalAsync = ref.watch(goalProvider);
-    final lastSyncAsync = ref.watch(lastSyncTimeProvider);
 
-    // Listen to provider updates and update local state
-    ref.listen<AsyncValue<StepData?>>(currentDayStepsProvider, (previous, next) {
-      print('HomeScreen: currentDayStepsProvider changed - previous: ${previous?.value?.stepsCount}, next: ${next.value?.stepsCount}');
+    ref.listen<AsyncValue<StepData?>>(currentDayStepsProvider, (_, next) {
       next.whenData((data) {
         if (data != null && mounted) {
-          print('HomeScreen: Updating _currentSteps from $_currentSteps to ${data.stepsCount}');
           setState(() {
             _currentSteps = data.stepsCount;
             _lastSyncedSteps = data.stepsCount;
@@ -304,358 +226,380 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       });
     });
 
-    // Gradient background and modern card layout to match design
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0F8A58), Color(0xFF12B76A)],
-          ),
-        ),
-        child: SafeArea(
-          child: Stack(
-            children: [
-              SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header: greeting + actions
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _greeting(),
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white70),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Keep Moving!',
-                                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // action buttons
-                        Column(
-                          children: [
-                            Row(
-                              children: [
-                                _roundIconButton(icon: Icons.notifications_none, onPressed: () {}),
-                                const SizedBox(width: 12),
-                                _roundIconButton(
-                                  icon: _isLoggingOut ? Icons.hourglass_empty : Icons.logout,
-                                  onPressed: _isLoggingOut ? null : _onLogoutPressed,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    // Main card
-                    goalAsync.when(
-                      data: (goal) => _buildMainCard(goal, lastSyncAsync),
-                      loading: () => const SizedBox(height: 260, child: Center(child: CircularProgressIndicator(color: Colors.white))),
-                      error: (e, s) => const SizedBox(),
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    // Calories + Distance row
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _statCard(
-                            icon: Icons.local_fire_department,
-                            title: _caloriesBurned != null
-                                ? '${_caloriesBurned!.toStringAsFixed(1)} kcal'
-                                : '— kcal',
-                            subtitle: 'Calories',
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _statCard(
-                            icon: Icons.straighten,
-                            title: _distanceKm != null
-                                ? '${_distanceKm!.toStringAsFixed(2)} km'
-                                : '— km',
-                            subtitle: 'Distance',
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Weekly progress
-                    _weeklyProgressCard(),
-
-                    const SizedBox(height: 16),
-
-                    // Tiles: Meals / Water
-                    Row(
-                      children: [
-                        Expanded(child: _tileCard(icon: Icons.restaurant, title: 'Meals', subtitle: 'Track food', onTap: () => Navigator.of(context).pushNamed('/meals'))),
-                        const SizedBox(width: 12),
-                        Expanded(child: _tileCard(icon: Icons.opacity, title: 'Water', subtitle: 'Stay hydrated', onTap: () => Navigator.of(context).pushNamed('/water'))),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    _dailyTipCard(),
-
-                    const SizedBox(height: 14),
-
-                    _encouragementCard(goalAsync),
-
-                    const SizedBox(height: 120), // leave space for floating profile
-                  ],
-                ),
-              ),
-
-              // Floating Profile button bottom-right
-              Positioned(
-                right: 18,
-                bottom: 18,
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).pushNamed('/profile'),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.person, color: Color(0xFF0F8A58)),
-                        SizedBox(width: 8),
-                        Text('Profile', style: TextStyle(color: Color(0xFF0F8A58), fontWeight: FontWeight.w700)),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _roundIconButton({required IconData icon, required VoidCallback? onPressed}) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 52,
-        height: 52,
-        decoration: BoxDecoration(
-          color: Colors.white24,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(icon, color: Colors.white),
-      ),
-    );
-  }
-
-  Widget _buildMainCard(int goal, AsyncValue<DateTime?> lastSyncAsync) {
-    final progress = (goal == 0) ? 0.0 : (_currentSteps / goal).clamp(0.0, 1.0);
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 12, offset: Offset(0, 6))],
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
-      child: Column(
-        children: [
-          // "Synced with server" pill removed
-
-          const SizedBox(height: 18),
-
-          // circular steps indicator
-          SizedBox(
-            height: 200,
-            child: Center(
-              child: Stack(
-                alignment: Alignment.center,
+      backgroundColor: _bg,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    width: 160,
-                    height: 160,
-                    child: CircularProgressIndicator(
-                      value: progress,
-                      strokeWidth: 14,
-                      backgroundColor: const Color(0xFFF0FBF6),
-                      valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFF0F8A58)),
+                  _buildHeader(),
+                  const SizedBox(height: 18),
+                  goalAsync.when(
+                    data: (goal) => _buildStepsCard(goal),
+                    loading: () => const SizedBox(
+                      height: 180,
+                      child: Center(
+                        child: CircularProgressIndicator(color: _green),
+                      ),
                     ),
+                    error: (_, __) => const SizedBox(),
                   ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.directions_walk, color: const Color(0xFF0F8A58), size: 28),
-                      const SizedBox(height: 6),
-                      Text(_currentSteps.toString(), style: const TextStyle(fontSize: 48, color: Color(0xFF0F8A58), fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 6),
-                      Text('of $goal steps', style: TextStyle(color: Colors.grey[600])),
-                    ],
-                  ),
+                  const SizedBox(height: 14),
+                  _buildWeeklyProgress(),
+                  const SizedBox(height: 14),
+                  _buildMealsWaterRow(),
+                  const SizedBox(height: 14),
+                  _buildTipKeepGoingRow(),
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
-          ),
 
-          const SizedBox(height: 6),
-
-          // thin progress bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(value: progress, minHeight: 8, backgroundColor: const Color(0xFFF0FBF6), valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFFCCF6E3))),
-          ),
-
-          const SizedBox(height: 12),
-
-          Text('${(progress * 100).toStringAsFixed(0)}% of daily goal', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.grey[700])),
-
-          const SizedBox(height: 12),
-
-          // status pill removed
-        ],
+            // ── Floating bottom nav ───────────────────────────────────
+            Positioned(
+              left: 18,
+              right: 18,
+              bottom: 16,
+              child: _buildBottomNav(),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _statCard({required IconData icon, required String title, required String subtitle, bool fullWidth = false}) {
-    return Container(
-      height: fullWidth ? 84 : 110,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(color: const Color(0xFFEFFBF6), borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: const Color(0xFF0F8A58)),
-          ),
-          const SizedBox(width: 12),
-          Column(
+  // ─── Header ────────────────────────────────────────────────────────────────
+  Widget _buildHeader() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(title, style: const TextStyle(color: Color(0xFF0F8A58), fontWeight: FontWeight.w800)),
-              const SizedBox(height: 6),
-              Text(subtitle, style: TextStyle(color: Colors.grey[700])),
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _weeklyProgressCard() {
-    final weeklyStepsAsync = ref.watch(weeklyStepsProvider);
-    
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 6))]),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Weekly Progress', style: TextStyle(fontWeight: FontWeight.w800)),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const WeeklyProgressScreen(),
-                    ),
-                  );
-                }, 
-                child: const Text('View All'),
+              Text(
+                _greeting(),
+                style: const TextStyle(
+                  color: _white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Keep Moving!',
+                style: TextStyle(
+                  color: _green,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          weeklyStepsAsync.when(
-            data: (weekData) {
-              if (weekData == null) {
-                return _buildEmptyWeeklyChart();
-              }
-              return _buildWeeklyChart(weekData);
-            },
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: CircularProgressIndicator(),
+        ),
+        // Notification bell
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: _card,
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: const Icon(
+                Icons.notifications_none,
+                color: _white,
+                size: 22,
               ),
             ),
-            error: (_, __) => _buildEmptyWeeklyChart(),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildEmptyWeeklyChart() {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(7, (i) => Container(width: 36, height: 28, decoration: BoxDecoration(color: const Color(0xFFEFFBF6), borderRadius: BorderRadius.circular(12)))),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Mon', style: TextStyle(color: Colors.grey, fontSize: 12)),
-            Text('Tue', style: TextStyle(color: Colors.grey, fontSize: 12)),
-            Text('Wed', style: TextStyle(color: Colors.grey, fontSize: 12)),
-            Text('Thu', style: TextStyle(color: Colors.grey, fontSize: 12)),
-            Text('Fri', style: TextStyle(color: Colors.grey, fontSize: 12)),
-            Text('Sat', style: TextStyle(color: Colors.grey, fontSize: 12)),
-            Text('Sun', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            Positioned(
+              top: 8,
+              right: 9,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: _green,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _bg, width: 1.5),
+                ),
+              ),
+            ),
           ],
         ),
       ],
     );
   }
-  
-  Widget _buildWeeklyChart(WeekStepsInfo weekData) {
-    // Create a map of all week days
+
+  // ─── Steps Card ────────────────────────────────────────────────────────────
+  Widget _buildStepsCard(int goal) {
+    final progress = goal == 0 ? 0.0 : (_currentSteps / goal).clamp(0.0, 1.0);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        children: [
+          // Top: ring + steps text
+          Row(
+            children: [
+              // Circular indicator
+              SizedBox(
+                width: 88,
+                height: 88,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 88,
+                      height: 88,
+                      child: CircularProgressIndicator(
+                        value: progress,
+                        strokeWidth: 8,
+                        backgroundColor: const Color(0xFFE8F5EF),
+                        valueColor: const AlwaysStoppedAnimation<Color>(_green),
+                      ),
+                    ),
+                    const Icon(Icons.directions_walk, color: _green, size: 28),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 20),
+
+              // Steps text + progress bar
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '$_currentSteps ',
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 32,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'of $goal steps',
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 7,
+                        backgroundColor: const Color(0xFFE8F5EF),
+                        valueColor: const AlwaysStoppedAnimation<Color>(_green),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+          const Divider(height: 1, color: Color(0xFFF0F0F0)),
+          const SizedBox(height: 14),
+
+          // Bottom metrics row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _metricItem(
+                _caloriesBurned != null
+                    ? _caloriesBurned!.toStringAsFixed(0)
+                    : '—',
+                'kcal',
+              ),
+              _vDivider(),
+              _metricItem(
+                _distanceKm != null ? _distanceKm!.toStringAsFixed(1) : '—',
+                'km',
+              ),
+              _vDivider(),
+              _metricItem('0', 'min'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricItem(String value, String label) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(label, style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+      ],
+    );
+  }
+
+  Widget _vDivider() {
+    return Container(width: 1, height: 30, color: const Color(0xFFEEEEEE));
+  }
+
+  // ─── Weekly Progress ───────────────────────────────────────────────────────
+  Widget _buildWeeklyProgress() {
+    final weeklyAsync = ref.watch(weeklyStepsProvider);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Weekly Progress',
+                style: TextStyle(
+                  color: _white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const WeeklyProgressScreen(),
+                  ),
+                ),
+                child: const Icon(Icons.chevron_right, color: _grey, size: 22),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          weeklyAsync.when(
+            data: (data) =>
+                data != null ? _buildBarChart(data) : _buildEmptyBarChart(),
+            loading: () => const SizedBox(
+              height: 80,
+              child: Center(child: CircularProgressIndicator(color: _green)),
+            ),
+            error: (_, __) => _buildEmptyBarChart(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyBarChart() {
+    final days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+    return Column(
+      children: [
+        // Y-axis labels + bars
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // Y-axis
+            Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: ['180', '120', '60', '0']
+                  .map(
+                    (l) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        l,
+                        style: const TextStyle(color: _grey, fontSize: 10),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: SizedBox(
+                height: 100,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: List.generate(
+                    7,
+                    (_) => Container(
+                      width: 20,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2A2D2A),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 32),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: days
+                      .map(
+                        (d) => Text(
+                          d,
+                          style: const TextStyle(color: _grey, fontSize: 11),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBarChart(WeekStepsInfo weekData) {
     final now = DateTime.now();
-    final weekStart = now.subtract(Duration(days: now.weekday - 1));
-    
-    final weekDays = List.generate(7, (index) {
-      final date = weekStart.add(Duration(days: index));
+    // Sunday-first week
+    final sundayOffset = now.weekday % 7; // days since last sunday
+    final weekStart = now.subtract(Duration(days: sundayOffset));
+
+    final weekDays = List.generate(7, (i) {
+      final date = weekStart.add(Duration(days: i));
       final dateStr = DateFormat('yyyy-MM-dd').format(date);
-      final dayData = weekData.dayStepsInfo.firstWhere(
+      final day = weekData.dayStepsInfo.firstWhere(
         (d) => d.date == dateStr,
         orElse: () => DayStepsInfo(
           id: 0,
@@ -665,214 +609,421 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           distanceKm: 0,
         ),
       );
-      return dayData;
+      return day;
     });
-    
-    final maxSteps = weekDays.map((d) => d.stepsCount).reduce((a, b) => a > b ? a : b);
-    final chartHeight = 100.0;
-    
+
+    final labels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+    final maxSteps = weekDays
+        .map((d) => d.stepsCount)
+        .fold<int>(1, (a, b) => a > b ? a : b);
+    const chartH = 90.0;
+
     return Column(
       children: [
-        // Chart with bars and step counts
-        SizedBox(
-          height: chartHeight,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: weekDays.map((day) {
-              final date = DateTime.parse(day.date);
-              final isToday = date.day == now.day && date.month == now.month && date.year == now.year;
-              final barHeight = maxSteps > 0
-                  ? ((day.stepsCount / maxSteps) * (chartHeight - 35)).clamp(0.0, chartHeight - 35)
-                  : 0.0;
-              
-              return Container(
-                width: 36,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    // Step count above bar
-                    if (day.stepsCount > 0)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4.0),
-                        child: Text(
-                          day.stepsCount > 999 ? '${(day.stepsCount / 1000).toStringAsFixed(1)}k' : '${day.stepsCount}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: isToday ? const Color(0xFF0F8A58) : Colors.grey.shade600,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // Y-axis labels
+            Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children:
+                  [
+                        maxSteps,
+                        (maxSteps * 0.67).round(),
+                        (maxSteps * 0.33).round(),
+                        0,
+                      ]
+                      .map(
+                        (v) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Text(
+                            '$v',
+                            style: const TextStyle(color: _grey, fontSize: 9),
                           ),
                         ),
-                      ),
-                    // Bar
-                    Container(
-                      height: barHeight > 0 ? barHeight : 4,
+                      )
+                      .toList(),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: SizedBox(
+                height: chartH,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: List.generate(7, (i) {
+                    final day = weekDays[i];
+                    final isToday =
+                        DateTime.parse(day.date).day == now.day &&
+                        DateTime.parse(day.date).month == now.month &&
+                        DateTime.parse(day.date).year == now.year;
+                    final barH = maxSteps > 0
+                        ? ((day.stepsCount / maxSteps) * (chartH - 10)).clamp(
+                            4.0,
+                            chartH - 10,
+                          )
+                        : 4.0;
+                    return Container(
+                      width: 20,
+                      height: barH,
                       decoration: BoxDecoration(
-                        color: isToday ? const Color(0xFF0F8A58) : const Color(0xFFEFFBF6),
-                        borderRadius: BorderRadius.circular(12),
+                        color: isToday ? _green : const Color(0xFF2A2D2A),
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        const SizedBox(height: 8),
-        // Day labels
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: weekDays.map((day) {
-            final date = DateTime.parse(day.date);
-            final dayName = DateFormat('EEE').format(date);
-            final isToday = date.day == now.day && date.month == now.month && date.year == now.year;
-            
-            return SizedBox(
-              width: 36,
-              child: Text(
-                dayName,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: isToday ? const Color(0xFF0F8A58) : Colors.grey,
-                  fontSize: 12,
-                  fontWeight: isToday ? FontWeight.w800 : FontWeight.normal,
+                    );
+                  }),
                 ),
               ),
-            );
-          }).toList(),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            const SizedBox(width: 32),
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(7, (i) {
+                  final day = weekDays[i];
+                  final isToday =
+                      DateTime.parse(day.date).day == now.day &&
+                      DateTime.parse(day.date).month == now.month &&
+                      DateTime.parse(day.date).year == now.year;
+                  return Text(
+                    labels[i],
+                    style: TextStyle(
+                      color: isToday ? _green : _grey,
+                      fontSize: 11,
+                      fontWeight: isToday ? FontWeight.w700 : FontWeight.normal,
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _tileCard({required IconData icon, required String title, required String subtitle, VoidCallback? onTap}) {
-    final card = Container(
-      height: 110,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 6))]),
-      child: Row(
-        children: [
-          Container(width: 44, height: 44, decoration: BoxDecoration(color: const Color(0xFFEFFBF6), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: const Color(0xFF0F8A58))),
-          const SizedBox(width: 12),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [Text(title, style: TextStyle(color: Color(0xFF0F8A58), fontWeight: FontWeight.w800)), const SizedBox(height: 6), Text(subtitle, style: TextStyle(color: Colors.grey[700]))])
-        ],
-      ),
-    );
+  // ─── Meals & Water row ─────────────────────────────────────────────────────
+  Widget _buildMealsWaterRow() {
+    return Row(
+      children: [
+        // Meals — dark card
+        Expanded(
+          child: GestureDetector(
+            onTap: () => Navigator.of(context).pushNamed('/meals'),
+            child: Container(
+              height: 90,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: _card,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: const [
+                      Text(
+                        'Meals',
+                        style: TextStyle(
+                          color: _white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Icon(Icons.chevron_right, color: _grey, size: 18),
+                    ],
+                  ),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: 0.0,
+                      minHeight: 5,
+                      backgroundColor: const Color(0xFF2A2D2A),
+                      valueColor: const AlwaysStoppedAnimation<Color>(_green),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
 
-    if (onTap != null) {
-      return InkWell(onTap: onTap, borderRadius: BorderRadius.circular(16), child: card);
-    }
-    return card;
+        const SizedBox(width: 12),
+
+        // Water — green card
+        Expanded(
+          child: GestureDetector(
+            onTap: () => Navigator.of(context).pushNamed('/water'),
+            child: Container(
+              height: 90,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: _green,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: const [
+                      Text(
+                        'Water',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right,
+                        color: Colors.black54,
+                        size: 18,
+                      ),
+                    ],
+                  ),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: 0.3,
+                      minHeight: 5,
+                      backgroundColor: Colors.black26,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Colors.black,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  Widget _dailyTipCard() {
+  // ─── Daily Tip & Keep Going row ────────────────────────────────────────────
+  Widget _buildTipKeepGoingRow() {
+    return Row(
+      children: [
+        // Daily Tip — dark
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: _card,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Daily Tip',
+                  style: TextStyle(
+                    color: _white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Learn how your daily tip about the best fitness habits.',
+                  style: const TextStyle(
+                    color: _grey,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 12),
+
+        // Keep Going — green
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: _green,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Keep Going!',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  "Keep going! We're coming back stronger every day.",
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Bottom Nav ────────────────────────────────────────────────────────────
+  static const _navItems = [
+    _NavItem(Icons.home_rounded, 'Home', null),
+    _NavItem(Icons.water_drop_rounded, 'Water', '/water'),
+    _NavItem(Icons.restaurant_rounded, 'Meals', '/meals'),
+    _NavItem(Icons.bar_chart_rounded, 'Stats', null),
+    _NavItem(Icons.person_rounded, 'Profile', '/profile'),
+  ];
+
+  Widget _buildBottomNav() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: const Color(0xFF0F8A58), borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 6))]),
-      child: Row(
-        children: [
-          Container(width: 56, height: 56, decoration: BoxDecoration(color: const Color(0xFF12B76A), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.stairs, color: Colors.white)),
-          const SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Daily Tip', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700)), SizedBox(height: 6), Text('Take the stairs instead of the elevator', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800))])),
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(36),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 28,
+            offset: const Offset(0, 8),
+          ),
         ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: List.generate(_navItems.length, (i) {
+          final item = _navItems[i];
+          final active = i == _selectedIndex;
+
+          return GestureDetector(
+            onTap: () {
+              setState(() => _selectedIndex = i);
+              if (item.route != null) {
+                Navigator.of(context).pushNamed(item.route!);
+              }
+            },
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeInOut,
+              padding: EdgeInsets.symmetric(
+                horizontal: active ? 14 : 10,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: active ? _green : Colors.transparent,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    item.icon,
+                    size: 22,
+                    color: active ? Colors.white : Colors.grey[400],
+                  ),
+                  // Animated label: slides in + fades when active
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 280),
+                    curve: Curves.easeInOut,
+                    child: active
+                        ? Row(
+                            children: [
+                              const SizedBox(width: 6),
+                              AnimatedOpacity(
+                                opacity: active ? 1.0 : 0.0,
+                                duration: const Duration(milliseconds: 220),
+                                child: Text(
+                                  item.label,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    letterSpacing: 0.1,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
       ),
     );
   }
 
-  Widget _encouragementCard(AsyncValue<int> goalAsync) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: const Color(0xFF0AB36A), borderRadius: BorderRadius.circular(18), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 6))]),
-      child: Row(
-        children: [
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('🔥 Keep Going!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 22)), SizedBox(height: 8), Text("You're only 400 steps away from your goal!", style: TextStyle(color: Colors.white70))])),
-          Container(width: 72, height: 72, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(36)), child: Icon(Icons.emoji_events, color: Colors.white, size: 36)),
-        ],
-      ),
-    );
-  }
-
+  // ─── Logout ────────────────────────────────────────────────────────────────
   Future<void> _onLogoutPressed() async {
-    print('HomeScreen._onLogoutPressed: Starting logout...');
-    if (_isLoggingOut) {
-      print('HomeScreen._onLogoutPressed: Already logging out, ignoring');
-      return;
-    }
-    
-    if (!mounted) {
-      print('HomeScreen._onLogoutPressed: Widget not mounted');
-      return;
-    }
-    
+    if (_isLoggingOut || !mounted) return;
     setState(() => _isLoggingOut = true);
-    
     try {
-      print('HomeScreen._onLogoutPressed: Stopping sync timer and pedometer');
       _syncTimer?.cancel();
       try {
         _stepCounterService.dispose();
-      } catch (e) {
-        print('HomeScreen._onLogoutPressed: Failed to dispose StepCounterService: $e');
-      }
-
-      print('HomeScreen._onLogoutPressed: Clearing local step storage');
+      } catch (_) {}
       try {
         await StepStorageService().clear();
-        print('HomeScreen._onLogoutPressed: StepStorageService cleared');
-      } catch (e) {
-        print('HomeScreen._onLogoutPressed: Failed to clear StepStorageService: $e');
-      }
-
-      print('HomeScreen._onLogoutPressed: Calling AuthService.logout()');
+      } catch (_) {}
       await AuthService.logout();
-      print('HomeScreen._onLogoutPressed: AuthService.logout() completed');
-
       final sp = await SharedPreferences.getInstance();
       try {
         await sp.clear();
-        print('HomeScreen._onLogoutPressed: SharedPreferences cleared');
-      } catch (e) {
-        print('HomeScreen._onLogoutPressed: Failed to clear SharedPreferences: $e');
-      }
-
-      if (!mounted) {
-        print('HomeScreen._onLogoutPressed: Widget unmounted after logout');
-        return;
-      }
-
-      print('HomeScreen._onLogoutPressed: Navigating to /signin');
-      Navigator.of(context).pushReplacementNamed('/signin');
-    } catch (e, stackTrace) {
-      print('HomeScreen._onLogoutPressed: logout FAILED: $e');
-      print('HomeScreen._onLogoutPressed: stackTrace: $stackTrace');
-      
-      if (!mounted) return;
-      
-      await showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Logout failed'),
-          content: Text('Could not logout: $e'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    } finally {
+      } catch (_) {}
+      if (mounted) Navigator.of(context).pushReplacementNamed('/signin');
+    } catch (e) {
       if (mounted) {
-        setState(() => _isLoggingOut = false);
-        print('HomeScreen._onLogoutPressed: Reset _isLoggingOut flag');
+        showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Logout failed'),
+            content: Text('$e'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
       }
+    } finally {
+      if (mounted) setState(() => _isLoggingOut = false);
     }
   }
+}
 
-
-
-
-
+class _NavItem {
+  final IconData icon;
+  final String label;
+  final String? route;
+  const _NavItem(this.icon, this.label, this.route);
 }

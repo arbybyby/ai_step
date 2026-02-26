@@ -173,7 +173,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowFlutterPolicy");
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();

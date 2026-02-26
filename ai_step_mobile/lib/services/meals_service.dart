@@ -34,7 +34,8 @@ class MealsServiceException implements Exception {
       return 'Invalid data. Please check your input.\n${details ?? ''}';
     } else if (statusCode != null && statusCode! >= 500) {
       return 'Server error. Please try again later.';
-    } else if (message.contains('SocketException') || message.contains('Connection')) {
+    } else if (message.contains('SocketException') ||
+        message.contains('Connection')) {
       return 'Network error. Please check your internet connection.';
     } else if (message.contains('TimeoutException')) {
       return 'Request timed out. Please try again.';
@@ -49,11 +50,12 @@ class MealsService {
   final http.Client httpClient;
 
   MealsService({http.Client? httpClient})
-      : httpClient = httpClient ?? _createInsecureClient();
+    : httpClient = httpClient ?? _createInsecureClient();
 
   static http.Client _createInsecureClient() {
     final ioClient = HttpClient()
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
     return IOClient(ioClient);
   }
 
@@ -61,7 +63,9 @@ class MealsService {
     try {
       // Use AuthService to get token with automatic refresh if needed
       final token = await AuthService.getAccessTokenWithRefresh();
-      print('MealsService._getAccessToken: Token retrieved - ${token.isNotEmpty ? 'Present' : 'Missing'}${token.isNotEmpty ? ' (length: ${token.length})' : ''}');
+      print(
+        'MealsService._getAccessToken: Token retrieved - ${token.isNotEmpty ? 'Present' : 'Missing'}${token.isNotEmpty ? ' (length: ${token.length})' : ''}',
+      );
       return token.isNotEmpty ? token : null;
     } catch (e) {
       print('MealsService._getAccessToken: Could not read access token: $e');
@@ -78,16 +82,16 @@ class MealsService {
         prefs.getString('userId'),
         prefs.getString('id'),
       ];
-      
+
       final userIdStr = candidates.firstWhere(
         (id) => id != null && id.isNotEmpty,
         orElse: () => null,
       );
-      
+
       if (userIdStr != null) {
         return int.tryParse(userIdStr);
       }
-      
+
       print('MealsService._getUserId: No userId found in SharedPreferences');
       return null;
     } catch (e) {
@@ -97,9 +101,7 @@ class MealsService {
   }
 
   Map<String, String> _getHeaders() {
-    return {
-      'Content-Type': 'application/json',
-    };
+    return {'Content-Type': 'application/json'};
   }
 
   Future<Map<String, String>> _getAuthHeaders() async {
@@ -109,7 +111,9 @@ class MealsService {
       headers['Authorization'] = 'Bearer $token';
       print('MealsService._getAuthHeaders: Authorization header added');
     } else {
-      print('MealsService._getAuthHeaders: No token available - request will fail');
+      print(
+        'MealsService._getAuthHeaders: No token available - request will fail',
+      );
     }
     return headers;
   }
@@ -123,14 +127,16 @@ class MealsService {
 
       final headers = await _getAuthHeaders();
       print('MealsService.getAllMeals: Headers: $headers');
-      
+
       print('MealsService.getAllMeals: Making GET request...');
       final response = await httpClient.get(url, headers: headers);
 
-      print('MealsService.getAllMeals: Response received - Status: ${response.statusCode}');
+      print(
+        'MealsService.getAllMeals: Response received - Status: ${response.statusCode}',
+      );
       print('MealsService.getAllMeals: Response headers: ${response.headers}');
       print('MealsService.getAllMeals: Response body: ${response.body}');
-      
+
       if (response.statusCode == 200) {
         print('MealsService.getAllMeals: Success (200)');
         final List<dynamic> jsonList = jsonDecode(response.body);
@@ -169,17 +175,18 @@ class MealsService {
     final allMeals = await getAllMeals();
 
     return allMeals
-        .where((meal) =>
-            meal.mealName.toLowerCase().contains(query.toLowerCase()))
+        .where(
+          (meal) => meal.mealName.toLowerCase().contains(query.toLowerCase()),
+        )
         .toList();
   }
 
   /// Get all meals tracked by the current user
-  /// 
+  ///
   /// GET /api/meals
-  /// 
+  ///
   /// Returns a list of user-specific meal entries with tracking information
-  /// 
+  ///
   /// Example usage:
   /// ```dart
   /// try {
@@ -199,19 +206,25 @@ class MealsService {
 
       final headers = await _getAuthHeaders();
       print('MealsService.getUserMeals: Headers: $headers');
-      
+
       print('MealsService.getUserMeals: Making GET request...');
       final response = await httpClient.get(url, headers: headers);
 
-      print('MealsService.getUserMeals: Response received - Status: ${response.statusCode}');
+      print(
+        'MealsService.getUserMeals: Response received - Status: ${response.statusCode}',
+      );
       print('MealsService.getUserMeals: Response headers: ${response.headers}');
       print('MealsService.getUserMeals: Response body: ${response.body}');
-      
+
       if (response.statusCode == 200) {
         print('MealsService.getUserMeals: Success (200)');
         final List<dynamic> jsonList = jsonDecode(response.body);
-        final userMeals = jsonList.map((json) => UserMeal.fromJson(json)).toList();
-        print('MealsService.getUserMeals: Parsed ${userMeals.length} user meals');
+        final userMeals = jsonList
+            .map((json) => UserMeal.fromJson(json))
+            .toList();
+        print(
+          'MealsService.getUserMeals: Parsed ${userMeals.length} user meals',
+        );
         print('=== MealsService.getUserMeals END ===\n');
         return userMeals;
       } else if (response.statusCode == 401) {
@@ -244,12 +257,12 @@ class MealsService {
   }
 
   /// Add a new meal to the database
-  /// 
+  ///
   /// POST /api/meals/add
-  /// 
+  ///
   /// Automatically retrieves userID from SharedPreferences.
   /// MealType is sent as capitalized string (e.g., "Breakfast", "Lunch", "Dinner", "Snacks")
-  /// 
+  ///
   /// Request format:
   /// ```json
   /// {
@@ -263,7 +276,7 @@ class MealsService {
   ///   "fat": 8.5
   /// }
   /// ```
-  /// 
+  ///
   /// Example usage:
   /// ```dart
   /// try {
@@ -316,7 +329,7 @@ class MealsService {
         );
       }
 
-      final url = Uri.parse('http://192.168.43.16:8082/meals/add');
+      final url = Uri.parse('http://10.197.22.175:8082/meals/add');
       print('\n=== MealsService.addMeal START ===');
       print('MealsService.addMeal: BaseURL: $baseUrl');
       print('MealsService.addMeal: Full URL: $url');
@@ -327,7 +340,9 @@ class MealsService {
 
       // Convert MealType enum to capitalized string format (e.g., "Breakfast", "Lunch")
       final mealTypeString = mealType.toString().split('.').last;
-      final mealTypeCapitalized = mealTypeString[0].toUpperCase() + mealTypeString.substring(1).toLowerCase();
+      final mealTypeCapitalized =
+          mealTypeString[0].toUpperCase() +
+          mealTypeString.substring(1).toLowerCase();
 
       final body = jsonEncode({
         'userID': userId,
@@ -343,13 +358,11 @@ class MealsService {
       print('MealsService.addMeal: Request body: $body');
       print('MealsService.addMeal: Making POST request...');
 
-      final response = await httpClient.post(
-        url,
-        headers: headers,
-        body: body,
-      );
+      final response = await httpClient.post(url, headers: headers, body: body);
 
-      print('MealsService.addMeal: Response received - Status: ${response.statusCode}');
+      print(
+        'MealsService.addMeal: Response received - Status: ${response.statusCode}',
+      );
       print('MealsService.addMeal: Response headers: ${response.headers}');
       print('MealsService.addMeal: Response body: ${response.body}');
 
@@ -366,7 +379,8 @@ class MealsService {
         String errorDetails = response.body;
         try {
           final errorJson = jsonDecode(response.body);
-          errorDetails = errorJson['message'] ?? errorJson['error'] ?? response.body;
+          errorDetails =
+              errorJson['message'] ?? errorJson['error'] ?? response.body;
         } catch (_) {
           // If response is not JSON, use the raw body
         }
@@ -389,11 +403,11 @@ class MealsService {
   }
 
   /// Track a meal that the user has consumed
-  /// 
+  ///
   /// POST /api/meals/track (or appropriate endpoint for meal tracking)
-  /// 
+  ///
   /// This method records that the user ate a specific meal
-  /// 
+  ///
   /// Example usage:
   /// ```dart
   /// try {
@@ -422,7 +436,7 @@ class MealsService {
         );
       }
 
-      final url = Uri.parse('http://192.168.43.16:8082/meals/add');
+      final url = Uri.parse('http://10.197.22.175:8082/meals/add');
       print('\n=== MealsService.trackMeal START ===');
       print('MealsService.trackMeal: BaseURL: $baseUrl');
       print('MealsService.trackMeal: Full URL: $url');
@@ -432,7 +446,9 @@ class MealsService {
       print('MealsService.trackMeal: Headers: $headers');
 
       final mealTypeString = mealType.toString().split('.').last;
-      final mealTypeCapitalized = mealTypeString[0].toUpperCase() + mealTypeString.substring(1).toLowerCase();
+      final mealTypeCapitalized =
+          mealTypeString[0].toUpperCase() +
+          mealTypeString.substring(1).toLowerCase();
 
       final body = jsonEncode({
         'userID': userId,
@@ -445,13 +461,11 @@ class MealsService {
       print('MealsService.trackMeal: Request body: $body');
       print('MealsService.trackMeal: Making POST request...');
 
-      final response = await httpClient.post(
-        url,
-        headers: headers,
-        body: body,
-      );
+      final response = await httpClient.post(url, headers: headers, body: body);
 
-      print('MealsService.trackMeal: Response received - Status: ${response.statusCode}');
+      print(
+        'MealsService.trackMeal: Response received - Status: ${response.statusCode}',
+      );
       print('MealsService.trackMeal: Response body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -463,7 +477,8 @@ class MealsService {
         String errorDetails = response.body;
         try {
           final errorJson = jsonDecode(response.body);
-          errorDetails = errorJson['message'] ?? errorJson['error'] ?? response.body;
+          errorDetails =
+              errorJson['message'] ?? errorJson['error'] ?? response.body;
         } catch (_) {
           // If response is not JSON, use the raw body
         }
@@ -486,9 +501,9 @@ class MealsService {
   }
 
   /// Delete a meal entry from the database
-  /// 
+  ///
   /// DELETE /api/meals/delete
-  /// 
+  ///
   /// Example usage:
   /// ```dart
   /// try {
@@ -502,12 +517,9 @@ class MealsService {
   ///   ErrorHandler.showError(context, e);
   /// }
   /// ```
-  Future<void> deleteMeal({
-    required int id,
-    required int userId,
-  }) async {
+  Future<void> deleteMeal({required int id, required int userId}) async {
     try {
-      final url = Uri.parse('http://192.168.43.16:8082/meals/delete');
+      final url = Uri.parse('http://10.197.22.175:8082/meals/delete');
       print('\n=== MealsService.deleteMeal START ===');
       print('MealsService.deleteMeal: BaseURL: $baseUrl');
       print('MealsService.deleteMeal: Full URL: $url');
@@ -516,10 +528,7 @@ class MealsService {
       final headers = _getHeaders();
       print('MealsService.deleteMeal: Headers: $headers');
 
-      final body = jsonEncode({
-        'id': id,
-        'userID': userId,
-      });
+      final body = jsonEncode({'id': id, 'userID': userId});
 
       print('MealsService.deleteMeal: Request body: $body');
       print('MealsService.deleteMeal: Making DELETE request...');
@@ -530,7 +539,9 @@ class MealsService {
         body: body,
       );
 
-      print('MealsService.deleteMeal: Response received - Status: ${response.statusCode}');
+      print(
+        'MealsService.deleteMeal: Response received - Status: ${response.statusCode}',
+      );
       print('MealsService.deleteMeal: Response body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 204) {
@@ -542,7 +553,8 @@ class MealsService {
         String errorDetails = response.body;
         try {
           final errorJson = jsonDecode(response.body);
-          errorDetails = errorJson['message'] ?? errorJson['error'] ?? response.body;
+          errorDetails =
+              errorJson['message'] ?? errorJson['error'] ?? response.body;
         } catch (_) {
           // If response is not JSON, use the raw body
         }
