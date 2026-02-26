@@ -436,9 +436,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               _vDivider(),
               _metricItem(
-                _distanceKm != null
-                    ? _distanceKm!.toStringAsFixed(1)
-                    : '—',
+                _distanceKm != null ? _distanceKm!.toStringAsFixed(1) : '—',
                 'km',
               ),
               _vDivider(),
@@ -820,7 +818,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // Daily Tip — dark
         Expanded(
           child: Container(
-            height: 100,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: _card,
@@ -858,7 +855,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // Keep Going — green
         Expanded(
           child: Container(
-            height: 100,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: _green,
